@@ -54,6 +54,38 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, BACKLOG.md, NATIV
 5. Texte für Keimi und Hinweise liegen in `data/texts/`, nicht im Code verstreut.
 6. Alte Daten (v1, Schlüssel `lab.*`) werden beim ersten Start von `domain/migrate.js` übernommen.
 
+## Entscheidungen (Stufe 1: Fundament)
+
+- **Speicher** (`core/store.js`): Adapter mit vier Methoden (`get/set/remove/keys`, nur Strings).
+  `localStorageAdapter` für den Browser, `memoryAdapter` für Tests und als Vorlage für native
+  Speicher. Darüber typisierte Bereiche (`store.profile.get()`, `.set()`, `.update()`, `.reset()`),
+  die JSON lesen/schreiben, bei kaputten Werten auf den Standard zurückfallen und Objekt-Standards
+  mit dem Gespeicherten zusammenführen. **Die vollständige Schlüsseltabelle steht oben in
+  `src/core/store.js`.** Alle v2-Schlüssel beginnen mit `ng2.`, Schema-Version in `ng2.meta`.
+- **Migration** (`domain/migrate.js`): `convertV1` ist rein, `migrateFromV1` schreibt einmalig
+  (Merker `ng2.meta.migratedFromV1`) und nur Bereiche, die es in v2 noch nicht gibt. v1-Schlüssel
+  (`lab.*`) bleiben unverändert erhalten. Beispiel-Trainings aus v1 entfallen, Beispiel-Personen
+  bleiben markiert. Ein Test prüft, dass jeder `lab.*`-Schlüssel aus `src/app.html` zugeordnet ist.
+- **Datumslogik** (`core/dates.js`): Tage sind lokale Schlüssel `YYYY-MM-DD`; Rechnen mit Schlüsseln
+  über UTC-Kalenderarithmetik, dadurch immun gegen Sommer-/Winterzeit. Alles, was „jetzt“ braucht,
+  nimmt ein injizierbares `now`. Wochen beginnen montags (Index 0).
+- **Texte**: Domain-Funktionen liefern Text-Schlüssel mit Parametern (z. B. Steigerungsvorschlag,
+  Wochenring, Gewohnheit), die deutschen Texte stehen in `src/data/texts/de.js`.
+- **Kalender-Datei** (`domain/ics.js`): Termine mit Uhrzeit tragen `TZID=Europe/Berlin` und eine
+  mitgelieferte `VTIMEZONE` (statt „schwebender“ Zeit), damit 18:00 auch nach der Zeitumstellung
+  18:00 bleibt und alle Kalender gleich rechnen. Ohne Uhrzeit: ganztägige Termine. Pro Wochentag ein
+  `RRULE:FREQ=WEEKLY;BYDAY=..`-Termin mit stabiler UID (`ng2-training-mo@nachtgarten`), damit ein
+  erneuter Import aktualisiert statt verdoppelt. Gestrichene Tage verschwinden beim Re-Import nicht
+  automatisch (Grenze des Formats). CRLF, Faltung bei 75 Oktetten, RFC-5545-Escaping.
+- **Timer** (`domain/timer.js`): zeitstempelbasiert mit injizierbarer Uhr; `poll()` liefert
+  Ereignisse (Countdown, Seitenwechsel zur Hälfte, Schrittende, fertig) und holt im Hintergrund
+  verpasste Schritte nach. Ton/Vibration macht die UI.
+- **Sicherung** (`domain/backup.js`): Format v2 `{app, version: 2, schema, created, data}`;
+  v1-Sicherungen werden beim Lesen über `convertV1` übersetzt. Einspielen ersetzt nur v2-Daten.
+- **Tests**: `npm test` startet `node --test "tests/unit/**/*.test.js"` (Node ≥ 21 erwartet ein
+  Datei-Muster statt eines Ordners). Die Tests laufen fest in `Europe/Berlin`
+  (`tests/unit/helpers/env.js`), damit Zeitumstellungs-Fälle überall gleich geprüft werden.
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.
