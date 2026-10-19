@@ -204,6 +204,22 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
 - **Teilen**: Standard-Zeichen ist der schlichte Mond der Karten; das eigene Tier als Siegel nur über
   „Mit Begleiter-Siegel“ (aus).
 
+## Entscheidungen (Eigener Plan)
+
+- **Editor** (`domain/plan-editor.js`, `features/training/plan-editor.js`, Routen `#editor?id=` und `#einheit?id=&s=`):
+  Programm = Einheiten mit geordneten Übungen (Sätze, Wdh.-Bereich, Reserve, Pause) + Woche Mo…So, gespeichert in
+  `ng2.programs`. Jede Änderung läuft durch den Reducer `editProgram` und wird sofort mit `syncProgram` in `plans`
+  (je Einheit, Id „<programm>-<einheit>“) und `schedule` übertragen – Live-Training, Heute und „Plan als Link“ bleiben
+  unverändert. Die Pause je Übung nutzt das Live-Training (`queueFromPlan` übernimmt `rest`).
+- **Gesten**: Griff zieht sofort, auf dem Handy auch langes Drücken (380 ms); Haptik-Ticks bei jedem neuen Platz;
+  Pfeiltasten am Griff. Wischen nach links (ab 96 px) löscht mit „Rückgängig“ (`restoreItem` an derselben Stelle).
+  Antippen öffnet ein Sheet mit Steppern und Geräte-Varianten.
+- **Anlegen**: leer oder „Aus Vorlage starten“ (`programFromTemplate`, alle zehn Vorlagen). `src` merkt sich die
+  Vorlage-Übung, damit Geräte-Tausch die Hinweise nicht verfälscht.
+- **Hinweise** (`programHints`): `validatePlan` live, nur Warnungen (Frequenz, Drücken/Ziehen, Volumen), höchstens drei,
+  in Salbei, nie blockierend; unveränderte Vorlagen bleiben still.
+- Ein neues Sheet blendet einen offenen Hinweis (Toast) aus.
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.

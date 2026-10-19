@@ -7,6 +7,7 @@ import { h } from './dom.js';
 import { icon } from './icons.js';
 import { haptic, prefersReducedMotion } from '../core/platform.js';
 import { t } from '../data/texts/i18n.js';
+import { dismissToast } from './toast.js';
 
 /** @type {Sheet[]} */
 const stack = [];
@@ -105,6 +106,8 @@ export function openSheet({ title, content = [], actions, hideTitle = false, dis
   document.addEventListener('keydown', onKey, true);
 
   stack.push(sheet);
+  // Ein offener Hinweis gehört zum Bildschirm darunter, nicht über das neue Sheet.
+  dismissToast();
   document.body.append(el);
   updateInert();
   requestAnimationFrame(() => {

@@ -36,6 +36,7 @@
  * | ng2.ideas      | ideas      | Ideen-Labor: Favoriten                                          | {likes:[]} |
  * | ng2.motto      | motto      | eigener Leitsatz auf „Heute“                                    | null     |
  * | ng2.gate       | gate       | „Wirklich jetzt?“: Entscheidungen (60 Tage), Schonfrist nach „Trotzdem öffnen“ | s. u. |
+ * | ng2.programs   | programs   | eigene Pläne aus dem Editor: Einheiten, Übungen (Sätze, Wdh., RIR, Pause), Wochentage | []  |
  */
 
 export const PREFIX = 'ng2.';
@@ -364,6 +365,7 @@ const AREAS = /** @type {const} */ ({
   settings: defaultSettings,
   gear: () => ['Körpergewicht'],
   plans: () => [],
+  programs: () => [],
   schedule: () => ({}),
   sessions: () => [],
   history: () => ({}),

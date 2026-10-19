@@ -763,6 +763,124 @@ def check_exercise_flow(browser, base, scheme):
     context.close()
 
 
+def items_of(page):
+    return page.evaluate("JSON.parse(localStorage.getItem('ng2.programs'))[0].sessions")
+
+
+def pick_in_library(page, query, count):
+    """In der Bibliothek (Mehrfachauswahl) suchen und die ersten `count` Treffer wählen."""
+    page.wait_for_selector(".library.is-multi .lib-cats")
+    page.fill(".lib-search", query)
+    page.wait_for_timeout(300)
+    for i in range(count):
+        page.locator(".lib-open").nth(i).click()
+    check(page.locator(".lib-row.is-selected").count() == count, "Auswahl nicht markiert")
+    page.click(".lib-add")
+    page.wait_for_selector(".library", state="detached")
+
+
+def check_plan_editor(browser, base, scheme):
+    """Eigenen Plan: zwei Einheiten, Übungen mehrfach wählen, verschieben, wischen + Rückgängig, Tage, Bearbeiten."""
+    context, page, errors = fresh(browser, base, scheme, SIZES[0])
+    page.evaluate("localStorage.removeItem('ng2.plans')")
+    page.goto(base + "#training")
+    page.reload()
+    page.click(".editor-create-button")
+    page.click(".editor-choice:not(.is-template)")
+    page.wait_for_selector(".editor .editor-session")
+    page.fill(".editor-name", "Zwei Tage")
+    # Einheit A: drei Übungen auf einmal
+    page.click(".editor-session-open")
+    page.wait_for_selector(".editor-session-view .editor-empty")
+    page.click(".editor-add")
+    pick_in_library(page, "bank", 3)
+    page.wait_for_selector(".editor-item >> nth=2")
+    names = [it["exercise"] for it in items_of(page)[0]["items"]]
+    check(len(names) == 3, f"nicht drei Übungen: {names}")
+    page.wait_for_timeout(500)
+    shot3(page, f"{scheme}_editor_session")
+    # Verschieben am Griff: erste nach unten
+    handle = page.locator(".editor-handle").nth(0).bounding_box()
+    page.mouse.move(handle["x"] + handle["width"] / 2, handle["y"] + handle["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(handle["x"] + handle["width"] / 2, handle["y"] + handle["height"] / 2 + 170, steps=12)
+    page.mouse.up()
+    page.wait_for_timeout(250)
+    moved = [it["exercise"] for it in items_of(page)[0]["items"]]
+    check(moved[2] == names[0] and moved[:2] == names[1:], f"Verschieben falsch: {names} → {moved}")
+    # Tastatur: Pfeil hoch
+    page.locator(".editor-handle").nth(2).focus()
+    page.keyboard.press("ArrowUp")
+    check([it["exercise"] for it in items_of(page)[0]["items"]][1] == names[0], "Pfeiltaste verschiebt nicht")
+    # Wischen nach links löscht, Rückgängig holt zurück
+    before = [it["exercise"] for it in items_of(page)[0]["items"]]
+    row = page.locator(".editor-item-content").nth(0).bounding_box()
+    page.mouse.move(row["x"] + row["width"] - 80, row["y"] + row["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(row["x"] + 40, row["y"] + row["height"] / 2 + 3, steps=10)
+    page.mouse.up()
+    page.wait_for_selector(".toast.is-visible .toast-action")
+    check(len(items_of(page)[0]["items"]) == 2, "Wischen löscht nicht")
+    page.click(".toast-action")
+    page.wait_for_timeout(200)
+    check([it["exercise"] for it in items_of(page)[0]["items"]] == before, "Rückgängig stellt nicht an derselben Stelle her")
+    # Antippen: Sätze und Pause einstellen
+    page.locator(".editor-item-content").nth(0).click()
+    page.wait_for_selector(".editor-item-sheet .stepper")
+    page.locator(".editor-item-sheet .stepper-button[aria-label='Sätze erhöhen']").click()
+    page.locator(".editor-item-sheet .stepper-button[aria-label='Pause erhöhen']").click()
+    shot3(page, f"{scheme}_editor_item")
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".editor-item-sheet", state="detached")
+    first = items_of(page)[0]["items"][0]
+    check(first["sets"] == 4 and first["rest"] == 105, f"Bearbeiten nicht gespeichert: {first}")
+    check("4 ×" in page.locator(".editor-item-sub").first.inner_text(), "Liste zeigt neue Sätze nicht")
+    # Wochentag Mo für A
+    page.click(".editor-day[data-day='0']")
+    # zurück, Einheit B anlegen
+    page.click(".editor-top .back-link")
+    page.wait_for_selector(".editor .editor-sessions")
+    page.click(".editor-add-session")
+    page.wait_for_selector(".editor-session-view .editor-empty")
+    page.click(".editor-add")
+    pick_in_library(page, "beinpresse", 1)
+    page.wait_for_selector(".editor-item")
+    page.click(".editor-day[data-day='3']")
+    page.click(".editor-top .back-link")
+    page.wait_for_selector(".editor .editor-session >> nth=1")
+    shot3(page, f"{scheme}_editor_overview")
+    program = page.evaluate("JSON.parse(localStorage.getItem('ng2.programs'))[0]")
+    check(program["name"] == "Zwei Tage" and len(program["sessions"]) == 2, f"Programm falsch: {program['name']}, {len(program['sessions'])}")
+    check(program["week"][0] == "A" and program["week"][3] == "B", f"Tage falsch: {program['week']}")
+    plans = page.evaluate("JSON.parse(localStorage.getItem('ng2.plans'))")
+    check(len(plans) == 2 and plans[0]["items"][0]["sets"] == 4, "Pläne nicht übertragen")
+    sched = page.evaluate("JSON.parse(localStorage.getItem('ng2.schedule'))")
+    check(sched["0"]["id"] == plans[0]["id"] and sched["3"]["id"] == plans[1]["id"], f"Wochenplan falsch: {sched}")
+    # Fertig → Training zeigt den eigenen Plan; Live nutzt die Pause der Übung
+    page.click(".editor-done")
+    page.wait_for_selector(".own-plan-row:has-text('Zwei Tage')")
+    page.goto(base + "#live?plan=" + plans[0]["id"])
+    page.wait_for_selector(".live-anim .nga-wrap")
+    to_log(page)
+    page.click(".live-done")
+    page.wait_for_selector(".rest .rest-time")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.live')).rest.duration") == 105, "Pause aus dem Plan nicht übernommen")
+    page.click(".live-finish")
+    page.wait_for_selector(".finish.sheet-panel")
+    page.keyboard.press("Escape")
+    # Aus Vorlage starten: zehn Vorlagen, Kopie bearbeitbar
+    page.goto(base + "#training")
+    page.click(".editor-create-button")
+    page.click(".editor-choice.is-template")
+    check(page.locator(".editor-template").count() == 10, "nicht zehn Vorlagen")
+    page.click(".editor-template[data-template=gk3]")
+    page.wait_for_selector(".editor .editor-session >> nth=2")
+    check(page.locator(".editor-hints").is_hidden(), "Vorlage zeigt Hinweise")
+    no_horizontal_scroll(page, "Editor")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -786,6 +904,7 @@ def run():
                 check_polish(browser, base, scheme)
                 check_persistence(browser, base, scheme)
                 check_exercise_flow(browser, base, scheme)
+                check_plan_editor(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

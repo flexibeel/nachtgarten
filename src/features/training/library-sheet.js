@@ -95,7 +95,7 @@ const CATEGORY_ICON = Object.freeze({ push: 'pushup', pull: 'pullup', legs: 'squ
  * @param {string} id
  * @param {{size?: number}} [options]
  */
-function thumb(ctx, id, { size = 48 } = {}) {
+export function thumb(ctx, id, { size = 48 } = {}) {
   const slot = h('span', { class: 'lib-thumb', 'aria-hidden': 'true' });
   /** @type {any} */
   let anim = null;
@@ -166,9 +166,18 @@ function row(ctx, ex, onOpen) {
  * Bibliothek: erst Kategorien als Kacheln (mit Pixel-Symbol), dann eine ruhige Liste mit Vorschau.
  * Suche springt direkt in die Liste über alle Übungen.
  * @param {AppContext} ctx
- * @param {{mode?: 'pick'|'view', onPick?: (id: string) => void, title?: string}} [options]
+ * Modus „multi“: Übungen antippen wählt sie aus, unten „3 hinzufügen“ (Plan-Editor).
+ * @param {{mode?: 'pick'|'view'|'multi', onPick?: (id: string) => void, onPickMany?: (ids: string[]) => void, title?: string}} [options]
  */
-export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
+export function openLibrary(ctx, { mode = 'view', onPick, onPickMany, title } = {}) {
+  /** @type {string[]} */
+  const selected = [];
+  const addButton = mode === 'multi' ? h('button', { type: 'button', class: 'button button-primary button-wide lib-add', disabled: true }) : null;
+  const paintAdd = () => {
+    if (!addButton) return;
+    addButton.disabled = !selected.length;
+    addButton.textContent = selected.length ? t(selected.length === 1 ? 'library.addSelectedOne' : 'library.addSelected', { count: selected.length }) : t('library.selectHint');
+  };
   const state = { query: '', category: /** @type {any} */ (null), gear: /** @type {string|null} */ (null), onlyFav: false, all: false, limit: PAGE };
   const body = h('div', { class: 'lib-body' });
   const list = h('ul', { class: 'lib-list' });
@@ -185,6 +194,16 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
   };
 
   const open = (id) => {
+    if (mode === 'multi') {
+      const i = selected.indexOf(id);
+      if (i >= 0) selected.splice(i, 1);
+      else selected.push(id);
+      haptic('select');
+      body.querySelectorAll(`.lib-open[data-id="${CSS.escape(id)}"]`).forEach((b) => b.closest('.lib-row')?.classList.toggle('is-selected', i < 0));
+      body.querySelectorAll(`.lib-open[data-id="${CSS.escape(id)}"]`).forEach((b) => b.setAttribute('aria-pressed', String(i < 0)));
+      paintAdd();
+      return;
+    }
     if (mode === 'pick') {
       importExercise(ctx, id);
       sheet.close('pick').then(() => onPick?.(id));
@@ -244,7 +263,15 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
         on: { click: () => { state.gear = state.gear === o.value ? null : o.value; haptic('select'); resetList(); } },
       })));
     count.textContent = t(found.length === 1 ? 'library.countOne' : 'library.count', { count: found.length });
-    replace(list, found.slice(0, state.limit).map((ex) => row(ctx, ex, open)));
+    replace(list, found.slice(0, state.limit).map((ex) => {
+      const li = row(ctx, ex, open);
+      if (mode === 'multi') {
+        const on = selected.includes(ex.id);
+        li.classList.toggle('is-selected', on);
+        li.querySelector('.lib-open')?.setAttribute('aria-pressed', String(on));
+      }
+      return li;
+    }));
     if (!found.length) list.append(h('li', { class: 'lib-empty', text: t(state.onlyFav ? 'library.noFavorites' : 'library.nothing') }));
     more.hidden = found.length <= state.limit;
     more.textContent = t('library.more', { count: found.length - state.limit });
@@ -280,9 +307,16 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
   const sheet = openSheet({
     title: title ?? t('library.title'),
     size: 'tall',
-    className: 'library',
+    className: ['library', mode === 'multi' && 'is-multi'].filter(Boolean).join(' '),
     content: [search, body],
+    actions: addButton ?? undefined,
   });
+  addButton?.addEventListener('click', () => {
+    const ids = [...selected];
+    ids.forEach((id) => importExercise(ctx, id));
+    sheet.close('pick').then(() => onPickMany?.(ids));
+  });
+  paintAdd();
   paint();
   if (!dbReady()) loadDb().then(() => sheet.el.isConnected && paint());
   return sheet;

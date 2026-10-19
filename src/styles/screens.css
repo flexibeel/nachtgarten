@@ -1575,6 +1575,32 @@
   color: var(--text);
   text-align: left;
 }
+/* Mehrfachauswahl (Plan-Editor): gewählte Zeilen mit Haken auf der Vorschau */
+.lib-row.is-selected .lib-thumb {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+.lib-row.is-selected .lib-name {
+  color: var(--accent-ink);
+  font-weight: var(--fw-bold);
+}
+.lib-row .lib-open .lib-thumb {
+  position: relative;
+}
+.lib-row.is-selected .lib-thumb::after {
+  content: '✓';
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-strong);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+}
 .lib-texts {
   display: flex;
   flex-direction: column;
@@ -2539,4 +2565,440 @@
 }
 .order-eye[aria-pressed='false'] {
   color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- Eigener Plan (Editor) */
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-bottom: calc(var(--target-lg) + var(--space-6));
+}
+.editor-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  margin-top: calc(-1 * var(--space-4));
+}
+.editor-top .back-link {
+  min-width: 0;
+  overflow: hidden;
+}
+.editor-top .back-link span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.editor-top-space {
+  flex: 1;
+}
+/* Name direkt im Titel bearbeiten: groß, Serif, ohne Kasten */
+.editor-name {
+  width: 100%;
+  min-height: var(--target);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--border) dashed transparent;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 9vw, 2.6rem);
+  line-height: var(--lh-tight);
+  outline: none;
+}
+.editor-name:focus {
+  border-bottom-color: var(--line-strong);
+}
+.editor-name::placeholder {
+  color: var(--muted);
+}
+.editor-eyebrow {
+  margin-bottom: calc(-1 * var(--space-4));
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+/* Sanfte Hinweise: Salbei, nie Warnfarbe */
+.editor-hints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--sage-soft);
+}
+.editor-hints[hidden] {
+  display: none;
+}
+.editor-hints-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--sage-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.editor-hints-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0 0 0 var(--space-5);
+  font-size: var(--fs-sm);
+}
+.editor-hints-sub {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+/* Einheiten als Karten: „Tag A · 6 Übungen“, Name, Wochentage */
+.editor-sessions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor-session {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.editor-session-open {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--target);
+  color: var(--text);
+  text-decoration: none;
+}
+.editor-session-open .icon {
+  color: var(--muted);
+}
+.editor-session-texts {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.editor-session-eyebrow {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+.editor-session-name {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.editor-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--space-1);
+}
+.editor-day {
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--soft);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.editor-day:active {
+  transform: scale(0.94);
+}
+.editor-day[aria-pressed='true'] {
+  background: var(--accent-strong);
+  color: var(--on-accent);
+}
+/* Tag gehört schon einer anderen Einheit: dezent markiert, antippen legt um */
+.editor-day.is-other {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.editor-add-session {
+  align-self: stretch;
+}
+.editor-add-session[hidden] {
+  display: none;
+}
+.editor .action-bar-inner > .button,
+.editor .action-bar-inner > a.button {
+  flex: 1;
+}
+/* Übungsliste einer Einheit */
+.editor-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor-item {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background: var(--danger);
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.editor-items.is-sorting .editor-item:not(.is-dragging) {
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.editor-item.is-dragging {
+  z-index: 2;
+  overflow: visible;
+  box-shadow: var(--shadow-toast);
+  transition: none;
+}
+.editor-item-delete {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-right: var(--space-5);
+  color: var(--on-accent);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+}
+.editor-item.is-armed .editor-item-delete .icon {
+  transform: scale(1.15);
+}
+.editor-item-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-2) var(--space-1) var(--space-2) var(--space-3);
+  border-radius: inherit;
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform var(--dur-2) var(--ease-out);
+  cursor: pointer;
+}
+.editor-item.is-swiping .editor-item-content {
+  transition: none;
+}
+.editor-item.is-dragging .editor-item-content {
+  background: var(--card);
+}
+.editor-item-content:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.editor-item-texts {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.editor-item-name {
+  overflow: hidden;
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.editor-item-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.editor-item-variant {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--soft);
+  color: var(--text);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+.editor-handle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--target);
+  height: var(--target-lg);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: none;
+  color: var(--muted);
+  cursor: grab;
+  touch-action: none;
+}
+.editor-item.is-dragging .editor-handle {
+  cursor: grabbing;
+  color: var(--accent-ink);
+}
+.editor-empty {
+  padding: var(--space-6) var(--space-4);
+  border-radius: var(--radius-card);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--muted);
+  text-align: center;
+}
+.editor-empty[hidden] {
+  display: none;
+}
+/* Anlegen: zwei große Wege, Vorlagen als ruhige Liste */
+.editor-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: 76px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  text-align: left;
+}
+.editor-choice-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.editor-choice.is-template .editor-choice-icon {
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+}
+.editor-choice-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.editor-choice-title {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+}
+.editor-choice-sub {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.editor-templates {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.editor-templates[hidden] {
+  display: none;
+}
+.editor-template {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-3);
+  width: 100%;
+  min-height: var(--target-lg);
+  padding: var(--space-2) 0;
+  border: 0;
+  border-top: var(--border) solid var(--line);
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.editor-templates li:first-child .editor-template {
+  border-top: 0;
+}
+.editor-template .icon {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  align-self: center;
+  color: var(--muted);
+}
+.editor-template-name {
+  font-weight: var(--fw-bold);
+}
+.editor-template-sub {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.editor-item-sheet .sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.editor-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.own-plans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+}
+.editor-create-button {
+  margin-top: var(--space-3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-item,
+  .editor-item-content,
+  .editor-day {
+    transition: none;
+  }
+}
+
+/* Stepper im Sheet „Übung bearbeiten“: kompakt wie im Live-Training */
+.editor-field .stepper {
+  grid-template-columns: var(--target) 1fr var(--target);
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-button);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.editor-field .stepper-button {
+  width: var(--target);
+  height: var(--target);
+  border: 0;
+  background: var(--soft);
+}
+.editor-field .stepper-value {
+  min-height: var(--target);
+  padding: 0;
+}
+.editor-field .stepper-number {
+  font-size: 1.375rem;
+}
+.editor-session-view .editor-name {
+  font-size: clamp(1.75rem, 7.6vw, 2.2rem);
 }
