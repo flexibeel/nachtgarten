@@ -209,7 +209,7 @@ def check_deep_links(page, base, scheme):
     page.wait_for_selector(".live .back-link")
     check(page.is_hidden(".tabbar"), "Tab-Leiste im Live-Training sichtbar")
     page.goto(base + "#umlenken")
-    page.wait_for_selector(".placeholder-title:has-text('Fokus')")
+    page.wait_for_selector(".page-title:has-text('Fokus')")
     # Ideen-Labor ist aus: Direktsprung landet auf „Heute“
     page.goto(base + "#ideen")
     page.wait_for_selector(".heute-greeting")
@@ -333,6 +333,63 @@ def check_live(browser, base, scheme):
     context.close()
 
 
+def check_gate(browser, base, scheme):
+    """„Wirklich jetzt?“: durchatmen, trotzdem öffnen (Zeitkonto), Schonfrist, Anleitung."""
+    context, page, errors = new_page(browser, scheme)
+    page.add_init_script("window.__opened = []; window.__ngOpenExternal = (app, web) => window.__opened.push(app)")
+    page.goto(base)
+    page.wait_for_selector(".onboarding")
+    while page.locator(".onboarding").count():
+        page.click(NEXT)
+        page.wait_for_timeout(80)
+    page.evaluate("localStorage.setItem('ng2.settings', JSON.stringify({...JSON.parse(localStorage.getItem('ng2.settings')), enabledModules: ['train', 'habits', 'handy']}))")
+    page.goto(base + "#umlenken?von=instagram")
+    page.wait_for_selector(".gate-title:has-text('Wirklich jetzt?')")
+    check(page.locator(".gate-choice").count() == 3, "drei Möglichkeiten fehlen")
+    check("Kurz bewegen" in page.inner_text(".gate-choice.is-primary"), "ohne Training: Kurz bewegen fehlt")
+    shot(page, f"{scheme}_gate")
+    no_horizontal_scroll(page, "Wirklich jetzt?")
+    page.click(".gate-choice:has-text('durchatmen')")
+    page.wait_for_selector(".breath-phase:has-text('atmen')")
+    shot(page, f"{scheme}_gate_breath")
+    page.click(".gate-close")
+    page.wait_for_selector(".heute-greeting")
+    check("1× umgelenkt" in page.inner_text("[data-tile=umlenken]"), "Wochenzahl fehlt auf der Kachel")
+    page.goto(base + "#umlenken?von=instagram")
+    page.wait_for_selector(".gate-choice.is-quiet")
+    page.click(".gate-choice.is-quiet")
+    check(page.evaluate("window.__opened.length") == 1, "Instagram nicht geöffnet")
+    account = page.evaluate("JSON.parse(localStorage.getItem('ng2.account'))")
+    today = list(account["days"].keys())[-1]
+    check(account["days"][today]["used"] == 5, f"Zeitkonto nicht belastet: {account}")
+    page.goto(base + "#heute")
+    page.wait_for_selector(".heute-greeting")
+    page.goto(base + "#umlenken?von=instagram")
+    page.wait_for_selector(".gate-forward")
+    check(page.evaluate("window.__opened.length") == 2, "Schonfrist leitet nicht weiter")
+    gate = page.evaluate("JSON.parse(localStorage.getItem('ng2.gate'))")
+    check([e["choice"] for e in gate["log"]] == ["breath", "open"], f"Entscheidungen falsch: {gate['log']}")
+    # Training läuft: zurück zum Training mit Stand
+    page.evaluate("localStorage.setItem('ng2.gate', JSON.stringify({log: [], graceUntil: null}))")
+    page.evaluate("localStorage.setItem('ng2.live', JSON.stringify({start: Date.now(), sets: [{exercise: 'bench', weight: 40, reps: 8, rir: null, at: Date.now()}], form: null, queue: null, metrics: null, legHintDismissed: false}))")
+    page.goto(base + "#heute")
+    page.goto(base + "#umlenken?von=instagram")
+    page.wait_for_selector(".gate-choice.is-primary:has-text('Zurück zum Training')")
+    check("Satz 2" in page.inner_text(".gate-choice.is-primary"), "Trainingsstand fehlt")
+    page.goto(base + "#fokus")
+    page.wait_for_selector(".gate-week")
+    page.click(".gate-overview-actions .button-primary")
+    page.wait_for_selector(".guide .guide-step")
+    check(page.locator(".guide-step").count() == 6, "Anleitung unvollständig")
+    check("#umlenken?von=instagram" in page.inner_text(".guide-url-text"), "Adresse fehlt")
+    shot(page, f"{scheme}_guide")
+    page.locator(".guide .sheet-body").evaluate("el => el.scrollTo(0, 700)")
+    shot(page, f"{scheme}_guide_url")
+    no_horizontal_scroll(page, "Anleitung")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -351,6 +408,7 @@ def run():
                 check_default_path(browser, base, scheme)
                 check_plain_onboarding(browser, base, scheme)
                 check_live(browser, base, scheme)
+                check_gate(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

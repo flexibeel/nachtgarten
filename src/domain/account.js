@@ -169,3 +169,11 @@ export function isTrainingLocked({ live, lockDuringTraining, now }) {
  * @param {string[]} dates  sieben Datumsschlüssel
  */
 export const recentDays = (state, dates) => dates.map((key) => ({ key, ...dayOf(state, key) }));
+
+/**
+ * Statt Instagram etwas anderes gewählt (durchatmen, bewegen, zurück zum Training).
+ * Zählt als Umlenkung, verdient aber keine Zeit (das tut nur „jemandem schreiben“).
+ * @param {AccountState} state
+ * @param {string} today
+ */
+export const recordDetour = (state, today) => changeDay(state, today, (d) => ({ ...d, redirects: d.redirects + 1 }));

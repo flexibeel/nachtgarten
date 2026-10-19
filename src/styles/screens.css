@@ -1327,3 +1327,327 @@
   font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------------------------------------------------------------- Fokus & „Wirklich jetzt?“ */
+
+.page-intro {
+  margin-top: var(--space-2);
+  color: var(--muted);
+}
+.gate-numbers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.gate-number {
+  display: flex;
+  flex-direction: column;
+}
+.gate-number-value {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+.gate-number-label {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.gate-overview-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-tabbar) + 10);
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  background: var(--bg);
+}
+.gate-inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: 100%;
+  max-width: var(--content-max);
+  min-height: 100%;
+  padding: calc(var(--safe-top) + var(--space-8)) var(--gutter) calc(var(--safe-bottom) + var(--space-5));
+}
+.gate-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 3rem;
+  line-height: var(--lh-tight);
+}
+.gate-calm {
+  color: var(--muted);
+  font-size: var(--fs-lg);
+}
+.gate .companion-small .companion-button,
+.finish .companion-small .companion-button {
+  width: 64px;
+  height: 64px;
+}
+.gate-choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: auto;
+}
+.gate-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 76px;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.gate-choice:active {
+  transform: scale(0.98);
+}
+.gate-choice-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-pill);
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+}
+.gate-choice-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.gate-choice-label {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+}
+.gate-choice-sub {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.gate-choice.is-primary {
+  border-color: transparent;
+  background: var(--accent-strong);
+  color: var(--on-accent);
+}
+.gate-choice.is-primary .gate-choice-icon {
+  background: color-mix(in srgb, var(--on-accent) 18%, transparent);
+  color: var(--on-accent);
+}
+.gate-choice.is-primary .gate-choice-sub {
+  color: var(--on-accent);
+  opacity: 0.85;
+}
+.gate-choice.is-quiet {
+  border-style: dashed;
+  background: transparent;
+}
+.gate-choice.is-quiet .gate-choice-icon {
+  background: var(--soft);
+  color: var(--muted);
+}
+.gate-stat {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.gate-close {
+  align-self: center;
+}
+.gate-forward {
+  margin: auto;
+  color: var(--muted);
+}
+.gate-timer {
+  align-items: center;
+  justify-content: center;
+}
+.breath-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(280px, 70vw);
+  aspect-ratio: 1;
+}
+.breath {
+  width: 52%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft) 0%, var(--sage-soft) 100%);
+  box-shadow: 0 0 0 1px var(--line);
+  transform: scale(1);
+  transition: transform 4s cubic-bezier(0.45, 0, 0.55, 1);
+}
+.breath:not(.is-in) {
+  transition-duration: 6s;
+}
+.breath.is-in {
+  transform: scale(1.8);
+}
+.breath.is-move {
+  transform: none;
+  width: 100%;
+  background: none;
+  box-shadow: inset 0 0 0 3px var(--soft);
+}
+.breath.is-still {
+  transform: none !important;
+  width: 100%;
+  background: none;
+  box-shadow: inset 0 0 0 3px var(--soft);
+}
+.breath-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  text-align: center;
+}
+.breath-phase {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  line-height: var(--lh-snug);
+}
+.breath-time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.gate-done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  text-align: center;
+}
+.gate-done[hidden] {
+  display: none;
+}
+.gate-done-text {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+}
+
+/* Anleitung */
+.guide-intro {
+  color: var(--muted);
+}
+.guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide-step {
+  display: grid;
+  grid-template-columns: 28px 1fr 56px;
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+.guide-num {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+}
+.guide-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.guide-text {
+  line-height: var(--lh-snug);
+}
+.guide-url {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.guide-url-text {
+  padding: var(--space-2);
+  border-radius: var(--radius-small);
+  background: var(--soft);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}
+.guide-copy {
+  min-height: var(--target);
+}
+.guide-art {
+  width: 56px;
+  height: auto;
+}
+.guide-art .ga-phone {
+  fill: var(--bg);
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+.guide-art .ga-notch,
+.guide-art .ga-row,
+.guide-art .ga-bar,
+.guide-art .ga-field {
+  fill: var(--soft);
+}
+.guide-art .ga-field {
+  fill: var(--card);
+}
+.guide-art .ga-hi,
+.guide-art .ga-switch {
+  fill: var(--accent);
+}
+.guide-art .ga-title {
+  fill: var(--text);
+  opacity: 0.6;
+}
+.guide-art .ga-ghost {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-dasharray: 2 2;
+}
+.guide-art .ga-dot {
+  fill: var(--muted);
+}
+.guide-art .ga-knob {
+  fill: var(--card);
+}
+.guide-art .ga-mark,
+.guide-art .ga-plus,
+.guide-art .ga-check {
+  fill: none;
+  stroke: var(--card);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.guide-note {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .breath {
+    transition: none;
+  }
+}
