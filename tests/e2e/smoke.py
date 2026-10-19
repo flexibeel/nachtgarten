@@ -390,6 +390,41 @@ def check_gate(browser, base, scheme):
     context.close()
 
 
+def check_wizard(browser, base, scheme):
+    """Plan für mich finden: vier Taps, drei Plankarten, übernehmen → Pläne und Wochenplan."""
+    context, page, errors = new_page(browser, scheme)
+    page.goto(base)
+    page.wait_for_selector(".onboarding")
+    while page.locator(".onboarding").count():
+        page.click(NEXT)
+        page.wait_for_timeout(80)
+    page.goto(base + "#training")
+    page.click(".plan-finder .button-primary")
+    page.wait_for_selector(".wizard .wizard-option")
+    shot(page, f"{scheme}_wizard_days")
+    for value in ["3", "45", "gym", "neu"]:
+        page.click(f".wizard-option[data-value='{value}']")
+    page.wait_for_selector(".wizard .plan-card")
+    check(page.locator(".wizard .plan-card").count() == 3, "nicht drei Vorschläge")
+    check(page.locator(".wizard .plan-card").first.locator(".plan-fact").count() == 3, "drei Fakten fehlen")
+    shot(page, f"{scheme}_wizard_results")
+    page.locator(".wizard .plan-why-summary").first.click()
+    page.wait_for_timeout(150)
+    shot(page, f"{scheme}_wizard_why")
+    no_horizontal_scroll(page, "Planfinder")
+    page.locator(".wizard .plan-card .button-primary").first.click()
+    page.wait_for_selector(".wizard", state="detached")
+    plans = page.evaluate("JSON.parse(localStorage.getItem('ng2.plans'))")
+    check(len(plans) == 3 and plans[0]["id"].startswith("gk3-"), f"Plan nicht übernommen: {[p['id'] for p in plans]}")
+    sched = page.evaluate("JSON.parse(localStorage.getItem('ng2.schedule'))")
+    check(len(sched) == 3, f"Wochenplan falsch: {sched}")
+    page.wait_for_selector(".plan-row")
+    check(page.locator(".plan-row").count() == 3, "Einheiten nicht in der Liste")
+    shot(page, f"{scheme}_training_plan")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -409,6 +444,7 @@ def run():
                 check_plain_onboarding(browser, base, scheme)
                 check_live(browser, base, scheme)
                 check_gate(browser, base, scheme)
+                check_wizard(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

@@ -10,6 +10,8 @@ import { reactivePart } from '../part.js';
 import { openLibrary } from './library-sheet.js';
 import { openSummary } from './finish.js';
 import { loadDb } from './exercises.js';
+import { openAllPlans, openWizard } from './plans-ui.js';
+import { planById } from '../../data/plans.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -33,6 +35,22 @@ export function mountTraining(ctx, view) {
       ),
     );
   }, 'training-live');
+
+  const finder = reactivePart(ctx, ['settings'], (el) => {
+    const active = ctx.store.settings.get().activePlan;
+    const plan = active ? planById(active.template) : null;
+    replace(
+      el,
+      card(
+        { title: plan ? plan.name : t('plans.findTitle'), className: 'plan-finder' },
+        h('p', { class: 'card-hint', text: plan ? t('plans.perWeek', { days: active.days }) : t('plans.findHint') }),
+        h('div', { class: 'plan-finder-actions' },
+          h('button', { type: 'button', class: ['button', plan ? 'button-quiet' : 'button-primary'], on: { click: () => openWizard(ctx) } }, icon('sparkle', { size: 20 }), h('span', { text: t(plan ? 'plans.change' : 'plans.find') })),
+          h('button', { type: 'button', class: 'button button-quiet', text: t('plans.all'), on: { click: () => openAllPlans(ctx) } }),
+        ),
+      ),
+    );
+  }, 'training-finder');
 
   const plans = reactivePart(ctx, ['plans', 'settings'], (el) => {
     const list = ctx.store.plans.get().filter((p) => p.items.length);
@@ -61,9 +79,10 @@ export function mountTraining(ctx, view) {
   const last = ctx.store.lastCard.get();
   if (last?.items) more.append(h('button', { type: 'button', class: 'list-button', on: { click: () => openSummary(ctx, last) } }, icon('check'), h('span', { text: t('training.last') })));
 
-  view.append(head, live.el, plans.el, card({ variant: 'plain' }, more));
+  view.append(head, live.el, finder.el, plans.el, card({ variant: 'plain' }, more));
   return () => {
     live.destroy?.();
+    finder.destroy?.();
     plans.destroy?.();
   };
 }

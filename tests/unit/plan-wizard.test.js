@@ -49,3 +49,27 @@ test('Jede g_-Übung ist zugeordnet; Ziele existieren in der Bibliothek', () => 
   assert.match(EXDB[279][0], /Incline Dumbbell Press/);
   assert.match(EXDB[154][0], /Dead Bug/);
 });
+
+test('Vorlage übernehmen: Pläne mit Bibliotheks-Ids, Wochenplan, eigene Pläne bleiben', async () => {
+  const { adoptTemplate, sessionChip } = await import('../../src/domain/plan-wizard.js');
+  const { planById } = await import('../../src/data/plans.js');
+  const { weekOf } = await import('../../src/domain/plan-select.js');
+  const home = planById('home');
+  const week = weekOf(home, { days: 3 });
+  const own = { id: 'p1', name: 'Mein Plan', items: [] };
+  const old = { id: 'gk2-a', name: 'alt', items: [] };
+  const schedule = { 0: { kind: 'plan', id: 'p1' }, 5: { kind: 'activity', id: 'run' } };
+  const r = adoptTemplate(home, { week, plans: [own, old], schedule, previous: 'gk2' }, libraryIdFor);
+  assert.ok(r.plans.includes(own) && !r.plans.some((p) => p.id === 'gk2-a'));
+  const adopted = r.plans.filter((p) => p.template === 'home');
+  assert.equal(adopted.length, home.sessions.length);
+  const ids = adopted.flatMap((p) => p.items.map((it) => it.exercise));
+  assert.ok(ids.includes('db29') && ids.includes('db361'), 'Pull-Apart und Seitheben liegend → Bibliothek');
+  assert.ok(ids.includes('g_bulgarian'), 'nur verwandt: eigene Id bleibt');
+  assert.ok(!ids.some((id) => G_MAP[id]?.exact), 'keine exakt zugeordnete g_-Id übrig');
+  assert.deepEqual(r.schedule[5], { kind: 'activity', id: 'run' });
+  assert.equal(r.days, 3);
+  week.forEach((s, d) => assert.equal(r.schedule[d]?.id, s ? `home-${s}`.toLowerCase() : d === 5 ? 'run' : undefined));
+  assert.equal(sessionChip({ id: 'A', name: 'Ganzkörper A' }), 'A');
+  assert.equal(sessionChip({ id: 'PUSH_A', name: 'Push A (schwer)' }), 'Push');
+});
