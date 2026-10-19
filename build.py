@@ -9,7 +9,7 @@ fonts='''<style>
 @font-face{font-family:"Onest";src:url(fonts/onest.woff) format("woff");font-weight:100 900;font-display:swap}
 @font-face{font-family:"JetBrains Mono";src:url(fonts/jetbrains.woff) format("woff");font-weight:100 800;font-display:swap}
 </style>'''
-head=f'''<!doctype html><html lang="de"><head><meta charset="utf-8">
+head=f'''<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Nachtgarten</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0F1312">
 <meta name="color-scheme" content="dark light">
@@ -27,7 +27,7 @@ head=f'''<!doctype html><html lang="de"><head><meta charset="utf-8">
 tail='''
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
 </body></html>'''
-src=src.replace("<title>"+(m.group(1) if m else "")+"</title>","<title>Nachtgarten</title>",1)
+src=re.sub(r"<title>.*?</title>","",src,count=1)
 out=head+src+tail
 pass
 open("index.html","w").write(out)
