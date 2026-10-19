@@ -926,6 +926,13 @@ mark.mout{background:var(--pollen);color:var(--pollen-ink);border-radius:6px;pad
 .howlink.hl2 .ico{fill:none;stroke-width:2}
 .actsum{color:var(--ink)}
 @media (prefers-reduced-motion: reduce){.toast.in{animation:none}.qlist{scroll-behavior:auto}}
+.qsbtn{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border-radius:20px;border:0;background:var(--moss);color:var(--on-moss);text-align:left;font:inherit;min-height:64px;cursor:pointer}
+.qsbtn .ico{width:28px;height:28px;flex:none}
+.qsbtn strong{display:block;font-size:1.1rem}
+.qsbtn span span{font-size:.85rem;opacity:.85}
+.no-train .qsbtn{display:none!important}
+.sprow{display:flex;flex-direction:column;gap:6px}
+.sprow .seg{flex-wrap:wrap}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <filter id="mglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -2532,6 +2539,21 @@ const _privacyTileB=privacyTile;privacyTile=function(){_privacyTileB();const t=$
   r.innerHTML=`<p class="note">Neues Handy? Mit einer Sicherung nimmst du alles mit.</p><div class="choices"><button class="btn ghost" id="bkSave">Sicherung speichern</button><button class="btn ghost" id="bkLoad">Sicherung laden</button></div>`;
   const wipe=$("#wipeAll");wipe?wipe.before(r):t.appendChild(r);$("#bkSave").onclick=exportBackup;$("#bkLoad").onclick=importBackup};
 
+/* ---------- Schnellstart: Direktsprünge, Startansicht, Sport-starten-Knopf ---------- */
+const ROUTES={heute:()=>show("heute"),training:()=>show("training"),live:()=>{show("training");setTimeout(()=>startLive(),250)},mama:()=>show("mama"),umlenken:()=>show("gate"),feed:()=>show("feed"),kurz:()=>startPlayer("b1"),ruecken:()=>startPlayer("b2")};
+function routeFromHash(){const h=(location.hash||"").replace(/^#/,"").toLowerCase();if(h&&ROUTES[h]&&store.get("lab.profile",null)){ROUTES[h]();try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}return true}return false}
+window.addEventListener("hashchange",routeFromHash);
+const STARTS=[["heute","Heute"],["training","Training"],["live","Direkt ins Live-Training"]];
+function quickStart(){const h=$("#v-heute");if(!h||$("#qsBtn"))return;const b=document.createElement("button");b.id="qsBtn";b.className="qsbtn";
+  b.innerHTML=`${icon("dumbbell")}<span><strong>Sport starten</strong><span>Ein Tipp, und du bist im Training</span></span>`;
+  const anchor=h.querySelector(".headrow")||h.children[0];anchor.after(b);b.onclick=()=>{buzz2(10);ROUTES.live()}}
+function startPrefRow(){const t=$("#privTile");if(!t||$("#spRow"))return;const cur=store.get("lab.startView","heute");const r=document.createElement("div");r.id="spRow";r.className="sprow";
+  r.innerHTML=`<p class="note">Beim Öffnen der App direkt zu:</p><div class="seg">${STARTS.map(([k,l])=>`<button data-sv="${k}" aria-pressed="${cur===k}">${l}</button>`).join("")}</div>`;
+  const bk=$("#bkRow");bk?bk.before(r):t.appendChild(r);r.querySelectorAll("[data-sv]").forEach(b=>b.onclick=()=>{store.set("lab.startView",b.dataset.sv);buzz2(6);r.querySelectorAll("[data-sv]").forEach(x=>x.setAttribute("aria-pressed",x===b));toast("Gemerkt")})}
+const _privacyTileQ=privacyTile;privacyTile=function(){_privacyTileQ();startPrefRow()};
+const _showQ=show;show=function(tab){_showQ(tab);if(tab==="heute")quickStart()};
+function applyStartView(){if(routeFromHash())return;if(!store.get("lab.profile",null))return;const sv=store.get("lab.startView","heute");if(sv!=="heute"&&ROUTES[sv])ROUTES[sv]()}
+
 /* nav */
 let curTab="heute";
 const tabsEl=document.querySelector(".tabs"),tabInd=document.createElement("span");tabInd.className="tabind";tabsEl.prepend(tabInd);
@@ -3490,7 +3512,7 @@ $("#bodies").onclick=e=>{const el=e.target.closest("[data-m]");if(!el)return;con
   toast(`${MUS[m]}: ${c?`${fmtN(c)} ${c===1?"Satz":"Sätze"} diese Woche`:plannedMuscles().has(m)?"noch geplant":"diese Woche noch offen"}`)};
 autoFinishLive();
 
-renderIdeas();renderHeute();paintTrainTile();moveInd(true);paintAvatar();privacyTile();if(!profile)onboarding();
+renderIdeas();renderHeute();paintTrainTile();moveInd(true);paintAvatar();privacyTile();if(!profile)onboarding();quickStart();setTimeout(applyStartView,120);
 </script>
 
 <script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
