@@ -1,0 +1,2714 @@
+{
+"3_4_Sit-Up": {
+"name": "3/4 Sit-Up",
+"c": 0
+},
+"Ab_Crunch_Machine": {
+"name": "Bauchmaschine (Crunch)",
+"c": 0
+},
+"Ab_Roller": {
+"name": "Ab Roller (Bauchrad)",
+"c": 0
+},
+"Advanced_Kettlebell_Windmill": {
+"name": "Kettlebell Windmill (fortgeschritten)",
+"c": 0
+},
+"Air_Bike": {
+"name": "Air Bike (Fahrrad-Crunch)",
+"c": 0
+},
+"Alternate_Hammer_Curl": {
+"name": "Hammer Curls im Wechsel",
+"c": 0
+},
+"Alternate_Heel_Touchers": {
+"name": "Fersentippen im Wechsel",
+"c": 0
+},
+"Alternate_Incline_Dumbbell_Curl": {
+"name": "Schrägbank-Curls im Wechsel",
+"c": 0
+},
+"Alternating_Cable_Shoulder_Press": {
+"name": "Kabel-Schulterdrücken im Wechsel",
+"c": 0
+},
+"Alternating_Deltoid_Raise": {
+"name": "Seit- und Frontheben im Wechsel",
+"c": 0
+},
+"Alternating_Floor_Press": {
+"name": "Floor Press im Wechsel",
+"c": 0
+},
+"Alternating_Hang_Clean": {
+"name": "Hang Clean im Wechsel (Kettlebell)",
+"c": 0
+},
+"Alternating_Kettlebell_Press": {
+"name": "Kettlebell-Drücken im Wechsel",
+"c": 0
+},
+"Alternating_Kettlebell_Row": {
+"name": "Kettlebell-Rudern im Wechsel",
+"c": 0
+},
+"Alternating_Renegade_Row": {
+"name": "Renegade Row",
+"c": 0
+},
+"Anti-Gravity_Press": {
+"name": "Anti-Gravity Press",
+"c": 0
+},
+"Arnold_Dumbbell_Press": {
+"name": "Arnold Press",
+"c": 0
+},
+"Around_The_Worlds": {
+"name": "Around the Worlds",
+"c": 0
+},
+"Atlas_Stone_Trainer": {
+"name": "Atlas Stone Training",
+"c": 0
+},
+"Atlas_Stones": {
+"name": "Atlas Stones",
+"c": 0
+},
+"Axle_Deadlift": {
+"name": "Axle-Kreuzheben (dicke Stange)",
+"c": 0
+},
+"Back_Flyes_-_With_Bands": {
+"name": "Reverse Flys mit Band",
+"c": 0
+},
+"Backward_Drag": {
+"name": "Schlitten rückwärts ziehen",
+"c": 0
+},
+"Balance_Board": {
+"name": "Balance Board",
+"c": 0
+},
+"Ball_Leg_Curl": {
+"name": "Beinbeuger am Gymnastikball",
+"c": 0
+},
+"Band_Assisted_Pull-Up": {
+"name": "Klimmzüge mit Band-Unterstützung",
+"c": 0
+},
+"Band_Good_Morning": {
+"name": "Good Morning mit Band",
+"c": 0
+},
+"Band_Good_Morning_Pull_Through": {
+"name": "Band Pull Through",
+"c": 0
+},
+"Band_Hip_Adductions": {
+"name": "Hüftadduktion mit Band",
+"c": 0
+},
+"Band_Pull_Apart": {
+"name": "Band Pull Apart",
+"c": 0
+},
+"Band_Skull_Crusher": {
+"name": "Skull Crusher mit Band",
+"c": 0
+},
+"Barbell_Ab_Rollout": {
+"name": "Ab Rollout mit Langhantel",
+"c": 0
+},
+"Barbell_Ab_Rollout_-_On_Knees": {
+"name": "Ab Rollout mit Langhantel kniend",
+"c": 0
+},
+"Barbell_Bench_Press_-_Medium_Grip": {
+"name": "Bankdrücken mit Langhantel (mittlerer Griff)",
+"c": 0
+},
+"Barbell_Curl": {
+"name": "Langhantel-Curls",
+"c": 0
+},
+"Barbell_Curls_Lying_Against_An_Incline": {
+"name": "Langhantel-Curls auf Schrägbank liegend",
+"c": 0
+},
+"Barbell_Deadlift": {
+"name": "Kreuzheben mit Langhantel",
+"c": 0
+},
+"Barbell_Full_Squat": {
+"name": "Kniebeuge mit Langhantel (tief)",
+"c": 0
+},
+"Barbell_Glute_Bridge": {
+"name": "Glute Bridge mit Langhantel",
+"c": 0
+},
+"Barbell_Guillotine_Bench_Press": {
+"name": "Guillotine-Bankdrücken",
+"c": 0
+},
+"Barbell_Hack_Squat": {
+"name": "Hackenschmidt-Kniebeuge mit Langhantel",
+"c": 0
+},
+"Barbell_Hip_Thrust": {
+"name": "Hip Thrust",
+"c": 0
+},
+"Barbell_Incline_Bench_Press_-_Medium_Grip": {
+"name": "Schrägbankdrücken mit Langhantel",
+"c": 0
+},
+"Barbell_Incline_Shoulder_Raise": {
+"name": "Schulterblatt-Heben auf Schrägbank (Langhantel)",
+"c": 0
+},
+"Barbell_Lunge": {
+"name": "Ausfallschritte mit Langhantel",
+"c": 0
+},
+"Barbell_Rear_Delt_Row": {
+"name": "Langhantel-Rudern für hintere Schulter",
+"c": 0
+},
+"Barbell_Rollout_from_Bench": {
+"name": "Ab Rollout von der Bank",
+"c": 0
+},
+"Barbell_Seated_Calf_Raise": {
+"name": "Wadenheben sitzend mit Langhantel",
+"c": 0
+},
+"Barbell_Shoulder_Press": {
+"name": "Schulterdrücken mit Langhantel",
+"c": 0
+},
+"Barbell_Shrug": {
+"name": "Shrugs mit Langhantel",
+"c": 0
+},
+"Barbell_Shrug_Behind_The_Back": {
+"name": "Shrugs mit Langhantel hinter dem Rücken",
+"c": 1
+},
+"Barbell_Side_Bend": {
+"name": "Seitbeugen mit Langhantel",
+"c": 1
+},
+"Barbell_Side_Split_Squat": {
+"name": "Seitlicher Split Squat mit Langhantel",
+"c": 1
+},
+"Barbell_Squat": {
+"name": "Kniebeuge mit Langhantel",
+"c": 1
+},
+"Barbell_Squat_To_A_Bench": {
+"name": "Kniebeuge zur Bank mit Langhantel",
+"c": 1
+},
+"Barbell_Step_Ups": {
+"name": "Step-ups mit Langhantel",
+"c": 1
+},
+"Barbell_Walking_Lunge": {
+"name": "Gehende Ausfallschritte mit Langhantel",
+"c": 1
+},
+"Battling_Ropes": {
+"name": "Battle Ropes",
+"c": 1
+},
+"Bear_Crawl_Sled_Drags": {
+"name": "Bärengang mit Schlitten",
+"c": 1
+},
+"Bench_Dips": {
+"name": "Bankdips",
+"c": 1
+},
+"Bench_Press_-_Powerlifting": {
+"name": "Bankdrücken (Powerlifting)",
+"c": 1
+},
+"Bench_Press_-_With_Bands": {
+"name": "Bankdrücken mit Bändern",
+"c": 1
+},
+"Bench_Press_with_Chains": {
+"name": "Bankdrücken mit Ketten",
+"c": 1
+},
+"Bent-Arm_Barbell_Pullover": {
+"name": "Pullover mit Langhantel (gebeugte Arme)",
+"c": 1
+},
+"Bent-Arm_Dumbbell_Pullover": {
+"name": "Kurzhantel-Pullover (gebeugte Arme)",
+"c": 1
+},
+"Bent-Knee_Hip_Raise": {
+"name": "Hüftheben mit gebeugten Knien",
+"c": 1
+},
+"Bent_Over_Barbell_Row": {
+"name": "Vorgebeugtes Langhantelrudern",
+"c": 1
+},
+"Bent_Over_Dumbbell_Rear_Delt_Raise_With_Head_On_Bench": {
+"name": "Reverse Flys vorgebeugt, Kopf auf Bank",
+"c": 1
+},
+"Bent_Over_Low-Pulley_Side_Lateral": {
+"name": "Seitheben am Kabel vorgebeugt",
+"c": 1
+},
+"Bent_Over_One-Arm_Long_Bar_Row": {
+"name": "Einarmiges T-Bar-Rudern",
+"c": 1
+},
+"Bent_Over_Two-Arm_Long_Bar_Row": {
+"name": "T-Bar-Rudern beidarmig",
+"c": 1
+},
+"Bent_Over_Two-Dumbbell_Row": {
+"name": "Vorgebeugtes Kurzhantelrudern",
+"c": 1
+},
+"Bent_Over_Two-Dumbbell_Row_With_Palms_In": {
+"name": "Vorgebeugtes Kurzhantelrudern, neutraler Griff",
+"c": 1
+},
+"Bent_Press": {
+"name": "Bent Press",
+"c": 1
+},
+"Board_Press": {
+"name": "Board Press",
+"c": 1
+},
+"Body-Up": {
+"name": "Body-Up",
+"c": 1
+},
+"Body_Tricep_Press": {
+"name": "Trizepsdrücken mit Körpergewicht",
+"c": 1
+},
+"Bodyweight_Flyes": {
+"name": "Flys mit Körpergewicht (rollende Stangen)",
+"c": 1
+},
+"Bodyweight_Mid_Row": {
+"name": "Körpergewichtsrudern (mittlerer Rücken)",
+"c": 1
+},
+"Bodyweight_Squat": {
+"name": "Kniebeuge mit Körpergewicht",
+"c": 1
+},
+"Bodyweight_Walking_Lunge": {
+"name": "Gehende Ausfallschritte",
+"c": 1
+},
+"Bosu_Ball_Cable_Crunch_With_Side_Bends": {
+"name": "Kabel-Crunch auf Bosu mit Seitbeuge",
+"c": 1
+},
+"Bottoms-Up_Clean_From_The_Hang_Position": {
+"name": "Bottoms-Up Clean aus dem Hang",
+"c": 1
+},
+"Bottoms_Up": {
+"name": "Bottoms Up (Beckenheben aus Rückenlage)",
+"c": 1
+},
+"Box_Squat": {
+"name": "Box Squat",
+"c": 1
+},
+"Box_Squat_with_Bands": {
+"name": "Box Squat mit Bändern",
+"c": 1
+},
+"Box_Squat_with_Chains": {
+"name": "Box Squat mit Ketten",
+"c": 1
+},
+"Bradford_Rocky_Presses": {
+"name": "Bradford Press",
+"c": 1
+},
+"Butt-Ups": {
+"name": "Butt-Ups",
+"c": 1
+},
+"Butt_Lift_Bridge": {
+"name": "Glute Bridge (Beckenheben)",
+"c": 1
+},
+"Butterfly": {
+"name": "Butterfly",
+"c": 1
+},
+"Cable_Chest_Press": {
+"name": "Kabel-Brustdrücken",
+"c": 1
+},
+"Cable_Crossover": {
+"name": "Cable Crossover",
+"c": 1
+},
+"Cable_Crunch": {
+"name": "Kabel-Crunch",
+"c": 1
+},
+"Cable_Deadlifts": {
+"name": "Kabel-Kreuzheben",
+"c": 1
+},
+"Cable_Hammer_Curls_-_Rope_Attachment": {
+"name": "Kabel-Hammer-Curls mit Seil",
+"c": 1
+},
+"Cable_Hip_Adduction": {
+"name": "Hüftadduktion am Kabel",
+"c": 1
+},
+"Cable_Incline_Pushdown": {
+"name": "Überzüge am Kabel auf der Schrägbank",
+"c": 1
+},
+"Cable_Incline_Triceps_Extension": {
+"name": "Trizepsstrecken am Kabel auf Schrägbank",
+"c": 1
+},
+"Cable_Internal_Rotation": {
+"name": "Innenrotation am Kabel",
+"c": 1
+},
+"Cable_Iron_Cross": {
+"name": "Cable Iron Cross",
+"c": 2
+},
+"Cable_Judo_Flip": {
+"name": "Cable Judo Flip",
+"c": 2
+},
+"Cable_Lying_Triceps_Extension": {
+"name": "Trizepsstrecken am Kabel liegend",
+"c": 2
+},
+"Cable_One_Arm_Tricep_Extension": {
+"name": "Einarmiges Trizepsstrecken am Kabel",
+"c": 2
+},
+"Cable_Preacher_Curl": {
+"name": "Kabel-Scottcurls",
+"c": 2
+},
+"Cable_Rear_Delt_Fly": {
+"name": "Reverse Flys am Kabel",
+"c": 2
+},
+"Cable_Reverse_Crunch": {
+"name": "Reverse Crunch am Kabel",
+"c": 2
+},
+"Cable_Rope_Overhead_Triceps_Extension": {
+"name": "Trizeps-Überkopfstrecken am Kabel mit Seil",
+"c": 2
+},
+"Cable_Rope_Rear-Delt_Rows": {
+"name": "Seilrudern für hintere Schulter",
+"c": 2
+},
+"Cable_Russian_Twists": {
+"name": "Russian Twists am Kabel",
+"c": 2
+},
+"Cable_Seated_Crunch": {
+"name": "Kabel-Crunch sitzend",
+"c": 2
+},
+"Cable_Seated_Lateral_Raise": {
+"name": "Seitheben am Kabel sitzend",
+"c": 2
+},
+"Cable_Shoulder_Press": {
+"name": "Kabel-Schulterdrücken",
+"c": 2
+},
+"Cable_Shrugs": {
+"name": "Kabel-Shrugs",
+"c": 2
+},
+"Cable_Wrist_Curl": {
+"name": "Handgelenkcurls am Kabel",
+"c": 2
+},
+"Calf-Machine_Shoulder_Shrug": {
+"name": "Shrugs an der Wadenmaschine",
+"c": 2
+},
+"Calf_Press": {
+"name": "Wadendrücken (Maschine)",
+"c": 2
+},
+"Calf_Press_On_The_Leg_Press_Machine": {
+"name": "Wadendrücken an der Beinpresse",
+"c": 2
+},
+"Calf_Raise_On_A_Dumbbell": {
+"name": "Wadenheben auf Kurzhantel",
+"c": 2
+},
+"Calf_Raises_-_With_Bands": {
+"name": "Wadenheben mit Band",
+"c": 2
+},
+"Car_Deadlift": {
+"name": "Car Deadlift (Auto-Kreuzheben)",
+"c": 2
+},
+"Car_Drivers": {
+"name": "Car Drivers (Lenkradübung mit Scheibe)",
+"c": 2
+},
+"Chain_Handle_Extension": {
+"name": "Trizepsstrecken mit Ketten",
+"c": 2
+},
+"Chain_Press": {
+"name": "Ketten-Bankdrücken",
+"c": 2
+},
+"Chair_Squat": {
+"name": "Chair Squat (Multipresse)",
+"c": 2
+},
+"Chin-Up": {
+"name": "Chin-up (Klimmzug Untergriff)",
+"c": 2
+},
+"Circus_Bell": {
+"name": "Circus Bell",
+"c": 2
+},
+"Clean": {
+"name": "Umsetzen (Clean)",
+"c": 2
+},
+"Clean_Deadlift": {
+"name": "Clean Deadlift",
+"c": 2
+},
+"Clean_Pull": {
+"name": "Clean Pull",
+"c": 2
+},
+"Clean_Shrug": {
+"name": "Clean Shrug",
+"c": 2
+},
+"Clean_and_Jerk": {
+"name": "Umsetzen und Stoßen",
+"c": 2
+},
+"Clean_and_Press": {
+"name": "Umsetzen und Drücken",
+"c": 2
+},
+"Clean_from_Blocks": {
+"name": "Umsetzen von Blöcken",
+"c": 2
+},
+"Clock_Push-Up": {
+"name": "Uhr-Liegestütz",
+"c": 2
+},
+"Close-Grip_Barbell_Bench_Press": {
+"name": "Enges Bankdrücken",
+"c": 2
+},
+"Close-Grip_Dumbbell_Press": {
+"name": "Enges Kurzhantel-Drücken",
+"c": 2
+},
+"Close-Grip_EZ-Bar_Curl_with_Band": {
+"name": "Enge SZ-Curls mit Band",
+"c": 2
+},
+"Close-Grip_EZ-Bar_Press": {
+"name": "Enges Bankdrücken mit SZ-Stange",
+"c": 2
+},
+"Close-Grip_EZ_Bar_Curl": {
+"name": "Enge SZ-Curls",
+"c": 2
+},
+"Close-Grip_Front_Lat_Pulldown": {
+"name": "Enger Latzug vorne",
+"c": 2
+},
+"Close-Grip_Push-Up_off_of_a_Dumbbell": {
+"name": "Enge Liegestütze auf Kurzhantel",
+"c": 2
+},
+"Close-Grip_Standing_Barbell_Curl": {
+"name": "Enge Langhantel-Curls stehend",
+"c": 2
+},
+"Cocoons": {
+"name": "Cocoons",
+"c": 2
+},
+"Conans_Wheel": {
+"name": "Conan's Wheel",
+"c": 2
+},
+"Concentration_Curls": {
+"name": "Konzentrationscurls",
+"c": 2
+},
+"Cross-Body_Crunch": {
+"name": "Diagonaler Crunch",
+"c": 2
+},
+"Cross_Body_Hammer_Curl": {
+"name": "Hammer Curls diagonal",
+"c": 2
+},
+"Cross_Over_-_With_Bands": {
+"name": "Crossover mit Band",
+"c": 2
+},
+"Crucifix": {
+"name": "Crucifix",
+"c": 2
+},
+"Crunch_-_Hands_Overhead": {
+"name": "Crunch mit Armen über Kopf",
+"c": 3
+},
+"Crunch_-_Legs_On_Exercise_Ball": {
+"name": "Crunch mit Beinen auf Gymnastikball",
+"c": 3
+},
+"Crunches": {
+"name": "Crunches",
+"c": 3
+},
+"Cuban_Press": {
+"name": "Cuban Press",
+"c": 3
+},
+"Dead_Bug": {
+"name": "Dead Bug",
+"c": 3
+},
+"Deadlift_with_Bands": {
+"name": "Kreuzheben mit Bändern",
+"c": 3
+},
+"Deadlift_with_Chains": {
+"name": "Kreuzheben mit Ketten",
+"c": 3
+},
+"Decline_Barbell_Bench_Press": {
+"name": "Negativ-Bankdrücken mit Langhantel",
+"c": 3
+},
+"Decline_Close-Grip_Bench_To_Skull_Crusher": {
+"name": "Enges Negativ-Bankdrücken mit Skull Crusher",
+"c": 3
+},
+"Decline_Crunch": {
+"name": "Negativ-Crunch",
+"c": 3
+},
+"Decline_Dumbbell_Bench_Press": {
+"name": "Negativ-Kurzhanteldrücken",
+"c": 3
+},
+"Decline_Dumbbell_Flyes": {
+"name": "Negativ-Flys mit Kurzhanteln",
+"c": 3
+},
+"Decline_Dumbbell_Triceps_Extension": {
+"name": "Negativ-Trizepsstrecken mit Kurzhanteln",
+"c": 3
+},
+"Decline_EZ_Bar_Triceps_Extension": {
+"name": "Negativ-Trizepsstrecken mit SZ-Stange",
+"c": 3
+},
+"Decline_Oblique_Crunch": {
+"name": "Seitlicher Negativ-Crunch",
+"c": 3
+},
+"Decline_Push-Up": {
+"name": "Liegestütze mit erhöhten Füßen",
+"c": 3
+},
+"Decline_Reverse_Crunch": {
+"name": "Negativ-Reverse-Crunch",
+"c": 3
+},
+"Decline_Smith_Press": {
+"name": "Negativ-Drücken an der Multipresse",
+"c": 3
+},
+"Deficit_Deadlift": {
+"name": "Defizit-Kreuzheben",
+"c": 3
+},
+"Dip_Machine": {
+"name": "Dip-Maschine",
+"c": 3
+},
+"Dips_-_Chest_Version": {
+"name": "Dips (Brust-Variante)",
+"c": 3
+},
+"Dips_-_Triceps_Version": {
+"name": "Dips (Trizeps-Variante)",
+"c": 3
+},
+"Donkey_Calf_Raises": {
+"name": "Donkey Calf Raises",
+"c": 3
+},
+"Double_Kettlebell_Alternating_Hang_Clean": {
+"name": "Doppel-Kettlebell Hang Clean im Wechsel",
+"c": 3
+},
+"Double_Kettlebell_Jerk": {
+"name": "Doppel-Kettlebell Jerk",
+"c": 3
+},
+"Double_Kettlebell_Push_Press": {
+"name": "Doppel-Kettlebell Push Press",
+"c": 3
+},
+"Double_Kettlebell_Snatch": {
+"name": "Doppel-Kettlebell Snatch",
+"c": 3
+},
+"Double_Kettlebell_Windmill": {
+"name": "Doppel-Kettlebell Windmill",
+"c": 3
+},
+"Downward_Facing_Balance": {
+"name": "Ballbalance bäuchlings",
+"c": 3
+},
+"Drag_Curl": {
+"name": "Drag Curl",
+"c": 3
+},
+"Dumbbell_Alternate_Bicep_Curl": {
+"name": "Bizepscurls im Wechsel (Kurzhantel)",
+"c": 3
+},
+"Dumbbell_Bench_Press": {
+"name": "Kurzhantel-Bankdrücken",
+"c": 3
+},
+"Dumbbell_Bench_Press_with_Neutral_Grip": {
+"name": "Kurzhantel-Bankdrücken mit neutralem Griff",
+"c": 3
+},
+"Dumbbell_Bicep_Curl": {
+"name": "Bizepscurls mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Clean": {
+"name": "Umsetzen mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Floor_Press": {
+"name": "Floor Press mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Flyes": {
+"name": "Kurzhantel-Flys",
+"c": 3
+},
+"Dumbbell_Incline_Row": {
+"name": "Kurzhantelrudern auf Schrägbank",
+"c": 3
+},
+"Dumbbell_Incline_Shoulder_Raise": {
+"name": "Schulterblatt-Heben auf Schrägbank (Kurzhantel)",
+"c": 3
+},
+"Dumbbell_Lunges": {
+"name": "Ausfallschritte mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Lying_One-Arm_Rear_Lateral_Raise": {
+"name": "Einarmige Reverse Flys liegend",
+"c": 3
+},
+"Dumbbell_Lying_Pronation": {
+"name": "Pronation mit Kurzhantel liegend",
+"c": 3
+},
+"Dumbbell_Lying_Rear_Lateral_Raise": {
+"name": "Reverse Flys liegend mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Lying_Supination": {
+"name": "Supination mit Kurzhantel liegend",
+"c": 3
+},
+"Dumbbell_One-Arm_Shoulder_Press": {
+"name": "Einarmiges Kurzhantel-Schulterdrücken",
+"c": 3
+},
+"Dumbbell_One-Arm_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken mit Kurzhantel",
+"c": 3
+},
+"Dumbbell_One-Arm_Upright_Row": {
+"name": "Einarmiges aufrechtes Rudern (Kurzhantel)",
+"c": 3
+},
+"Dumbbell_Prone_Incline_Curl": {
+"name": "Curls bäuchlings auf der Schrägbank",
+"c": 3
+},
+"Dumbbell_Raise": {
+"name": "Aufrechtes Rudern seitlich mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Rear_Lunge": {
+"name": "Ausfallschritte rückwärts mit Kurzhanteln",
+"c": 3
+},
+"Dumbbell_Scaption": {
+"name": "Scaption mit Kurzhanteln",
+"c": 4
+},
+"Dumbbell_Seated_One-Leg_Calf_Raise": {
+"name": "Einbeiniges Wadenheben sitzend",
+"c": 4
+},
+"Dumbbell_Shoulder_Press": {
+"name": "Kurzhantel-Schulterdrücken",
+"c": 4
+},
+"Dumbbell_Shrug": {
+"name": "Shrugs mit Kurzhanteln",
+"c": 4
+},
+"Dumbbell_Side_Bend": {
+"name": "Seitbeugen mit Kurzhantel",
+"c": 4
+},
+"Dumbbell_Squat": {
+"name": "Kniebeuge mit Kurzhanteln",
+"c": 4
+},
+"Dumbbell_Squat_To_A_Bench": {
+"name": "Kniebeuge zur Bank mit Kurzhanteln",
+"c": 4
+},
+"Dumbbell_Step_Ups": {
+"name": "Step-ups mit Kurzhanteln",
+"c": 4
+},
+"Dumbbell_Tricep_Extension_-Pronated_Grip": {
+"name": "Trizepsstrecken mit Kurzhanteln (Obergriff)",
+"c": 4
+},
+"EZ-Bar_Curl": {
+"name": "SZ-Curls",
+"c": 4
+},
+"EZ-Bar_Skullcrusher": {
+"name": "SZ-Skullcrusher",
+"c": 4
+},
+"Elbow_to_Knee": {
+"name": "Ellbogen zum Knie",
+"c": 4
+},
+"Elevated_Back_Lunge": {
+"name": "Ausfallschritte rückwärts von erhöhter Fläche",
+"c": 4
+},
+"Elevated_Cable_Rows": {
+"name": "Kabelrudern sitzend mit Erhöhung",
+"c": 4
+},
+"Exercise_Ball_Crunch": {
+"name": "Crunch auf Gymnastikball",
+"c": 4
+},
+"Exercise_Ball_Pull-In": {
+"name": "Knieanziehen auf dem Gymnastikball",
+"c": 4
+},
+"Extended_Range_One-Arm_Kettlebell_Floor_Press": {
+"name": "Einarmige Kettlebell-Floor-Press (großer Bewegungsradius)",
+"c": 4
+},
+"External_Rotation": {
+"name": "Außenrotation",
+"c": 4
+},
+"External_Rotation_with_Band": {
+"name": "Außenrotation mit Band",
+"c": 4
+},
+"External_Rotation_with_Cable": {
+"name": "Außenrotation am Kabel",
+"c": 4
+},
+"Face_Pull": {
+"name": "Face Pulls",
+"c": 4
+},
+"Farmers_Walk": {
+"name": "Farmer's Walk",
+"c": 4
+},
+"Finger_Curls": {
+"name": "Fingercurls",
+"c": 4
+},
+"Flat_Bench_Cable_Flyes": {
+"name": "Kabel-Flys auf Flachbank",
+"c": 4
+},
+"Flat_Bench_Leg_Pull-In": {
+"name": "Knieanziehen auf der Flachbank",
+"c": 4
+},
+"Flat_Bench_Lying_Leg_Raise": {
+"name": "Beinheben auf Flachbank liegend",
+"c": 4
+},
+"Flexor_Incline_Dumbbell_Curls": {
+"name": "Kurzhantel-Curls auf Schrägbank (Flexor)",
+"c": 4
+},
+"Floor_Glute-Ham_Raise": {
+"name": "Glute-Ham Raise am Boden",
+"c": 4
+},
+"Floor_Press": {
+"name": "Floor Press",
+"c": 4
+},
+"Floor_Press_with_Chains": {
+"name": "Floor Press mit Ketten",
+"c": 4
+},
+"Flutter_Kicks": {
+"name": "Flutter Kicks",
+"c": 4
+},
+"Forward_Drag_with_Press": {
+"name": "Schlitten vorwärts ziehen mit Drücken",
+"c": 4
+},
+"Frankenstein_Squat": {
+"name": "Frankenstein Squat",
+"c": 4
+},
+"Freehand_Jump_Squat": {
+"name": "Sprungkniebeuge",
+"c": 4
+},
+"Frog_Sit-Ups": {
+"name": "Frosch-Sit-ups",
+"c": 4
+},
+"Front_Barbell_Squat": {
+"name": "Frontkniebeuge mit Langhantel",
+"c": 4
+},
+"Front_Barbell_Squat_To_A_Bench": {
+"name": "Frontkniebeuge zur Bank",
+"c": 4
+},
+"Front_Cable_Raise": {
+"name": "Frontheben am Kabel",
+"c": 4
+},
+"Front_Dumbbell_Raise": {
+"name": "Frontheben mit Kurzhanteln",
+"c": 4
+},
+"Front_Incline_Dumbbell_Raise": {
+"name": "Frontheben auf Schrägbank",
+"c": 4
+},
+"Front_Plate_Raise": {
+"name": "Frontheben mit Hantelscheibe",
+"c": 4
+},
+"Front_Raise_And_Pullover": {
+"name": "Frontheben mit Pullover",
+"c": 4
+},
+"Front_Squat_Clean_Grip": {
+"name": "Frontkniebeuge (Clean-Griff)",
+"c": 4
+},
+"Front_Squats_With_Two_Kettlebells": {
+"name": "Frontkniebeuge mit zwei Kettlebells",
+"c": 4
+},
+"Front_Two-Dumbbell_Raise": {
+"name": "Frontheben mit zwei Kurzhanteln",
+"c": 4
+},
+"Full_Range-Of-Motion_Lat_Pulldown": {
+"name": "Latzug mit voller Bewegung",
+"c": 4
+},
+"Gironda_Sternum_Chins": {
+"name": "Gironda Sternum Chins",
+"c": 4
+},
+"Glute_Ham_Raise": {
+"name": "Glute-Ham Raise",
+"c": 4
+},
+"Glute_Kickback": {
+"name": "Glute Kickback",
+"c": 4
+},
+"Goblet_Squat": {
+"name": "Goblet Squat",
+"c": 4
+},
+"Good_Morning": {
+"name": "Good Morning",
+"c": 5
+},
+"Good_Morning_off_Pins": {
+"name": "Good Morning aus den Pins",
+"c": 5
+},
+"Gorilla_Chin_Crunch": {
+"name": "Gorilla Chin/Crunch",
+"c": 5
+},
+"Hack_Squat": {
+"name": "Hackenschmidt-Kniebeuge (Maschine)",
+"c": 5
+},
+"Hammer_Curls": {
+"name": "Hammer Curls",
+"c": 5
+},
+"Hammer_Grip_Incline_DB_Bench_Press": {
+"name": "Schrägbankdrücken mit Kurzhanteln (Hammergriff)",
+"c": 5
+},
+"Handstand_Push-Ups": {
+"name": "Handstand-Liegestütze",
+"c": 5
+},
+"Hang_Clean": {
+"name": "Hang Clean",
+"c": 5
+},
+"Hang_Clean_-_Below_the_Knees": {
+"name": "Hang Clean unter Kniehöhe",
+"c": 5
+},
+"Hang_Snatch": {
+"name": "Hang Snatch",
+"c": 5
+},
+"Hang_Snatch_-_Below_Knees": {
+"name": "Hang Snatch unter Kniehöhe",
+"c": 5
+},
+"Hanging_Bar_Good_Morning": {
+"name": "Good Morning mit hängender Stange",
+"c": 5
+},
+"Hanging_Leg_Raise": {
+"name": "Hängendes Beinheben",
+"c": 5
+},
+"Hanging_Pike": {
+"name": "Hanging Pike (Beinheben bis zur Stange)",
+"c": 5
+},
+"Heaving_Snatch_Balance": {
+"name": "Heaving Snatch Balance",
+"c": 5
+},
+"High_Cable_Curls": {
+"name": "Bizepscurls am oberen Kabelzug",
+"c": 5
+},
+"Hip_Extension_with_Bands": {
+"name": "Hüftstreckung mit Band",
+"c": 5
+},
+"Hip_Flexion_with_Band": {
+"name": "Hüftbeugung mit Band",
+"c": 5
+},
+"Hip_Lift_with_Band": {
+"name": "Hüftheben mit Band",
+"c": 5
+},
+"Hyperextensions_Back_Extensions": {
+"name": "Hyperextensions (Rückenstrecker)",
+"c": 5
+},
+"Hyperextensions_With_No_Hyperextension_Bench": {
+"name": "Rückenstrecken ohne Gerät",
+"c": 5
+},
+"Incline_Barbell_Triceps_Extension": {
+"name": "Trizepsstrecken auf Schrägbank mit Langhantel",
+"c": 5
+},
+"Incline_Bench_Pull": {
+"name": "Rudern bäuchlings auf der Schrägbank",
+"c": 5
+},
+"Incline_Cable_Chest_Press": {
+"name": "Kabel-Schrägbankdrücken",
+"c": 5
+},
+"Incline_Cable_Flye": {
+"name": "Kabel-Flys auf Schrägbank",
+"c": 5
+},
+"Incline_Dumbbell_Bench_With_Palms_Facing_In": {
+"name": "Schrägbankdrücken mit Kurzhanteln (neutral)",
+"c": 5
+},
+"Incline_Dumbbell_Curl": {
+"name": "Schrägbank-Kurzhantelcurls",
+"c": 5
+},
+"Incline_Dumbbell_Flyes": {
+"name": "Schrägbank-Flys mit Kurzhanteln",
+"c": 5
+},
+"Incline_Dumbbell_Flyes_-_With_A_Twist": {
+"name": "Schrägbank-Flys mit Drehung",
+"c": 5
+},
+"Incline_Dumbbell_Press": {
+"name": "Schrägbankdrücken mit Kurzhanteln",
+"c": 5
+},
+"Incline_Hammer_Curls": {
+"name": "Hammer Curls auf Schrägbank",
+"c": 5
+},
+"Incline_Inner_Biceps_Curl": {
+"name": "Schrägbank-Curls nach außen",
+"c": 5
+},
+"Incline_Push-Up": {
+"name": "Schräge Liegestütze",
+"c": 5
+},
+"Incline_Push-Up_Close-Grip": {
+"name": "Schräge Liegestütze eng",
+"c": 5
+},
+"Incline_Push-Up_Medium": {
+"name": "Schräge Liegestütze (mittlerer Griff)",
+"c": 5
+},
+"Incline_Push-Up_Reverse_Grip": {
+"name": "Schräge Liegestütze Untergriff",
+"c": 5
+},
+"Incline_Push-Up_Wide": {
+"name": "Schräge Liegestütze breit",
+"c": 5
+},
+"Internal_Rotation_with_Band": {
+"name": "Innenrotation mit Band",
+"c": 5
+},
+"Inverted_Row": {
+"name": "Inverted Row (Körpergewichtsrudern)",
+"c": 5
+},
+"Inverted_Row_with_Straps": {
+"name": "Inverted Row mit Schlingen",
+"c": 5
+},
+"Iron_Cross": {
+"name": "Iron Cross (Kurzhantel)",
+"c": 5
+},
+"Isometric_Neck_Exercise_-_Front_And_Back": {
+"name": "Isometrische Nackenübung vorne/hinten",
+"c": 5
+},
+"Isometric_Neck_Exercise_-_Sides": {
+"name": "Isometrische Nackenübung seitlich",
+"c": 5
+},
+"Isometric_Wipers": {
+"name": "Isometric Wipers (Seitwärts-Liegestütz)",
+"c": 5
+},
+"JM_Press": {
+"name": "JM Press",
+"c": 5
+},
+"Jackknife_Sit-Up": {
+"name": "Klappmesser (Jackknife Sit-up)",
+"c": 5
+},
+"Janda_Sit-Up": {
+"name": "Janda Sit-up",
+"c": 5
+},
+"Jefferson_Squats": {
+"name": "Jefferson Squat",
+"c": 5
+},
+"Jerk_Balance": {
+"name": "Jerk Balance",
+"c": 5
+},
+"Jerk_Dip_Squat": {
+"name": "Jerk Dip Squat",
+"c": 5
+},
+"Keg_Load": {
+"name": "Fass laden (Keg Load)",
+"c": 6
+},
+"Kettlebell_Arnold_Press": {
+"name": "Kettlebell Arnold Press",
+"c": 6
+},
+"Kettlebell_Dead_Clean": {
+"name": "Kettlebell Dead Clean",
+"c": 6
+},
+"Kettlebell_Figure_8": {
+"name": "Kettlebell-Acht",
+"c": 6
+},
+"Kettlebell_Halo": {
+"name": "Kettlebell Halo",
+"c": 6
+},
+"Kettlebell_Halo_With_Overhead_Extension": {
+"name": "Kettlebell Halo mit Überkopfstrecken",
+"c": 6
+},
+"Kettlebell_Hang_Clean": {
+"name": "Kettlebell Hang Clean",
+"c": 6
+},
+"Kettlebell_One-Legged_Deadlift": {
+"name": "Einbeiniges Kettlebell-Kreuzheben",
+"c": 6
+},
+"Kettlebell_Overhead_Triceps_Extension": {
+"name": "Trizepsstrecken über Kopf mit Kettlebell",
+"c": 6
+},
+"Kettlebell_Pass_Between_The_Legs": {
+"name": "Kettlebell durch die Beine reichen",
+"c": 6
+},
+"Kettlebell_Pirate_Ships": {
+"name": "Kettlebell Pirate Ships",
+"c": 6
+},
+"Kettlebell_Pistol_Squat": {
+"name": "Pistol Squat mit Kettlebell",
+"c": 6
+},
+"Kettlebell_Seated_Press": {
+"name": "Kettlebell-Drücken sitzend",
+"c": 6
+},
+"Kettlebell_Seesaw_Press": {
+"name": "Kettlebell Seesaw Press",
+"c": 6
+},
+"Kettlebell_Sumo_High_Pull": {
+"name": "Kettlebell Sumo High Pull",
+"c": 6
+},
+"Kettlebell_Thruster": {
+"name": "Kettlebell Thruster",
+"c": 6
+},
+"Kettlebell_Turkish_Get-Up_Lunge_style": {
+"name": "Turkish Get-Up (Ausfallschritt)",
+"c": 6
+},
+"Kettlebell_Turkish_Get-Up_Squat_style": {
+"name": "Turkish Get-Up (Kniebeuge)",
+"c": 6
+},
+"Kettlebell_Windmill": {
+"name": "Kettlebell Windmill",
+"c": 6
+},
+"Kipping_Muscle_Up": {
+"name": "Kipping Muscle-up",
+"c": 6
+},
+"Knee_Hip_Raise_On_Parallel_Bars": {
+"name": "Beinheben am Bauchturm (Captain's Chair)",
+"c": 6
+},
+"Kneeling_Cable_Crunch_With_Alternating_Oblique_Twists": {
+"name": "Kabel-Crunch kniend mit Drehung",
+"c": 6
+},
+"Kneeling_Cable_Triceps_Extension": {
+"name": "Trizepsstrecken am Kabel kniend",
+"c": 6
+},
+"Kneeling_High_Pulley_Row": {
+"name": "Rudern am hohen Kabel kniend",
+"c": 6
+},
+"Kneeling_Jump_Squat": {
+"name": "Sprungkniebeuge aus dem Knien",
+"c": 6
+},
+"Kneeling_Single-Arm_High_Pulley_Row": {
+"name": "Einarmiges Rudern am hohen Kabel kniend",
+"c": 6
+},
+"Kneeling_Squat": {
+"name": "Kniende Kniebeuge",
+"c": 6
+},
+"Landmine_180s": {
+"name": "Landmine 180s",
+"c": 6
+},
+"Landmine_Linear_Jammer": {
+"name": "Landmine Jammer",
+"c": 6
+},
+"Lateral_Raise_-_With_Bands": {
+"name": "Seitheben mit Band",
+"c": 6
+},
+"Leg-Over_Floor_Press": {
+"name": "Floor Press mit Bein über Bein",
+"c": 6
+},
+"Leg_Extensions": {
+"name": "Beinstrecker",
+"c": 6
+},
+"Leg_Lift": {
+"name": "Beinheben stehend nach hinten",
+"c": 6
+},
+"Leg_Press": {
+"name": "Beinpresse",
+"c": 6
+},
+"Leg_Pull-In": {
+"name": "Knieheben liegend (Leg Pull-In)",
+"c": 6
+},
+"Leverage_Chest_Press": {
+"name": "Brustpresse (Hebelmaschine)",
+"c": 6
+},
+"Leverage_Deadlift": {
+"name": "Kreuzheben an der Hebelmaschine",
+"c": 6
+},
+"Leverage_Decline_Chest_Press": {
+"name": "Negativ-Brustpresse (Hebelmaschine)",
+"c": 6
+},
+"Leverage_High_Row": {
+"name": "Rudern hoch (Hebelmaschine)",
+"c": 6
+},
+"Leverage_Incline_Chest_Press": {
+"name": "Schrägbank-Brustpresse (Hebelmaschine)",
+"c": 6
+},
+"Leverage_Iso_Row": {
+"name": "Iso-Rudern (Hebelmaschine)",
+"c": 6
+},
+"Leverage_Shoulder_Press": {
+"name": "Schulterpresse (Hebelmaschine)",
+"c": 6
+},
+"Leverage_Shrug": {
+"name": "Shrugs (Hebelmaschine)",
+"c": 6
+},
+"Log_Lift": {
+"name": "Log Lift",
+"c": 6
+},
+"London_Bridges": {
+"name": "London Bridges",
+"c": 6
+},
+"Low_Cable_Crossover": {
+"name": "Cable Crossover von unten",
+"c": 6
+},
+"Low_Cable_Triceps_Extension": {
+"name": "Trizepsstrecken am unteren Kabel",
+"c": 6
+},
+"Low_Pulley_Row_To_Neck": {
+"name": "Rudern zum Hals am unteren Kabel",
+"c": 6
+},
+"Lunge_Pass_Through": {
+"name": "Ausfallschritt mit Kettlebell-Übergabe",
+"c": 6
+},
+"Lunge_Sprint": {
+"name": "Ausfallschritt-Sprint (Multipresse)",
+"c": 6
+},
+"Lying_Cable_Curl": {
+"name": "Kabelcurls liegend",
+"c": 7
+},
+"Lying_Cambered_Barbell_Row": {
+"name": "Rudern mit Cambered Bar liegend",
+"c": 7
+},
+"Lying_Close-Grip_Bar_Curl_On_High_Pulley": {
+"name": "Enge Curls liegend am oberen Kabelzug",
+"c": 7
+},
+"Lying_Close-Grip_Barbell_Triceps_Extension_Behind_The_Head": {
+"name": "Enges Trizepsstrecken hinter dem Kopf",
+"c": 7
+},
+"Lying_Close-Grip_Barbell_Triceps_Press_To_Chin": {
+"name": "Enges Trizepsdrücken zum Kinn liegend",
+"c": 7
+},
+"Lying_Dumbbell_Tricep_Extension": {
+"name": "Trizepsstrecken liegend mit Kurzhanteln",
+"c": 7
+},
+"Lying_Face_Down_Plate_Neck_Resistance": {
+"name": "Nackentraining bäuchlings mit Scheibe",
+"c": 7
+},
+"Lying_Face_Up_Plate_Neck_Resistance": {
+"name": "Nackentraining rücklings mit Scheibe",
+"c": 7
+},
+"Lying_High_Bench_Barbell_Curl": {
+"name": "Langhantelcurls auf hoher Bank liegend",
+"c": 7
+},
+"Lying_Leg_Curls": {
+"name": "Beinbeuger liegend",
+"c": 7
+},
+"Lying_Machine_Squat": {
+"name": "Kniebeuge an der Liegemaschine",
+"c": 7
+},
+"Lying_One-Arm_Lateral_Raise": {
+"name": "Einarmiges Seitheben liegend",
+"c": 7
+},
+"Lying_Rear_Delt_Raise": {
+"name": "Reverse Flys liegend",
+"c": 7
+},
+"Lying_Supine_Dumbbell_Curl": {
+"name": "Kurzhantelcurls rücklings liegend",
+"c": 7
+},
+"Lying_T-Bar_Row": {
+"name": "T-Bar-Rudern liegend",
+"c": 7
+},
+"Lying_Triceps_Press": {
+"name": "French Press liegend (Trizepsdrücken)",
+"c": 7
+},
+"Machine_Bench_Press": {
+"name": "Brustpresse an der Maschine",
+"c": 7
+},
+"Machine_Bicep_Curl": {
+"name": "Bizepscurls an der Maschine",
+"c": 7
+},
+"Machine_Preacher_Curls": {
+"name": "Scottcurls an der Maschine",
+"c": 7
+},
+"Machine_Shoulder_Military_Press": {
+"name": "Schulterpresse an der Maschine",
+"c": 7
+},
+"Machine_Triceps_Extension": {
+"name": "Trizepsmaschine",
+"c": 7
+},
+"Middle_Back_Shrug": {
+"name": "Schulterblatt-Shrugs auf Schrägbank",
+"c": 7
+},
+"Mixed_Grip_Chin": {
+"name": "Klimmzüge im Wechselgriff",
+"c": 7
+},
+"Monster_Walk": {
+"name": "Monster Walk",
+"c": 7
+},
+"Muscle_Snatch": {
+"name": "Muscle Snatch",
+"c": 7
+},
+"Muscle_Up": {
+"name": "Muscle-up",
+"c": 7
+},
+"Narrow_Stance_Hack_Squats": {
+"name": "Hackenschmidt-Kniebeuge eng",
+"c": 7
+},
+"Narrow_Stance_Leg_Press": {
+"name": "Beinpresse enger Stand",
+"c": 7
+},
+"Narrow_Stance_Squats": {
+"name": "Kniebeuge enger Stand",
+"c": 7
+},
+"Natural_Glute_Ham_Raise": {
+"name": "Natural Glute-Ham Raise",
+"c": 7
+},
+"Neck_Press": {
+"name": "Bankdrücken zum Hals",
+"c": 7
+},
+"Oblique_Crunches": {
+"name": "Seitliche Crunches",
+"c": 7
+},
+"Oblique_Crunches_-_On_The_Floor": {
+"name": "Seitliche Crunches am Boden",
+"c": 7
+},
+"Olympic_Squat": {
+"name": "Olympische Kniebeuge",
+"c": 7
+},
+"One-Arm_Dumbbell_Row": {
+"name": "Einarmiges Kurzhantelrudern",
+"c": 7
+},
+"One-Arm_Flat_Bench_Dumbbell_Flye": {
+"name": "Einarmige Kurzhantel-Flys",
+"c": 7
+},
+"One-Arm_High-Pulley_Cable_Side_Bends": {
+"name": "Einarmige Seitbeuge am oberen Kabelzug",
+"c": 7
+},
+"One-Arm_Incline_Lateral_Raise": {
+"name": "Einarmiges Seitheben auf Schrägbank",
+"c": 7
+},
+"One-Arm_Kettlebell_Clean": {
+"name": "Einarmiges Kettlebell-Umsetzen",
+"c": 7
+},
+"One-Arm_Kettlebell_Clean_and_Jerk": {
+"name": "Einarmiges Kettlebell-Umsetzen und -Stoßen",
+"c": 7
+},
+"One-Arm_Kettlebell_Floor_Press": {
+"name": "Einarmige Kettlebell-Floor-Press",
+"c": 7
+},
+"One-Arm_Kettlebell_Jerk": {
+"name": "Einarmiger Kettlebell Jerk",
+"c": 7
+},
+"One-Arm_Kettlebell_Military_Press_To_The_Side": {
+"name": "Einarmiges Kettlebell-Drücken zur Seite",
+"c": 7
+},
+"One-Arm_Kettlebell_Para_Press": {
+"name": "Einarmige Kettlebell Para Press",
+"c": 7
+},
+"One-Arm_Kettlebell_Push_Press": {
+"name": "Einarmiger Kettlebell Push Press",
+"c": 7
+},
+"One-Arm_Kettlebell_Row": {
+"name": "Einarmiges Kettlebell-Rudern",
+"c": 7
+},
+"One-Arm_Kettlebell_Snatch": {
+"name": "Einarmiger Kettlebell Snatch",
+"c": 7
+},
+"One-Arm_Kettlebell_Split_Jerk": {
+"name": "Einarmiger Kettlebell Split Jerk",
+"c": 7
+},
+"One-Arm_Kettlebell_Split_Snatch": {
+"name": "Einarmiger Kettlebell Split Snatch",
+"c": 7
+},
+"One-Arm_Kettlebell_Swings": {
+"name": "Einarmige Kettlebell Swings",
+"c": 7
+},
+"One-Arm_Long_Bar_Row": {
+"name": "Einarmiges T-Bar-Rudern",
+"c": 8
+},
+"One-Arm_Medicine_Ball_Slam": {
+"name": "Einarmiger Medizinball-Slam",
+"c": 8
+},
+"One-Arm_Open_Palm_Kettlebell_Clean": {
+"name": "Einarmiger Kettlebell Clean (offene Hand)",
+"c": 8
+},
+"One-Arm_Overhead_Kettlebell_Squats": {
+"name": "Einarmige Überkopf-Kniebeuge mit Kettlebell",
+"c": 8
+},
+"One-Arm_Side_Deadlift": {
+"name": "Einarmiges seitliches Kreuzheben",
+"c": 8
+},
+"One-Arm_Side_Laterals": {
+"name": "Einarmiges Seitheben",
+"c": 8
+},
+"One-Legged_Cable_Kickback": {
+"name": "Einbeiniger Kabel-Kickback",
+"c": 8
+},
+"One_Arm_Chin-Up": {
+"name": "Einarmiger Klimmzug",
+"c": 8
+},
+"One_Arm_Dumbbell_Bench_Press": {
+"name": "Einarmiges Kurzhantel-Bankdrücken",
+"c": 8
+},
+"One_Arm_Dumbbell_Preacher_Curl": {
+"name": "Einarmige Scottcurls mit Kurzhantel",
+"c": 8
+},
+"One_Arm_Floor_Press": {
+"name": "Einarmige Floor Press",
+"c": 8
+},
+"One_Arm_Lat_Pulldown": {
+"name": "Einarmiger Latzug",
+"c": 8
+},
+"One_Arm_Pronated_Dumbbell_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken liegend (Obergriff)",
+"c": 8
+},
+"One_Arm_Supinated_Dumbbell_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken liegend (Untergriff)",
+"c": 8
+},
+"One_Leg_Barbell_Squat": {
+"name": "Einbeinige Kniebeuge mit Langhantel",
+"c": 8
+},
+"Open_Palm_Kettlebell_Clean": {
+"name": "Kettlebell Clean mit offener Hand",
+"c": 8
+},
+"Otis-Up": {
+"name": "Otis-Up",
+"c": 8
+},
+"Overhead_Cable_Curl": {
+"name": "Kabelcurls über Kopf",
+"c": 8
+},
+"Overhead_Squat": {
+"name": "Überkopfkniebeuge",
+"c": 8
+},
+"Pallof_Press": {
+"name": "Pallof Press",
+"c": 8
+},
+"Pallof_Press_With_Rotation": {
+"name": "Pallof Press mit Rotation",
+"c": 8
+},
+"Palms-Down_Dumbbell_Wrist_Curl_Over_A_Bench": {
+"name": "Handgelenkcurls Obergriff über der Bank (Kurzhanteln)",
+"c": 8
+},
+"Palms-Down_Wrist_Curl_Over_A_Bench": {
+"name": "Handgelenkcurls Obergriff über der Bank (Langhantel)",
+"c": 8
+},
+"Palms-Up_Barbell_Wrist_Curl_Over_A_Bench": {
+"name": "Handgelenkcurls Untergriff über der Bank (Langhantel)",
+"c": 8
+},
+"Palms-Up_Dumbbell_Wrist_Curl_Over_A_Bench": {
+"name": "Handgelenkcurls Untergriff über der Bank (Kurzhanteln)",
+"c": 8
+},
+"Parallel_Bar_Dip": {
+"name": "Barrendips",
+"c": 8
+},
+"Physioball_Hip_Bridge": {
+"name": "Hüftbrücke auf Gymnastikball",
+"c": 8
+},
+"Pin_Presses": {
+"name": "Pin Press",
+"c": 8
+},
+"Plank": {
+"name": "Unterarmstütz (Plank)",
+"c": 8
+},
+"Plate_Pinch": {
+"name": "Scheiben-Pinchgriff",
+"c": 8
+},
+"Plate_Twist": {
+"name": "Russian Twist mit Hantelscheibe",
+"c": 8
+},
+"Platform_Hamstring_Slides": {
+"name": "Hamstring Slides",
+"c": 8
+},
+"Plie_Dumbbell_Squat": {
+"name": "Plié-Kniebeuge mit Kurzhantel",
+"c": 8
+},
+"Plyo_Kettlebell_Pushups": {
+"name": "Plyo-Liegestütze auf Kettlebells",
+"c": 8
+},
+"Power_Clean": {
+"name": "Power Clean",
+"c": 8
+},
+"Power_Clean_from_Blocks": {
+"name": "Power Clean von Blöcken",
+"c": 8
+},
+"Power_Jerk": {
+"name": "Power Jerk",
+"c": 8
+},
+"Power_Partials": {
+"name": "Power Partials (Seitheben)",
+"c": 8
+},
+"Power_Snatch": {
+"name": "Power Snatch",
+"c": 8
+},
+"Power_Snatch_from_Blocks": {
+"name": "Power Snatch von Blöcken",
+"c": 8
+},
+"Power_Stairs": {
+"name": "Power Stairs",
+"c": 8
+},
+"Preacher_Curl": {
+"name": "Scottcurls",
+"c": 8
+},
+"Preacher_Hammer_Dumbbell_Curl": {
+"name": "Scott-Hammercurls mit Kurzhantel",
+"c": 8
+},
+"Press_Sit-Up": {
+"name": "Press Sit-up",
+"c": 8
+},
+"Prone_Manual_Hamstring": {
+"name": "Beinbeuger bäuchlings mit Partner",
+"c": 8
+},
+"Pull_Through": {
+"name": "Pull Through am Kabel",
+"c": 8
+},
+"Pullups": {
+"name": "Klimmzüge",
+"c": 8
+},
+"Push-Up_Wide": {
+"name": "Liegestütze breit",
+"c": 8
+},
+"Push-Ups_-_Close_Triceps_Position": {
+"name": "Enge Liegestütze (Trizeps)",
+"c": 8
+},
+"Push-Ups_With_Feet_Elevated": {
+"name": "Liegestütze mit erhöhten Füßen",
+"c": 8
+},
+"Push-Ups_With_Feet_On_An_Exercise_Ball": {
+"name": "Liegestütze mit Füßen auf Gymnastikball",
+"c": 9
+},
+"Push_Press": {
+"name": "Push Press",
+"c": 9
+},
+"Push_Press_-_Behind_the_Neck": {
+"name": "Push Press hinter dem Nacken",
+"c": 9
+},
+"Push_Up_to_Side_Plank": {
+"name": "Liegestütz zu Seitstütz",
+"c": 9
+},
+"Pushups": {
+"name": "Liegestütze",
+"c": 9
+},
+"Pushups_Close_and_Wide_Hand_Positions": {
+"name": "Liegestütze eng und breit",
+"c": 9
+},
+"Rack_Delivery": {
+"name": "Rack Delivery",
+"c": 9
+},
+"Rack_Pull_with_Bands": {
+"name": "Rack Pulls mit Bändern",
+"c": 9
+},
+"Rack_Pulls": {
+"name": "Rack Pulls",
+"c": 9
+},
+"Reverse_Band_Bench_Press": {
+"name": "Reverse-Band-Bankdrücken",
+"c": 9
+},
+"Reverse_Band_Box_Squat": {
+"name": "Reverse-Band Box Squat",
+"c": 9
+},
+"Reverse_Band_Deadlift": {
+"name": "Reverse-Band-Kreuzheben",
+"c": 9
+},
+"Reverse_Band_Power_Squat": {
+"name": "Reverse-Band Power Squat",
+"c": 9
+},
+"Reverse_Band_Sumo_Deadlift": {
+"name": "Reverse-Band Sumo-Kreuzheben",
+"c": 9
+},
+"Reverse_Barbell_Curl": {
+"name": "Reverse Curls mit Langhantel",
+"c": 9
+},
+"Reverse_Barbell_Preacher_Curls": {
+"name": "Reverse Scottcurls mit Langhantel",
+"c": 9
+},
+"Reverse_Cable_Curl": {
+"name": "Reverse Curls am Kabel",
+"c": 9
+},
+"Reverse_Crunch": {
+"name": "Reverse Crunch",
+"c": 9
+},
+"Reverse_Flyes": {
+"name": "Reverse Flys",
+"c": 9
+},
+"Reverse_Flyes_With_External_Rotation": {
+"name": "Reverse Flys mit Außenrotation",
+"c": 9
+},
+"Reverse_Grip_Bent-Over_Rows": {
+"name": "Vorgebeugtes Rudern im Untergriff",
+"c": 9
+},
+"Reverse_Grip_Triceps_Pushdown": {
+"name": "Trizepsdrücken im Untergriff",
+"c": 9
+},
+"Reverse_Hyperextension": {
+"name": "Reverse Hyperextension",
+"c": 9
+},
+"Reverse_Machine_Flyes": {
+"name": "Reverse Butterfly (Maschine)",
+"c": 9
+},
+"Reverse_Plate_Curls": {
+"name": "Reverse Curls mit Hantelscheibe",
+"c": 9
+},
+"Reverse_Triceps_Bench_Press": {
+"name": "Bankdrücken im Untergriff (Trizeps)",
+"c": 9
+},
+"Rickshaw_Carry": {
+"name": "Rickshaw Carry",
+"c": 9
+},
+"Rickshaw_Deadlift": {
+"name": "Rickshaw-Kreuzheben",
+"c": 9
+},
+"Ring_Dips": {
+"name": "Ring-Dips",
+"c": 9
+},
+"Rocking_Standing_Calf_Raise": {
+"name": "Wadenheben stehend mit Fußheben",
+"c": 9
+},
+"Rocky_Pull-Ups_Pulldowns": {
+"name": "Rocky-Klimmzüge/Latzug",
+"c": 9
+},
+"Romanian_Deadlift": {
+"name": "Rumänisches Kreuzheben",
+"c": 9
+},
+"Romanian_Deadlift_from_Deficit": {
+"name": "Rumänisches Kreuzheben mit Erhöhung (Defizit)",
+"c": 9
+},
+"Rope_Climb": {
+"name": "Seilklettern",
+"c": 9
+},
+"Rope_Crunch": {
+"name": "Seil-Crunch",
+"c": 9
+},
+"Rope_Straight-Arm_Pulldown": {
+"name": "Überzüge am Kabel mit Seil",
+"c": 9
+},
+"Russian_Twist": {
+"name": "Russian Twist",
+"c": 9
+},
+"Sandbag_Load": {
+"name": "Sandsack laden",
+"c": 9
+},
+"Scapular_Pull-Up": {
+"name": "Schulterblatt-Klimmzug",
+"c": 9
+},
+"Seated_Band_Hamstring_Curl": {
+"name": "Beinbeuger sitzend mit Band",
+"c": 9
+},
+"Seated_Barbell_Military_Press": {
+"name": "Schulterdrücken sitzend mit Langhantel",
+"c": 9
+},
+"Seated_Barbell_Twist": {
+"name": "Langhantel-Twist sitzend",
+"c": 9
+},
+"Seated_Bent-Over_One-Arm_Dumbbell_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken vorgebeugt sitzend",
+"c": 9
+},
+"Seated_Bent-Over_Rear_Delt_Raise": {
+"name": "Reverse Flys sitzend vorgebeugt",
+"c": 9
+},
+"Seated_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension": {
+"name": "Trizepsstrecken beidarmig vorgebeugt sitzend",
+"c": 9
+},
+"Seated_Cable_Rows": {
+"name": "Kabelrudern sitzend",
+"c": 9
+},
+"Seated_Cable_Shoulder_Press": {
+"name": "Kabel-Schulterdrücken sitzend",
+"c": 9
+},
+"Seated_Calf_Raise": {
+"name": "Wadenheben sitzend",
+"c": 9
+},
+"Seated_Close-Grip_Concentration_Barbell_Curl": {
+"name": "Konzentrationscurls mit Langhantel sitzend",
+"c": 9
+},
+"Seated_Dumbbell_Curl": {
+"name": "Kurzhantelcurls sitzend",
+"c": 9
+},
+"Seated_Dumbbell_Inner_Biceps_Curl": {
+"name": "Bizepscurls sitzend nach außen",
+"c": 10
+},
+"Seated_Dumbbell_Palms-Down_Wrist_Curl": {
+"name": "Handgelenkcurls Obergriff sitzend (Kurzhantel)",
+"c": 10
+},
+"Seated_Dumbbell_Palms-Up_Wrist_Curl": {
+"name": "Handgelenkcurls Untergriff sitzend (Kurzhantel)",
+"c": 10
+},
+"Seated_Dumbbell_Press": {
+"name": "Kurzhantel-Schulterdrücken sitzend",
+"c": 10
+},
+"Seated_Flat_Bench_Leg_Pull-In": {
+"name": "Knieanziehen sitzend auf der Bank",
+"c": 10
+},
+"Seated_Good_Mornings": {
+"name": "Good Morning sitzend",
+"c": 10
+},
+"Seated_Head_Harness_Neck_Resistance": {
+"name": "Nackentraining mit Kopfgeschirr sitzend",
+"c": 10
+},
+"Seated_Leg_Curl": {
+"name": "Beinbeuger sitzend",
+"c": 10
+},
+"Seated_Leg_Tucks": {
+"name": "Knieanziehen sitzend (Leg Tucks)",
+"c": 10
+},
+"Seated_One-Arm_Dumbbell_Palms-Down_Wrist_Curl": {
+"name": "Einarmige Handgelenkcurls Obergriff sitzend",
+"c": 10
+},
+"Seated_One-Arm_Dumbbell_Palms-Up_Wrist_Curl": {
+"name": "Einarmige Handgelenkcurls Untergriff sitzend",
+"c": 10
+},
+"Seated_One-arm_Cable_Pulley_Rows": {
+"name": "Einarmiges Kabelrudern sitzend",
+"c": 10
+},
+"Seated_Palm-Up_Barbell_Wrist_Curl": {
+"name": "Handgelenkcurls Untergriff sitzend (Langhantel)",
+"c": 10
+},
+"Seated_Palms-Down_Barbell_Wrist_Curl": {
+"name": "Handgelenkcurls Obergriff sitzend (Langhantel)",
+"c": 10
+},
+"Seated_Side_Lateral_Raise": {
+"name": "Seitheben sitzend",
+"c": 10
+},
+"Seated_Triceps_Press": {
+"name": "Trizepsdrücken sitzend (Überkopf)",
+"c": 10
+},
+"Seated_Two-Arm_Palms-Up_Low-Pulley_Wrist_Curl": {
+"name": "Handgelenkcurls Untergriff am unteren Kabel",
+"c": 10
+},
+"See-Saw_Press_Alternating_Side_Press": {
+"name": "See-Saw Press (Wechseldrücken)",
+"c": 10
+},
+"Shotgun_Row": {
+"name": "Shotgun Row (einarmiges Kabelrudern)",
+"c": 10
+},
+"Shoulder_Press_-_With_Bands": {
+"name": "Schulterdrücken mit Band",
+"c": 10
+},
+"Side_Bridge": {
+"name": "Seitstütz",
+"c": 10
+},
+"Side_Jackknife": {
+"name": "Seitliches Klappmesser",
+"c": 10
+},
+"Side_Lateral_Raise": {
+"name": "Seitheben",
+"c": 10
+},
+"Side_Laterals_to_Front_Raise": {
+"name": "Seitheben zu Frontheben",
+"c": 10
+},
+"Side_To_Side_Chins": {
+"name": "Klimmzüge seitlich (Side to Side)",
+"c": 10
+},
+"Single-Arm_Cable_Crossover": {
+"name": "Einarmiger Cable Crossover",
+"c": 10
+},
+"Single-Arm_Linear_Jammer": {
+"name": "Einarmiger Landmine Jammer",
+"c": 10
+},
+"Single-Arm_Push-Up": {
+"name": "Einarmige Liegestütze",
+"c": 10
+},
+"Single-Leg_High_Box_Squat": {
+"name": "Einbeinige Kniebeuge auf hohe Box",
+"c": 10
+},
+"Single-Leg_Leg_Extension": {
+"name": "Einbeiniger Beinstrecker",
+"c": 10
+},
+"Single_Dumbbell_Raise": {
+"name": "Frontheben mit einer Kurzhantel",
+"c": 10
+},
+"Single_Leg_Glute_Bridge": {
+"name": "Einbeinige Glute Bridge",
+"c": 10
+},
+"Sit-Up": {
+"name": "Sit-up",
+"c": 10
+},
+"Sled_Drag_-_Harness": {
+"name": "Schlittenziehen mit Geschirr",
+"c": 10
+},
+"Sled_Overhead_Backward_Walk": {
+"name": "Schlitten rückwärts mit Armen über Kopf",
+"c": 10
+},
+"Sled_Overhead_Triceps_Extension": {
+"name": "Trizepsstrecken über Kopf am Schlitten",
+"c": 10
+},
+"Sled_Push": {
+"name": "Schlitten schieben",
+"c": 10
+},
+"Sled_Reverse_Flye": {
+"name": "Reverse Flys am Schlitten",
+"c": 10
+},
+"Sled_Row": {
+"name": "Schlitten-Rudern",
+"c": 10
+},
+"Smith_Incline_Shoulder_Raise": {
+"name": "Schulterblatt-Heben auf Schrägbank (Multipresse)",
+"c": 10
+},
+"Smith_Machine_Behind_the_Back_Shrug": {
+"name": "Shrugs hinter dem Rücken (Multipresse)",
+"c": 10
+},
+"Smith_Machine_Bench_Press": {
+"name": "Bankdrücken an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Bent_Over_Row": {
+"name": "Vorgebeugtes Rudern an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Calf_Raise": {
+"name": "Wadenheben an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Close-Grip_Bench_Press": {
+"name": "Enges Bankdrücken an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Decline_Press": {
+"name": "Negativ-Bankdrücken an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Hang_Power_Clean": {
+"name": "Hang Power Clean an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Hip_Raise": {
+"name": "Hüftheben an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Incline_Bench_Press": {
+"name": "Schrägbankdrücken an der Multipresse",
+"c": 10
+},
+"Smith_Machine_Leg_Press": {
+"name": "Beinpresse an der Multipresse",
+"c": 10
+},
+"Smith_Machine_One-Arm_Upright_Row": {
+"name": "Einarmiges aufrechtes Rudern (Multipresse)",
+"c": 11
+},
+"Smith_Machine_Overhead_Shoulder_Press": {
+"name": "Schulterdrücken an der Multipresse",
+"c": 11
+},
+"Smith_Machine_Pistol_Squat": {
+"name": "Pistol Squat an der Multipresse",
+"c": 11
+},
+"Smith_Machine_Reverse_Calf_Raises": {
+"name": "Fußheben an der Multipresse (Schienbein)",
+"c": 11
+},
+"Smith_Machine_Squat": {
+"name": "Kniebeuge an der Multipresse",
+"c": 11
+},
+"Smith_Machine_Stiff-Legged_Deadlift": {
+"name": "Steifbeiniges Kreuzheben an der Multipresse",
+"c": 11
+},
+"Smith_Machine_Upright_Row": {
+"name": "Aufrechtes Rudern an der Multipresse",
+"c": 11
+},
+"Smith_Single-Leg_Split_Squat": {
+"name": "Bulgarian Split Squat an der Multipresse",
+"c": 11
+},
+"Snatch": {
+"name": "Reißen (Snatch)",
+"c": 11
+},
+"Snatch_Balance": {
+"name": "Snatch Balance",
+"c": 11
+},
+"Snatch_Deadlift": {
+"name": "Snatch Deadlift",
+"c": 11
+},
+"Snatch_Pull": {
+"name": "Snatch Pull",
+"c": 11
+},
+"Snatch_Shrug": {
+"name": "Snatch Shrug",
+"c": 11
+},
+"Snatch_from_Blocks": {
+"name": "Reißen von Blöcken",
+"c": 11
+},
+"Speed_Band_Overhead_Triceps": {
+"name": "Trizepsstrecken über Kopf mit Band (explosiv)",
+"c": 11
+},
+"Speed_Box_Squat": {
+"name": "Speed Box Squat",
+"c": 11
+},
+"Speed_Squats": {
+"name": "Speed Squats",
+"c": 11
+},
+"Spell_Caster": {
+"name": "Spell Caster",
+"c": 11
+},
+"Spider_Crawl": {
+"name": "Spider Crawl",
+"c": 11
+},
+"Spider_Curl": {
+"name": "Spider Curls",
+"c": 11
+},
+"Split_Clean": {
+"name": "Split Clean",
+"c": 11
+},
+"Split_Jerk": {
+"name": "Split Jerk",
+"c": 11
+},
+"Split_Snatch": {
+"name": "Split Snatch",
+"c": 11
+},
+"Split_Squat_with_Dumbbells": {
+"name": "Split Squat mit Kurzhanteln",
+"c": 11
+},
+"Squat_Jerk": {
+"name": "Squat Jerk",
+"c": 11
+},
+"Squat_with_Bands": {
+"name": "Kniebeuge mit Bändern",
+"c": 11
+},
+"Squat_with_Chains": {
+"name": "Kniebeuge mit Ketten",
+"c": 11
+},
+"Squat_with_Plate_Movers": {
+"name": "Kniebeuge mit Scheibenumsetzen",
+"c": 11
+},
+"Squats_-_With_Bands": {
+"name": "Kniebeuge mit Band",
+"c": 11
+},
+"Standing_Alternating_Dumbbell_Press": {
+"name": "Kurzhantel-Schulterdrücken stehend im Wechsel",
+"c": 11
+},
+"Standing_Barbell_Calf_Raise": {
+"name": "Wadenheben stehend mit Langhantel",
+"c": 11
+},
+"Standing_Barbell_Press_Behind_Neck": {
+"name": "Nackendrücken stehend",
+"c": 11
+},
+"Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken vorgebeugt stehend",
+"c": 11
+},
+"Standing_Bent-Over_Two-Arm_Dumbbell_Triceps_Extension": {
+"name": "Trizepsstrecken beidarmig vorgebeugt stehend",
+"c": 11
+},
+"Standing_Biceps_Cable_Curl": {
+"name": "Bizepscurls am Kabel stehend",
+"c": 11
+},
+"Standing_Bradford_Press": {
+"name": "Bradford Press stehend",
+"c": 11
+},
+"Standing_Cable_Chest_Press": {
+"name": "Kabel-Brustdrücken stehend",
+"c": 11
+},
+"Standing_Cable_Lift": {
+"name": "Kabel-Lift stehend",
+"c": 11
+},
+"Standing_Cable_Wood_Chop": {
+"name": "Holzhacker am Kabel",
+"c": 11
+},
+"Standing_Calf_Raises": {
+"name": "Wadenheben stehend",
+"c": 11
+},
+"Standing_Concentration_Curl": {
+"name": "Konzentrationscurls stehend",
+"c": 11
+},
+"Standing_Dumbbell_Calf_Raise": {
+"name": "Wadenheben stehend mit Kurzhanteln",
+"c": 11
+},
+"Standing_Dumbbell_Press": {
+"name": "Kurzhantel-Schulterdrücken stehend",
+"c": 11
+},
+"Standing_Dumbbell_Reverse_Curl": {
+"name": "Reverse Curls stehend mit Kurzhanteln",
+"c": 11
+},
+"Standing_Dumbbell_Straight-Arm_Front_Delt_Raise_Above_Head": {
+"name": "Frontheben über Kopf mit gestreckten Armen",
+"c": 11
+},
+"Standing_Dumbbell_Triceps_Extension": {
+"name": "Trizepsstrecken stehend mit Kurzhantel",
+"c": 11
+},
+"Standing_Dumbbell_Upright_Row": {
+"name": "Aufrechtes Rudern stehend mit Kurzhanteln",
+"c": 11
+},
+"Standing_Front_Barbell_Raise_Over_Head": {
+"name": "Frontheben mit Langhantel über Kopf",
+"c": 11
+},
+"Standing_Inner-Biceps_Curl": {
+"name": "Bizepscurls stehend nach außen",
+"c": 11
+},
+"Standing_Leg_Curl": {
+"name": "Beinbeuger stehend",
+"c": 11
+},
+"Standing_Low-Pulley_Deltoid_Raise": {
+"name": "Seitheben am unteren Kabel",
+"c": 12
+},
+"Standing_Low-Pulley_One-Arm_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken am unteren Kabel",
+"c": 12
+},
+"Standing_Military_Press": {
+"name": "Military Press stehend",
+"c": 12
+},
+"Standing_Olympic_Plate_Hand_Squeeze": {
+"name": "Scheiben-Fingercurls stehend",
+"c": 12
+},
+"Standing_One-Arm_Cable_Curl": {
+"name": "Einarmige Kabelcurls stehend",
+"c": 12
+},
+"Standing_One-Arm_Dumbbell_Curl_Over_Incline_Bench": {
+"name": "Einarmige Kurzhantelcurls über Schrägbank",
+"c": 12
+},
+"Standing_One-Arm_Dumbbell_Triceps_Extension": {
+"name": "Einarmiges Trizepsstrecken stehend",
+"c": 12
+},
+"Standing_Overhead_Barbell_Triceps_Extension": {
+"name": "Trizepsstrecken stehend mit Langhantel über Kopf",
+"c": 12
+},
+"Standing_Palm-In_One-Arm_Dumbbell_Press": {
+"name": "Einarmiges Kurzhanteldrücken stehend (neutral)",
+"c": 12
+},
+"Standing_Palms-In_Dumbbell_Press": {
+"name": "Kurzhantel-Schulterdrücken stehend (neutral)",
+"c": 12
+},
+"Standing_Palms-Up_Barbell_Behind_The_Back_Wrist_Curl": {
+"name": "Handgelenkcurls hinter dem Rücken stehend",
+"c": 12
+},
+"Standing_Rope_Crunch": {
+"name": "Seil-Crunch stehend",
+"c": 12
+},
+"Standing_Towel_Triceps_Extension": {
+"name": "Trizepsstrecken mit Handtuch (mit Partner)",
+"c": 12
+},
+"Step-up_with_Knee_Raise": {
+"name": "Step-up mit Knieheben",
+"c": 12
+},
+"Stiff-Legged_Barbell_Deadlift": {
+"name": "Steifbeiniges Kreuzheben mit Langhantel",
+"c": 12
+},
+"Stiff-Legged_Dumbbell_Deadlift": {
+"name": "Steifbeiniges Kreuzheben mit Kurzhanteln",
+"c": 12
+},
+"Stiff_Leg_Barbell_Good_Morning": {
+"name": "Good Morning mit gestreckten Beinen",
+"c": 12
+},
+"Straight-Arm_Dumbbell_Pullover": {
+"name": "Kurzhantel-Pullover gestreckt",
+"c": 12
+},
+"Straight-Arm_Pulldown": {
+"name": "Überzüge am Kabel (Straight-Arm Pulldown)",
+"c": 12
+},
+"Straight_Bar_Bench_Mid_Rows": {
+"name": "Rudern auf der Bank stehend (Langhantel)",
+"c": 12
+},
+"Straight_Raises_on_Incline_Bench": {
+"name": "Frontheben bäuchlings auf der Schrägbank (Langhantel)",
+"c": 12
+},
+"Sumo_Deadlift": {
+"name": "Sumo-Kreuzheben",
+"c": 12
+},
+"Sumo_Deadlift_with_Bands": {
+"name": "Sumo-Kreuzheben mit Bändern",
+"c": 12
+},
+"Sumo_Deadlift_with_Chains": {
+"name": "Sumo-Kreuzheben mit Ketten",
+"c": 12
+},
+"Suspended_Fallout": {
+"name": "Fallout im Schlingentrainer",
+"c": 12
+},
+"Suspended_Push-Up": {
+"name": "Liegestütze im Schlingentrainer",
+"c": 12
+},
+"Suspended_Reverse_Crunch": {
+"name": "Reverse Crunch im Schlingentrainer",
+"c": 12
+},
+"Suspended_Row": {
+"name": "Rudern im Schlingentrainer",
+"c": 12
+},
+"Suspended_Split_Squat": {
+"name": "Split Squat im Schlingentrainer",
+"c": 12
+},
+"Svend_Press": {
+"name": "Svend Press",
+"c": 12
+},
+"T-Bar_Row_with_Handle": {
+"name": "T-Bar-Rudern mit Griff",
+"c": 12
+},
+"Tate_Press": {
+"name": "Tate Press",
+"c": 12
+},
+"Thigh_Abductor": {
+"name": "Abduktorenmaschine",
+"c": 12
+},
+"Thigh_Adductor": {
+"name": "Adduktorenmaschine",
+"c": 12
+},
+"Tire_Flip": {
+"name": "Reifen flippen",
+"c": 12
+},
+"Trap_Bar_Deadlift": {
+"name": "Trap-Bar-Kreuzheben",
+"c": 12
+},
+"Tricep_Dumbbell_Kickback": {
+"name": "Trizeps-Kickbacks mit Kurzhantel",
+"c": 12
+},
+"Triceps_Overhead_Extension_with_Rope": {
+"name": "Trizepsstrecken über Kopf mit Seil",
+"c": 12
+},
+"Triceps_Pushdown": {
+"name": "Trizepsdrücken am Kabel",
+"c": 12
+},
+"Triceps_Pushdown_-_Rope_Attachment": {
+"name": "Trizepsdrücken am Kabel mit Seil",
+"c": 12
+},
+"Triceps_Pushdown_-_V-Bar_Attachment": {
+"name": "Trizepsdrücken mit V-Griff",
+"c": 12
+},
+"Tuck_Crunch": {
+"name": "Tuck Crunch",
+"c": 12
+},
+"Two-Arm_Dumbbell_Preacher_Curl": {
+"name": "Scottcurls mit zwei Kurzhanteln",
+"c": 12
+},
+"Two-Arm_Kettlebell_Clean": {
+"name": "Kettlebell-Umsetzen beidarmig",
+"c": 12
+},
+"Two-Arm_Kettlebell_Jerk": {
+"name": "Kettlebell Jerk beidarmig",
+"c": 12
+},
+"Two-Arm_Kettlebell_Military_Press": {
+"name": "Kettlebell-Schulterdrücken beidarmig",
+"c": 12
+},
+"Two-Arm_Kettlebell_Row": {
+"name": "Kettlebell-Rudern beidarmig",
+"c": 12
+},
+"Underhand_Cable_Pulldowns": {
+"name": "Latzug im Untergriff",
+"c": 12
+},
+"Upright_Barbell_Row": {
+"name": "Aufrechtes Rudern mit Langhantel",
+"c": 12
+},
+"Upright_Cable_Row": {
+"name": "Aufrechtes Rudern am Kabel",
+"c": 12
+},
+"Upright_Row_-_With_Bands": {
+"name": "Aufrechtes Rudern mit Band",
+"c": 13
+},
+"V-Bar_Pulldown": {
+"name": "Latzug mit V-Griff",
+"c": 13
+},
+"V-Bar_Pullup": {
+"name": "Klimmzug mit V-Griff",
+"c": 13
+},
+"Weighted_Ball_Hyperextension": {
+"name": "Rückenstrecken auf dem Gymnastikball mit Gewicht",
+"c": 13
+},
+"Weighted_Ball_Side_Bend": {
+"name": "Seitbeugen auf dem Gymnastikball mit Gewicht",
+"c": 13
+},
+"Weighted_Bench_Dip": {
+"name": "Bankdips mit Zusatzgewicht",
+"c": 13
+},
+"Weighted_Crunches": {
+"name": "Crunches mit Zusatzgewicht",
+"c": 13
+},
+"Weighted_Jump_Squat": {
+"name": "Sprungkniebeuge mit Gewicht",
+"c": 13
+},
+"Weighted_Pull_Ups": {
+"name": "Klimmzüge mit Zusatzgewicht",
+"c": 13
+},
+"Weighted_Sissy_Squat": {
+"name": "Sissy Squat mit Gewicht",
+"c": 13
+},
+"Weighted_Sit-Ups_-_With_Bands": {
+"name": "Sit-ups mit Band auf der Negativbank",
+"c": 13
+},
+"Weighted_Squat": {
+"name": "Kniebeuge mit Gewichtsgürtel (zwischen zwei Bänken)",
+"c": 13
+},
+"Wide-Grip_Barbell_Bench_Press": {
+"name": "Bankdrücken breiter Griff",
+"c": 13
+},
+"Wide-Grip_Decline_Barbell_Bench_Press": {
+"name": "Negativ-Bankdrücken breiter Griff",
+"c": 13
+},
+"Wide-Grip_Decline_Barbell_Pullover": {
+"name": "Negativ-Pullover mit Langhantel breit",
+"c": 13
+},
+"Wide-Grip_Lat_Pulldown": {
+"name": "Latzug breiter Griff",
+"c": 13
+},
+"Wide-Grip_Pulldown_Behind_The_Neck": {
+"name": "Latzug breit hinter den Nacken",
+"c": 13
+},
+"Wide-Grip_Rear_Pull-Up": {
+"name": "Klimmzug breit hinter den Nacken",
+"c": 13
+},
+"Wide-Grip_Standing_Barbell_Curl": {
+"name": "Langhantelcurls breiter Griff stehend",
+"c": 13
+},
+"Wide_Stance_Barbell_Squat": {
+"name": "Kniebeuge breiter Stand",
+"c": 13
+},
+"Wide_Stance_Stiff_Legs": {
+"name": "Steifbeiniges Kreuzheben breiter Stand",
+"c": 13
+},
+"Wind_Sprints": {
+"name": "Wind Sprints (Knieheben hängend)",
+"c": 13
+},
+"Wrist_Roller": {
+"name": "Wrist Roller (Unterarmroller)",
+"c": 13
+},
+"Wrist_Rotations_with_Straight_Bar": {
+"name": "Handgelenkrotation mit Langhantel",
+"c": 13
+},
+"Yoke_Walk": {
+"name": "Yoke Walk",
+"c": 13
+},
+"Zercher_Squats": {
+"name": "Zercher-Kniebeuge",
+"c": 13
+},
+"Zottman_Curl": {
+"name": "Zottman Curls",
+"c": 13
+},
+"Zottman_Preacher_Curl": {
+"name": "Zottman Scottcurls",
+"c": 13
+}
+}
