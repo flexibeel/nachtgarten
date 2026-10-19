@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"tests/unit/**/*.test.js\"",
-    "test:e2e": "python3 tests/e2e/smoke.py",
+    "test:e2e": "python3 tests/e2e/smoke.py && python3 tests/e2e/mama.py",
     "deploy:beta": "python3 scripts/deploy-beta.py",
     "test:release": "python3 tests/e2e/release.py",
     "deploy:release": "python3 scripts/deploy-release.py"

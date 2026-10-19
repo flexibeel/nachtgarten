@@ -44,6 +44,7 @@ def main():
         run("npm", "test", "--silent", cwd=V2)
         if not args.skip_e2e:
             run("python3", "tests/e2e/smoke.py", cwd=V2)
+            run("python3", "tests/e2e/mama.py", cwd=V2)
     ensure_clean_v2()
 
     if (MAIN / "src" / "app.html").exists():

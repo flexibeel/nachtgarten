@@ -47,6 +47,8 @@ tests/
   unit/                   node --test (Domain-Logik, Registry, reine UI-Logik)
   e2e/smoke.py            Playwright (Python) im simulierten Handy, hell und dunkel
 scripts/deploy-beta.py    Beta nach main/beta/ kopieren, committen, pushen
+scripts/deploy-release.py App in den Wurzelordner von main bauen (Tests, Service Worker, Manifest), committen, pushen
+scripts/deploylib.py      gemeinsame Bausteine beider Skripte
 docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.md
 ```
 
@@ -220,6 +222,37 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
   in Salbei, nie blockierend; unveränderte Vorlagen bleiben still.
 - Ein neues Sheet blendet einen offenen Hinweis (Toast) aus.
 
+## Entscheidungen (Veröffentlichung, 19.10.2026)
+
+- **Drei Fassungen auf einem Ursprung** (`flexibeel.github.io/nachtgarten/`): App im Wurzelordner
+  (`scripts/deploy-release.py`), Beta unter `beta/` (`scripts/deploy-beta.py`), klassische Version (v1) unter
+  `klassisch/` (auf main: `python3 build.py`, Quelltext `v1/app.html`). Cache-Präfixe: `ng2-app-`, `ng2-beta-`, `ngk-`.
+- **Service Worker der App** liegt unter derselben Adresse wie früher v1 (`/nachtgarten/sw.js`), damit installierte
+  Homebildschirm-Apps ihn automatisch übernehmen. Platzhalter in `sw.js`: `LEGACY` (beim Aktivieren und noch einmal beim
+  ersten Seitenaufruf gelöschte Caches, in der App `ng-…` von v1) und `SKIP` (Unterordner mit eigenem Service Worker:
+  `klassisch/`, `beta/`). Manifest `id`/`start_url`/`scope` bleiben `./`.
+- **Brücke zur klassischen Version** (`features/classic/classic.js`): Was v2 noch nicht kann, zeigt die Karte „Kommt gleich in
+  der neuen Version. Bis dahin: In der klassischen Version öffnen“ mit Direktsprung (`klassisch/#feed`, `#ideen`, `#training`,
+  `#umlenken`). Der Ort steht in `<meta name="ng-classic">` (App `klassisch/`, Beta `../klassisch/`). v1 liest nur `lab.*`,
+  v2 schreibt nur `ng2.*`: Was in v2 neu dazukommt, sieht die klassische Version nicht (steht auf der Karte).
+- **Kalender** (`features/training/calendar-export.js`): Wochenplan als .ics über `domain/ics.js`, Uhrzeit optional, Erinnerung 30 Min.
+- **Tests**: `tests/e2e/release.py` stellt GitHub Pages lokal nach (Ordner unter `/nachtgarten/`, alter Stand aus git, neuer
+  aus dem Arbeitsbaum von main): frische Installation, Upgrade von v1 mit Daten und aktivem v1-Service-Worker, Klassisch, Beta, offline.
+
+## Entscheidungen (Schwangerschaft & Rückbildung)
+
+- **Inhalte** (`data/homeplans.js`): `MAMA` und `BEGIN` wörtlich aus v1 (ein Test vergleicht mit `src/app.html`), nur Deutsch.
+- **Logik** (`domain/homeplans.js`): „Heute für dich“ (`todayPick`: heute erledigt → dieser Plan; sonst der Plan nach dem
+  zuletzt geschafften dieser Phase), Woche (`homeWeek`, ruhiges Ziel 3), Wochentipp, Abfragen (`mamaPrompt`: Baby da? →
+  Checkliste vor pp1/pp2 → „Neu für dich“, höchstens eine), Protokoll-Eintrag `kind: 'homeplan'`.
+- **Ansicht** (`features/mama/mama-view.js`): Kopf mit SSW bzw. Wochen nach der Geburt, eine Abfrage, eine Karte „Heute für dich“
+  mit einem Knopf, „Deine Woche“ (Tage, Tipp, Pläne der Phase); Hinweise, Sicherheit, Angaben und Quellen eingeklappt.
+- **Start** (`features/mama/start.js`): einmalige Sicherheitsbestätigung (`mama.safetyOk`), Belastungstest-Check vor `pp2b`,
+  Komplett/Kurz. **Player** (`features/player/player.js`, `#player?plan=&kurz=1&von=`, `#kurz` = b1): `domain/timer.js`,
+  Töne (`ui/beep.js`), Wake Lock, Warnzeichen, Kaiserschnitt-Hinweis. Verlassen ohne „Beenden“ pausiert, Stand in `ng2.player`,
+  „Weitermachen“ in der Mama-Ansicht. Ende: Eintrag, +15 Min. Zeitkonto, zurück.
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.
+- Beta: `python3 scripts/deploy-beta.py`, App: `python3 scripts/deploy-release.py` (Unit-, Smoke- und Mama-E2E-Tests vorher).
