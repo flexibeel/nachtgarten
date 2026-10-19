@@ -918,6 +918,8 @@ mark.mout{background:var(--pollen);color:var(--pollen-ink);border-radius:6px;pad
 .no-train .qsbtn{display:none!important}
 .sprow{display:flex;flex-direction:column;gap:6px}
 .sprow .seg{flex-wrap:wrap}
+.insthint{z-index:80}
+.steps2{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-size:1.05rem;line-height:1.4}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <filter id="mglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -2539,6 +2541,18 @@ const _privacyTileQ=privacyTile;privacyTile=function(){_privacyTileQ();startPref
 const _showQ=show;show=function(tab){_showQ(tab);if(tab==="heute")quickStart()};
 function applyStartView(){if(routeFromHash())return;if(!store.get("lab.profile",null))return;const sv=store.get("lab.startView","heute");if(sv!=="heute"&&ROUTES[sv])ROUTES[sv]()}
 
+/* ---------- Installations-Hinweis (nur auf eigener Adresse, nicht installiert) ---------- */
+let installEvt=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e});
+function isInstalled(){try{return navigator.standalone===true||matchMedia("(display-mode: standalone)").matches}catch(e){return false}}
+function installHint(force){if(!window.__standalone||isInstalled())return false;if(!force&&store.get("lab.installSkip",false))return false;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);const o=document.createElement("div");o.className="onb insthint";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");o.setAttribute("aria-label","Als App installieren");
+  o.innerHTML=`<div class="inner"><span class="eyebrow">Willkommen</span><h1>Hol dir Nachtgarten als App</h1><p class="muted">So startet sie im Vollbild vom Homebildschirm und funktioniert auch offline. Richte sie am besten erst danach ein: Was du hier im Browser einträgst, sieht die installierte App nicht.</p>
+   ${ios?`<ol class="steps2"><li>Unten in Safari auf <strong>Teilen</strong> tippen (Quadrat mit Pfeil nach oben).</li><li><strong>„Zum Home-Bildschirm“</strong> wählen und <strong>Hinzufügen</strong>.</li><li>Die App über das neue Icon öffnen.</li></ol><p class="note">Wichtig: in Safari öffnen, nicht in einer anderen App.</p>`
+     :`<ol class="steps2"><li>${installEvt?"Unten auf <strong>Installieren</strong> tippen.":"Im Browser-Menü (⋮) <strong>„App installieren“</strong> oder „Zum Startbildschirm hinzufügen“ wählen."}</li><li>Die App über das neue Icon öffnen.</li></ol>`}
+   <div class="foot" style="flex-direction:column">${!ios&&installEvt?`<button class="btn" id="instGo">Installieren</button>`:""}<button class="btn ghost" id="instLater">Erst mal im Browser ausprobieren</button></div></div>`;
+  document.body.appendChild(o);const close=()=>{o.remove();if(!store.get("lab.profile",null)&&!document.querySelector(".onb"))onboarding()};
+  $("#instLater").onclick=()=>{store.set("lab.installSkip",true);close()};const g=$("#instGo");if(g)g.onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}close()};return true}
+
 /* nav */
 let curTab="heute";
 const tabsEl=document.querySelector(".tabs"),tabInd=document.createElement("span");tabInd.className="tabind";tabsEl.prepend(tabInd);
@@ -3497,5 +3511,5 @@ $("#bodies").onclick=e=>{const el=e.target.closest("[data-m]");if(!el)return;con
   toast(`${MUS[m]}: ${c?`${fmtN(c)} ${c===1?"Satz":"Sätze"} diese Woche`:plannedMuscles().has(m)?"noch geplant":"diese Woche noch offen"}`)};
 autoFinishLive();
 
-renderIdeas();renderHeute();paintTrainTile();moveInd(true);paintAvatar();privacyTile();if(!profile)onboarding();quickStart();setTimeout(applyStartView,120);
+renderIdeas();renderHeute();paintTrainTile();moveInd(true);paintAvatar();privacyTile();if(!installHint()&&!profile)onboarding();quickStart();setTimeout(applyStartView,120);
 </script>
