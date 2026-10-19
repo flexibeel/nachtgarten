@@ -41,6 +41,15 @@ const PATHS = Object.freeze({
   shield: '<path d="M12 3.5 5 6.25v5.5c0 4.2 2.9 7.4 7 8.75 4.1-1.35 7-4.55 7-8.75v-5.5L12 3.5Z"/><path d="m9 12 2.2 2.2L15.2 10"/>',
   backspace: '<path d="M9 5.5h10a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H9L3.5 12 9 5.5Z"/><path d="m11.5 9.5 5 5M16.5 9.5l-5 5"/>',
   minus: '<path d="M5 12h14"/>',
+  star: '<path d="m12 4.2 2.35 4.76 5.25.77-3.8 3.7.9 5.23L12 16.2l-4.7 2.46.9-5.23-3.8-3.7 5.25-.77L12 4.2Z"/>',
+  starFilled: '<path fill="currentColor" d="m12 4.2 2.35 4.76 5.25.77-3.8 3.7.9 5.23L12 16.2l-4.7 2.46.9-5.23-3.8-3.7 5.25-.77L12 4.2Z"/>',
+  list: '<path d="M9 7h10.5M9 12h10.5M9 17h10.5"/><circle cx="5" cy="7" r=".9" fill="currentColor"/><circle cx="5" cy="12" r=".9" fill="currentColor"/><circle cx="5" cy="17" r=".9" fill="currentColor"/>',
+  clock: '<circle cx="12" cy="12.5" r="7.5"/><path d="M12 8.5v4l2.5 1.75M10 3h4"/>',
+  info: '<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8v.01"/>',
+  share: '<path d="M12 15V4m0 0L8 8m4-4 4 4M6.5 11H6a1.5 1.5 0 0 0-1.5 1.5v6A1.5 1.5 0 0 0 6 20h12a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 18 11h-.5"/>',
+  copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="2.5"/><path d="M15.5 8.5V6A1.5 1.5 0 0 0 14 4.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+  wind: '<path d="M4 9h10.5a2.5 2.5 0 1 0-2.5-2.5M4 13h14a2.5 2.5 0 1 1-2.5 2.5M4 17h6"/>',
+  walk: '<circle cx="13" cy="4.75" r="1.75"/><path d="m9.5 21 2-6 2.5 2.5V21M8 12l2.5-4.5 4 1 2 3.5M10.5 7.5 9.5 12l2 3"/>',
   arrowLeft: '<path d="M19 12H5m0 0 6-6m-6 6 6 6"/>',
 });
 
