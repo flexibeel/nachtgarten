@@ -231,7 +231,13 @@ export function setDots(done, target) {
  * @returns {import('../core/store.js').LiveQueue}
  */
 export function queueFromPlan(plan) {
-  return { planId: plan.id, name: plan.name, items: plan.items.map((it) => ({ exercise: it.exercise, sets: it.sets, reps: it.reps })), index: 0 };
+  return {
+    planId: plan.id,
+    name: plan.name,
+    // Pause je Übung aus dem eigenen Plan (Sekunden), sonst gilt die allgemeine Einstellung.
+    items: plan.items.map((it) => ({ exercise: it.exercise, sets: it.sets, reps: it.reps, ...(Number.isFinite(/** @type {any} */ (it).rest) ? { rest: /** @type {any} */ (it).rest } : {}) })),
+    index: 0,
+  };
 }
 
 /** Einstellung „Anleitung vor jeder Übung zeigen“. */

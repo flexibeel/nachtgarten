@@ -13,6 +13,7 @@ import { loadDb } from './exercises.js';
 import { openAllPlans, openWizard } from './plans-ui.js';
 import { planById } from '../../data/plans.js';
 import { sharePlanLink } from './plan-link.js';
+import { openCreatePlan } from './plan-editor.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -53,8 +54,9 @@ export function mountTraining(ctx, view) {
     );
   }, 'training-finder');
 
-  const plans = reactivePart(ctx, ['plans', 'settings'], (el) => {
+  const plans = reactivePart(ctx, ['plans', 'settings', 'programs'], (el) => {
     const list = ctx.store.plans.get().filter((p) => p.items.length);
+    const programs = ctx.store.programs.get();
     replace(
       el,
       card(
@@ -71,6 +73,20 @@ export function mountTraining(ctx, view) {
                 )),
             )
           : h('p', { class: 'card-hint', text: t('training.noPlans') }),
+        programs.length
+          ? h('div', { class: 'own-plans' },
+              h('p', { class: 'setting-label', text: t('editor.yourPlans') }),
+              h('ul', { class: 'plan-list' },
+                programs.map((p) =>
+                  h('li', { class: 'plan-item' },
+                    h('a', { class: 'plan-row own-plan-row', href: `#editor?id=${encodeURIComponent(p.id)}`, 'aria-label': t('editor.open', { name: p.name }) },
+                      h('span', { class: 'plan-row-texts' }, h('span', { class: 'plan-row-name', text: p.name }), h('span', { class: 'plan-row-sub', text: p.sessions.map((s) => s.name || s.id).join(' · ') })),
+                      icon('chevronRight', { size: 20 }),
+                    ),
+                  ))),
+            )
+          : null,
+        h('button', { type: 'button', class: 'button button-quiet button-wide editor-create-button', on: { click: () => openCreatePlan(ctx) } }, icon('plus'), h('span', { text: t('editor.create') })),
       ),
     );
   }, 'training-plans-part');

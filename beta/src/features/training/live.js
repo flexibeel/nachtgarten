@@ -661,7 +661,8 @@ function liveScreen(ctx, root) {
     haptic(result.pr ? [20, 60, 20, 60, 60] : 'success');
     dismissToast();
     restDoneAt = 0;
-    dispatch({ type: 'logged', at: now, restSeconds: store.settings.get().restSeconds || 90 });
+    const restFor = result.live.queue?.items.find((it) => it.exercise === exercise)?.rest;
+    dispatch({ type: 'logged', at: now, restSeconds: restFor ?? (store.settings.get().restSeconds || 90) });
     const k = setsDone(result.live, exercise);
     // Soll erreicht: gleich die nächste Übung des Plans vorbereiten (die Pause läuft weiter).
     const item = result.live.queue?.items.find((it) => it.exercise === exercise);
