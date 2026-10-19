@@ -72,17 +72,24 @@
 }
 
 .link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: flex-start;
   min-height: var(--target);
-  padding: 0;
+  padding: 0 var(--space-4);
   border: 0;
-  background: none;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
   color: var(--accent-ink);
-  font-weight: var(--fw-medium);
-  text-align: left;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-sm);
+  text-align: center;
+  text-decoration: none;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.link-button:active {
+  transform: scale(0.97);
 }
 
 .list-buttons {
@@ -888,4 +895,34 @@
 }
 .profile-companion[hidden] {
   display: none;
+}
+
+/* ---------------------------------------------------------------- App-Gefühl */
+
+/* Bedienelemente: nicht markierbar, kein Kontextmenü beim Halten, kein Tipp-Blitz. */
+button,
+.button,
+.chip,
+.segment,
+.tab,
+.tile,
+.sport-start,
+.plan-row,
+.list-button,
+.link-button,
+.back-link,
+summary,
+.sheet-header,
+.action-bar,
+.tabbar {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+img,
+svg {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
 }
