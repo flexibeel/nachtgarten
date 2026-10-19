@@ -24,21 +24,24 @@ import { PALETTE_VARS, PALETTE_WEIGHTS, PIXEL_CSS, resolveVars, parseColor, bake
 export const ANIM_VARS_CSS = `
 :where(:root){
   --anim-figure:#8C807A; --anim-figure-far:#C9BEB8; --anim-head:#F6EFEA; --anim-face:#6A5F5A;
-  --anim-work:#C4877A; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
+  --anim-work:#A9695D; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
   --anim-env:#EFE7E2; --anim-env-line:#D2C7C1; --anim-cable:#9A8F8A; --anim-band:#9DAA8F;
   --anim-floor:#E2D8D2; --anim-mat:#E3E8DD; --anim-trace:#B58C83; --anim-hole:#FFFCFA;
+  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7;
 }
 @media (prefers-color-scheme:dark){:where(:root:not([data-theme="light"])){
   --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
-  --anim-work:#D9A79B; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
+  --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
   --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
+  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
 }}
 :where(:root[data-theme="dark"]){
   --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
-  --anim-work:#D9A79B; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
+  --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
   --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
+  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
 }`;
 /** Regeln für die Szene (Farben nur über --anim-*). */
 export const ANIM_RULES_CSS = `
@@ -86,7 +89,17 @@ export const ANIM_RULES_CSS = `
 .nga .nga-gripbar{fill:var(--anim-weight)}
 .nga .nga-trace{stroke:var(--anim-trace);fill:none;stroke-width:1.1;stroke-linecap:round;stroke-dasharray:.1 2.6;opacity:.75}
 .nga .nga-trace-head{fill:var(--anim-trace);opacity:.8}
-.nga .nga-ghost{opacity:.16}
+.nga .nga-limb .nga-move{stroke:var(--anim-move)}
+.nga .nga-far .nga-move{stroke:var(--anim-move-far)}
+.nga .nga-hand.nga-move{fill:var(--anim-move)}
+.nga .nga-far .nga-hand.nga-move{fill:var(--anim-move-far)}
+.nga .nga-ghost line,.nga .nga-ghost path{stroke:var(--anim-ghost)!important}
+.nga .nga-ghost circle,.nga .nga-ghost .nga-sprout path{fill:var(--anim-ghost)!important;stroke:var(--anim-ghost)!important}
+.nga .nga-ghost .nga-sprout .nga-sprout-stem{fill:none!important}
+.nga-phase{display:flex;justify-content:center;gap:.5em;font-size:.8rem;line-height:1.3;color:var(--anim-figure);margin-top:4px;min-height:1.3em}
+.nga-phase span{opacity:.5;transition:opacity .25s,color .25s}
+.nga-phase span.on{opacity:1;color:var(--anim-trace);font-weight:700}
+.nga-phase i{font-style:normal;opacity:.4}
 .nga .nga-pairarrow{fill:none;stroke:var(--anim-trace);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .nga--thumb .nga-trace,.nga--thumb .nga-trace-head{display:none}
 .nga-px{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -152,25 +165,76 @@ export function phase(def, time) {
 }
 export { poseAt };
 
+/** Richtung: 0 = Start → Ende (inkl. Halt davor), 1 = zurück (inkl. Halt am Ende). */
+export function phaseDir(def, time) {
+  if (def.loop === "cycle") return 0;
+  const T = def.timing, c = time % (T.hold0 + T.up + T.hold1 + T.down);
+  return c < T.hold0 + T.up ? 0 : 1;
+}
+
 /* --------------------------------------------------------------- Szene */
 
 const LAYERS = ["ghost", "back", "trace", "farLeg", "farArm", "farProp", "torso", "head", "mid", "nearLeg", "nearArm", "front"];
 
+/**
+ * Welche Segmente bewegen sich deutlich? (Winkeländerung > 26° zwischen den Posen)
+ * def.emph kann das überschreiben: Liste aus "legs", "arms", "torso", "nArm", "fLeg", "rArm", …
+ */
+export function movingSegments(def) {
+  const sides = def.view === "front" ? ["l", "r"] : ["n", "f"];
+  const out = new Set();
+  if (def.emph) {
+    for (const t of def.emph) {
+      if (t === "torso") { out.add("torso"); continue; }
+      const one = /^[nflr][A-Z]/.test(t); // z. B. "nArm" = nur nahe Seite
+      const grp = (one ? t.slice(1) : t).toLowerCase();
+      const ss = one ? [t[0]] : sides;
+      const segs = grp === "legs" || grp === "leg" ? ["thigh", "shin", "foot"] : ["upper", "fore"];
+      for (const s of ss) for (const g of segs) out.add(s + "." + g);
+    }
+    return out;
+  }
+  if (def.frames.length < 2) return out;
+  const ang = (p, q) => Math.atan2(q[1] - p[1], q[0] - p[0]) * 57.2958;
+  const segs = { thigh: ["hip", "K"], shin: ["K", "A"], foot: ["heel", "toe"], upper: ["root", "E"], fore: ["E", "W"] };
+  const J0 = solve(def.frames[0], def.view);
+  for (const f of def.frames.slice(1)) {
+    const J = solve(f, def.view);
+    for (const s of sides) for (const g in segs) {
+      const [a, b] = segs[g];
+      let d = Math.abs(ang(J[s][a], J[s][b]) - ang(J0[s][a], J0[s][b])) % 360;
+      if (d > 180) d = 360 - d;
+      if (d > 26) out.add(s + "." + g);
+    }
+  }
+  return out;
+}
+
+/** Bewegt sich die Figur überhaupt nennenswert? (für Geist/Pfeil) */
+function hasMotion(def) {
+  if (def.loop === "cycle" || def.frames.length < 2 || def.breath) return false;
+  const a = solve(def.frames[0], def.view), b = solve(def.frames[def.frames.length - 1], def.view);
+  const pts = (J) => [J.H, J.S, J.Hd, ...[].concat(...(def.view === "front" ? ["l", "r"] : ["n", "f"]).map((s) => [J[s].W, J[s].A, J[s].K, J[s].E]))];
+  const pa = pts(a), pb = pts(b);
+  return pa.some((p, i) => Math.hypot(p[0] - pb[i][0], p[1] - pb[i][1]) > 5);
+}
+
 /** Baut eine Szene (Figur + Geräte) in eine Gruppe. */
-function buildScene(parent, def, { detail, ghost, pixel }) {
+function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true }) {
   const L = {};
   for (const n of LAYERS) L[n] = el("g", { class: "nga-l-" + n }, parent);
   if (def.floor !== false) {
-    const [vx, , vw] = def.frame;
+    const [vx, , vw] = frame || def.frame;
     el("line", { x1: vx + 3, x2: vx + vw - 3, y1: GROUND + 0.7, y2: GROUND + 0.7, class: "nga-floor" }, L.back);
   }
   const equip = createEquipment(L, def.props, { detail });
-  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
-  if (ghost && def.frames.length > 1) {
+  const moving = emphasis ? movingSegments(def) : new Set();
+  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving,
+    muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
+  if (ghost && hasMotion(def)) { // Endpose als einfarbige Silhouette ganz hinten
     const gl = {};
     for (const n of ["farLeg", "farArm", "torso", "head", "nearLeg", "nearArm"]) gl[n] = el("g", {}, L.ghost);
-    L.ghost.setAttribute("class", "nga-ghost");
-    createFigure(gl, { view: def.view, back: def.back, detail: false }).update(solve(def.frames[def.frames.length - 1], def.view));
+    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true }).update(solve(def.frames[def.frames.length - 1], def.view));
   }
   return {
     L,
@@ -184,9 +248,9 @@ function buildScene(parent, def, { detail, ghost, pixel }) {
 }
 
 /** Bewegungspfad (gepunktete Linie mit kleiner Pfeilspitze) für def.trace. */
-function drawTrace(layer, def) {
+function drawTrace(layer, def, headR = 2.6) {
   const tr = def.trace;
-  if (!tr) return;
+  if (!tr || !hasMotion(def)) return;
   const list = Array.isArray(tr) ? tr : [tr];
   const n = def.frames.length - 1;
   for (const t of list) {
@@ -208,7 +272,7 @@ function drawTrace(layer, def) {
     const e = sel[sel.length - 1], p = sel[sel.length - 2];
     const a = Math.atan2(e[1] - p[1], e[0] - p[0]);
     const h = (ang, r) => [e[0] + Math.cos(ang) * r, e[1] + Math.sin(ang) * r];
-    const q1 = h(a + Math.PI * 0.8, 2.6), q2 = h(a - Math.PI * 0.8, 2.6);
+    const q1 = h(a + Math.PI * 0.8, headR), q2 = h(a - Math.PI * 0.8, headR);
     el("path", { class: "nga-trace-head", d: `M${e[0].toFixed(2)} ${e[1].toFixed(2)}L${q1[0].toFixed(2)} ${q1[1].toFixed(2)}L${q2[0].toFixed(2)} ${q2[1].toFixed(2)}Z` }, layer);
   }
 }
@@ -233,7 +297,7 @@ const reducedMQ = typeof matchMedia === "function" ? matchMedia("(prefers-reduce
  * Enger, quadratischer Bildausschnitt um die Figur über alle Posen –
  * für Mini-Vorschauen, damit die Figur das kleine Feld gut ausfüllt.
  */
-export function autoFrame(def, pad = 4) {
+export function autoFrame(def, pad = 4, anchors = false) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   const take = (p, r = 0) => {
     if (!p) return;
@@ -248,6 +312,11 @@ export function autoFrame(def, pad = 4) {
       [L.E, L.W, L.G, L.K, L.A, L.toe, L.heel].forEach((p) => take(p, 3.5));
     }
   }
+  if (anchors) for (const pr of def.props || []) {
+    // feste Kabel-/Band-Ankerpunkte (Umlenkrolle) sollen sichtbar bleiben
+    if ((pr.k === "cable" || pr.k === "band") && Array.isArray(pr.from)) take(pr.from, 3);
+    if (pr.k === "pullbar") take([pr.x, pr.y], 3);
+  }
   if (def.floor !== false) y1 = Math.max(y1, GROUND + 2);
   const side = Math.max(x1 - x0, y1 - y0) + pad * 2;
   const cx = (x0 + x1) / 2;
@@ -258,7 +327,7 @@ export function autoFrame(def, pad = 4) {
 /** Größen in Pixeln. */
 export const SIZES = { thumb: 56, small: 120, large: 280 };
 /** Rastergröße (Pixel je Kante) für den Pixel-Look. */
-export const GRID = { thumb: 32, large: 64 };
+export const GRID = { thumb: 32, large: 88 };
 
 /* ------------------------------------------------------- Vektor-Darstellung */
 
@@ -269,13 +338,14 @@ function vectorRunner(wrap, def, o) {
   svg.setAttribute("focusable", "false");
   svg.setAttribute("viewBox", o.frame.join(" "));
   wrap.appendChild(svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame });
   if (o.arrow) drawTrace(scene.L.trace, def);
   let lastS = -1;
   scene.render(def.frames[0]);
   return {
     draw(time) {
       const s = phase(def, time);
+      o.onPhase && o.onPhase(time);
       if (Math.abs(s - lastS) < 1e-4) return; // in Haltephasen nichts neu zeichnen
       lastS = s;
       scene.render(poseAt(def.frames, s));
@@ -290,14 +360,14 @@ function vectorRunner(wrap, def, o) {
       wrap.appendChild(s2);
       if (o.thumb) {
         s2.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
-        buildScene(el("g", {}, s2), def, { detail: false }).render(def.reducedPose || last);
+        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame }).render(def.reducedPose || last);
         return;
       }
       wrap.classList.add("nga-pair");
       const gap = w * 0.16;
       s2.setAttribute("viewBox", `${x} ${y} ${w * 2 + gap} ${h}`);
-      buildScene(el("g", {}, s2), def, { detail: true }).render(def.frames[0]);
-      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true }).render(last);
+      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame }).render(def.frames[0]);
+      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame }).render(last);
       const ax = x + w + gap / 2, ay = y + h * 0.5;
       el("path", { class: "nga-pairarrow", d: `M${ax - 4} ${ay}h8m-3 -3l3 3l-3 3` }, s2);
     },
@@ -313,8 +383,8 @@ const spriteCache = new Map();
 function spritePositions(def) {
   const n = def.frames.length - 1;
   if (def.loop === "cycle") { const K = 8; return Array.from({ length: K }, (_, i) => (i / K) * n); }
-  const slow = def.timing.up >= 1.6;
-  const K = slow ? 5 : n > 1 ? 7 : 6;
+  const slow = def.timing.up >= 1.9;
+  const K = slow ? 5 : n > 1 ? 8 : 7;
   return Array.from({ length: K }, (_, i) => (i / (K - 1)) * n);
 }
 
@@ -336,7 +406,8 @@ function pixelRunner(wrap, def, o) {
   svg.setAttribute("viewBox", o.frame.join(" "));
   svg.setAttribute("width", grid); svg.setAttribute("height", grid);
   const style = el("style", {}, svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame });
+  if (o.arrow) drawTrace(scene.L.trace, def, 3.8); // Pixel-Bewegungsspur
 
   async function prepare() {
     const my = ++token;
@@ -394,6 +465,7 @@ function pixelRunner(wrap, def, o) {
   return {
     draw(time) {
       const s = phase(def, time);
+      o.onPhase && o.onPhase(time);
       const i = def.loop === "cycle" ? Math.floor((s / n) * K + 1e-6) % K : Math.round((s / n) * (K - 1));
       show(i);
     },
@@ -413,8 +485,9 @@ function pixelRunner(wrap, def, o) {
  *   size: "thumb" | "small" | "large" | Zahl (px)
  *   renderer: "pixel" (Standard, Sprite-Look) | "vector" (glatt, stufenlos)
  *   muscles: überschreibt die getönten Muskeln; label: Bildbeschreibung
- *   arrow: Bewegungspfeil (nur vector, Standard: groß ja), ghost: Endpose als Schatten (vector)
- *   grid: Pixelraster (Standard 64 groß / 32 klein)
+ *   arrow: Bewegungsspur mit Pfeil (Standard: groß ja), ghost: Endpose als blasse Silhouette (Standard: groß ja)
+ *   phases: Phasen-Beschriftung unter der großen Ansicht („runter · hoch“, Standard: groß ja)
+ *   grid: Pixelraster (Standard 88 groß / 32 klein)
  *   reduced: true/false erzwingt bzw. verhindert die ruhige Darstellung
  *   offset: Startversatz in Sekunden (damit nicht alle im Gleichtakt laufen)
  * @returns {{play():void, pause():void, toggle():void, seek(sec:number):void, destroy():void, playing:boolean, def:object}}
@@ -428,7 +501,8 @@ export function createExerciseAnim(host, cfg = {}) {
   const px = typeof size === "number" ? size : SIZES[size] || SIZES.large;
   const thumb = px <= 72;
   const reduced = cfg.reduced ?? !!(reducedMQ && reducedMQ.matches);
-  const frame = thumb ? def.thumbFrame || autoFrame(def) : def.frame;
+  // Ausschnitt: Mini eng um die Figur, groß etwas luftiger inkl. Kabelrollen
+  const frame = thumb ? def.thumbFrame || autoFrame(def) : def.largeFrame || autoFrame(def, 7, true);
   const renderer = cfg.renderer === "vector" ? "vector" : "pixel";
 
   const wrap = document.createElement("div");
@@ -438,8 +512,29 @@ export function createExerciseAnim(host, cfg = {}) {
   wrap.setAttribute("aria-label", cfg.label || def.label || "Übungsanimation");
   host.appendChild(wrap);
 
-  const o = { thumb, frame, ghost: cfg.ghost, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
-    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb]) };
+  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
+    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow]) };
+  // Phasen-Beschriftung (z. B. „runter · hoch“): aktive Richtung wird betont
+  let phaseEl = null;
+  if ((cfg.phases ?? !thumb) && !reduced && def.phases) {
+    phaseEl = document.createElement("div");
+    phaseEl.className = "nga-phase";
+    phaseEl.setAttribute("aria-hidden", "true");
+    const labels = def.loop === "cycle" ? [def.phases[0]] : def.phases;
+    labels.forEach((t, i) => {
+      if (i) phaseEl.append(Object.assign(document.createElement("i"), { textContent: "·" }));
+      phaseEl.append(Object.assign(document.createElement("span"), { textContent: t }));
+    });
+    wrap.after(phaseEl);
+    let last = -1;
+    const spans = phaseEl.querySelectorAll("span");
+    o.onPhase = (time) => {
+      const d = phaseDir(def, time);
+      if (d === last) return;
+      last = d;
+      spans.forEach((sp, i) => sp.classList.toggle("on", i === d || spans.length === 1));
+    };
+  }
   const runner = renderer === "pixel" ? pixelRunner(wrap, def, o) : vectorRunner(wrap, def, o);
   const inst = { def, playing: false, renderer };
 
@@ -481,7 +576,7 @@ export function createExerciseAnim(host, cfg = {}) {
   inst.destroy = () => {
     inst.pause(); io && io.disconnect();
     document.removeEventListener("visibilitychange", onVis);
-    runner.destroy(); wrap.remove();
+    runner.destroy(); wrap.remove(); phaseEl && phaseEl.remove();
   };
   sync();
   return inst;

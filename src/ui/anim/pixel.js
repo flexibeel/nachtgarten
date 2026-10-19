@@ -11,15 +11,15 @@
 
 /** Namen der Farb-Variablen (ohne „--anim-“), die die Palette bilden. */
 export const PALETTE_VARS = ["figure", "figure-far", "head", "face", "work", "sprout", "weight", "weight-back",
-  "env", "env-line", "cable", "band", "floor", "mat", "hole"];
+  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace"];
 /** Gewichte für die Mehrheitswahl: feine Details setzen sich eher durch. */
-export const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.3, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3 };
+export const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.4, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3, trace: 2.6, ghost: 0.8 };
 
 /** Liest die aktuellen Farbwerte (Theme-abhängig) am Element. */
 export function resolveVars(elm) {
   const cs = getComputedStyle(elm);
   const out = {};
-  for (const n of PALETTE_VARS.concat(["trace"])) out[n] = cs.getPropertyValue("--anim-" + n).trim() || "#888";
+  for (const n of PALETTE_VARS) out[n] = cs.getPropertyValue("--anim-" + n).trim() || "#888";
   return out;
 }
 
@@ -44,7 +44,9 @@ export function bakeCss(css, vars) {
 export const PIXEL_CSS = `
 .nga .nga-cable{stroke-width:1.7}
 .nga .nga-env,.nga .nga-tower{stroke:none}
-.nga .nga-plate-ring,.nga .nga-trace,.nga .nga-trace-head{display:none}
+.nga .nga-plate-ring{display:none}
+.nga .nga-trace{stroke-width:1.9;stroke-dasharray:2.2 2.4;stroke-linecap:butt;opacity:1}
+.nga .nga-trace-head{opacity:1}
 .nga .nga-floor{stroke-width:1.7}
 .nga .nga-dbbar{stroke-width:2}
 .nga .nga-band{stroke-width:2}

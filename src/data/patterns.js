@@ -89,7 +89,7 @@ export const PATTERNS = {
       Object.assign(B, { nU: 84, nL: 88, fU: 80, fL: 84 });
     }
     if (o.chair) { props.unshift({ k: "chair", x: 33, y: 73.5 }); Object.assign(B, { hx: 36, hy: 68, tr: 34 }); }
-    return { label: "Kniebeuge", frame: FR_STAND, frames: [A, B], props, muscles: ["quads", "glutes"],
+    return { label: "Kniebeuge", frame: FR_STAND, frames: [A, B], props, muscles: ["quads", "glutes"], emph: ["legs"],
       trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -109,7 +109,7 @@ export const PATTERNS = {
     } else if (eq === "koerper") {
       Object.assign(A, { nWr: [8, -7], fWr: [7.5, -7] }); Object.assign(B, { nWr: [8, -7], fWr: [7.5, -7] });
     } else props.push(...held(eq));
-    return { label: deep ? "Kreuzheben" : "Hüftbeuge", frame: FR_STAND, frames: [A, B], props,
+    return { label: deep ? "Kreuzheben" : "Hüftbeuge", frame: FR_STAND, frames: [A, B], props, emph: ["torso"],
       muscles: ["hams", "glutes", "lowerback"], trace: { at: (J) => J.S, off: -6 } };
   },
 
@@ -128,7 +128,7 @@ export const PATTERNS = {
       M = P(A, { hx: 45, hy: HY + 1.5, nA: [54, 80] });
       B = P(A, { hx: 47, hy: 70.5, tr: 6, nA: [62.5, AY], fA: [26, 89.6], fF: 30 });
     }
-    return { label: "Ausfallschritt", frame: FR_STAND, frames: [A, M, B], props: held(eq),
+    return { label: "Ausfallschritt", frame: FR_STAND, frames: [A, M, B], props: held(eq), emph: ["legs"],
       timing: T(0.3, 1.0, 0.35, 1.0), muscles: ["quads", "glutes"], trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -140,12 +140,12 @@ export const PATTERNS = {
     if (o.variant === "kneel") {
       const A = P(base, { hx: 42, hy: 67, tr: 0, fA: [22, 89.8], fF: 0 });
       const B = P(A, { hx: 46.5, hy: 68.5, tr: -6 });
-      return { label: "Halbkniestand", frame: FR_STAND, frames: [A, B], timing: T(0.6, 1.4, 0.8, 1.4),
+      return { label: "Halbkniestand", frame: FR_STAND, frames: [A, B], phases: ["Hüfte vor", "zurück"], timing: T(0.6, 1.4, 0.8, 1.4),
         props: [{ k: "mat", x: 14, w: 60 }], muscles: ["quads"] };
     }
     const A = P(base, { hx: 45, hy: 57.5, tr: 2 });
     const B = P(A, { hx: 45.5, hy: 71 });
-    return { label: "Split Squat", frame: FR_STAND, frames: [A, B], props: held(eq),
+    return { label: "Split Squat", frame: FR_STAND, frames: [A, B], props: held(eq), emph: ["legs"],
       muscles: ["quads", "glutes"], trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -187,6 +187,7 @@ export const PATTERNS = {
         const props = wall ? [{ k: "wall", x: 80 }] : [{ k: "pad", x: 88, y: 64.6, w: 30, h: 3.2, r: 1.2 },
           { k: "frame", d: "M78 66V94M98 66V94", sw: 2 }];
         return { label: wall ? "Liegestütz an der Wand" : "Liegestütz erhöht", frame: FR_STAND, frames: [A, B], props,
+          phases: ["wegdrücken", "zurück"],
           muscles: ["chest", "triceps"], trace: { at: (J) => J.S, off: -7 } };
       }
       const knee = v === "knee";
@@ -202,14 +203,14 @@ export const PATTERNS = {
       };
       const A = P(A0, fix(A0), { nW: [67, 91.4], fW: [66.4, 91.6], nEb: 1, fEb: 1, nk: -10 });
       const B = P(B0, fix(B0), { nW: [67, 91.4], fW: [66.4, 91.6], nEb: 1, fEb: 1, nk: -10 });
-      return { label: knee ? "Liegestütz auf den Knien" : "Liegestütz", frame: FR_FLOOR, frames: [A, B],
+      return { label: knee ? "Liegestütz auf den Knien" : "Liegestütz", frame: FR_FLOOR, frames: [A, B], phases: ["hochdrücken", "senken"],
         props: [{ k: "mat", x: 8, w: 76 }], muscles: ["chest", "triceps", "shoulders"], trace: { at: (J) => J.S, off: -7 } };
     }
     if (eq === "maschine" || (eq === "kabel" && v !== "stand")) {
       // Sitzend: Brustpresse an der Maschine
       const base = { hx: 46, hy: 64.5, tr: -6, nA: [64, AY], fA: [62.5, AY], nk: 4 };
-      const A = P(base, { nW: [57, 47], fW: [56.4, 47.4] });
-      const B = P(base, { nW: [68.5, 47.5], fW: [68, 47.8] });
+      const A = P(base, { nW: [54, 47.5], fW: [53.4, 47.9] });
+      const B = P(base, { nW: [68.8, 47.5], fW: [68.3, 47.8] });
       const props = [...machineSeat(46, 69, 38.8, 47, -6),
         { k: "frame", d: "M84 94V16H70", sw: 2.2 }, { k: "grip", at: g("n"), pivot: [70, 16] }];
       return { label: "Brustpresse", frame: FR_STAND, frames: [A, B], props, muscles: ["chest", "triceps"],
@@ -242,7 +243,7 @@ export const PATTERNS = {
       B = P(base, { nU: 178, nUl: 1, nW: [37.5, 43.6], fU: 178, fUl: 1, fW: [37.1, 44] });
     }
     props.push(...held(eq === "kurzhantel" ? "kurzhantel" : eq === "sz" ? "sz" : "langhantel"));
-    return { label: "Bankdrücken", frame: FR_FLOOR, frames: [A, B], props, muscles: ["chest", "triceps", "shoulders"],
+    return { label: "Bankdrücken", frame: FR_FLOOR, frames: [A, B], props, phases: ["hochdrücken", "senken"], muscles: ["chest", "triceps", "shoulders"],
       trace: { at: g("n"), off: 7 } };
   },
 
@@ -281,8 +282,8 @@ export const PATTERNS = {
     const eq = o.equipment || "langhantel";
     if (eq === "kabel" || eq === "band" && o.variant === "seated") {
       const base = { hx: 34, hy: 77, nA: [69, 79.5], fA: [68, 80], nF: 80, fF: 80 };
-      const A = P(base, { tr: 22, nW: [64, 64], fW: [63.5, 64.4] });
-      const B = P(base, { tr: -6, nW: [47.5, 66], fW: [47, 66.4] });
+      const A = P(base, { tr: 30, nW: [66.5, 64], fW: [66, 64.4] });
+      const B = P(base, { tr: -10, nW: [46.5, 66], fW: [46, 66.4] });
       if (o.uni) { A.fW = [52, 70]; B.fW = [52, 70]; }
       const py = [84.6, 70];
       const props = [{ k: "pad", x: 34, y: 82.6, w: 18, h: 3.4 }, { k: "frame", d: "M28 84V94M40 84V94", sw: 2 },
@@ -332,12 +333,12 @@ export const PATTERNS = {
       const bar = [52, 13];
       const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 10, nS: -22, fT: 6, fS: -28, nk: -6 };
       const B = P(A, { hy: 41, nk: -14, nEb: 1, fEb: 1 });
-      return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B],
+      return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B], phases: ["hochziehen", "runter"],
         props: [{ k: "pullbar", x: bar[0], y: bar[1] }], muscles: ["back", "biceps"], trace: { at: (J) => J.S, off: -7 } };
     }
     const base = { hx: 48, hy: 66.5, nA: [66, AY], fA: [64.5, AY], nk: -6 };
-    const A = P(base, { tr: -4, nW: [52, 20], fW: [51.6, 20.4] });
-    const B = P(base, { tr: -16, nW: [50.5, 45], fW: [50, 45.4] });
+    const A = P(base, { tr: 0, nW: [52.5, 19], fW: [52.1, 19.4] });
+    const B = P(base, { tr: -20, nW: [49.5, 45.5], fW: [49, 45.9] });
     const handle = HD(o, "Lat-Stange");
     const props = [{ k: "pad", x: 48, y: 71, w: 17, h: 3.4 }, { k: "frame", d: "M48 73V94M30 94V6H54", sw: 2.2 },
       { k: "pad", x: 64.5, y: 58.4, w: 9, h: 3.6, r: 1.8 }, { k: "frame", d: "M64.5 60.4V64", sw: 1.6 },
@@ -376,7 +377,7 @@ export const PATTERNS = {
     const seated = !!o.seated;
     const base = seated ? { hx: 42, hy: 65.5, tr: 0, nA: [60, AY], fA: [58.5, AY] } : P(STAND, { hx: 47 });
     let A = P(base, { nU: 4, nL: 4, fU: 3, fL: 3 });
-    let B = P(base, { nU: 14, nL: 150, fU: 13, fL: 149 });
+    let B = P(base, { nU: 18, nL: 156, fU: 17, fL: 155 });
     const props = seated ? [{ k: "chair", x: 40, y: 72 }] : [];
     if (v === "bayes") { // hinter dem Körper, Kabel von hinten
       Object.assign(base, { nA: [58, AY], fA: [38, AY], fF: 70 });
@@ -404,7 +405,7 @@ export const PATTERNS = {
         const A = P(base, { nU: 154, nL: 296, fU: 153, fL: 295 });
         const B = P(base, { nU: 154, nL: 160, fU: 153, fL: 159 });
         const py = pulleyPos(14, H(o, "mittel"));
-        return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B],
+        return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B], phases: ["strecken", "beugen"],
           props: [tower(14, H(o, "mittel")), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
           muscles: ["triceps"], trace: { at: g("n"), off: 6 } };
       }
@@ -412,13 +413,13 @@ export const PATTERNS = {
       const base = { hx: 46, hy: 64.5, tr: 0, nA: [64, AY], fA: [62.5, AY] };
       const A = P(base, { nU: 176, nL: 322, fU: 175, fL: 321 });
       const B = P(base, { nU: 176, nL: 178, fU: 175, fL: 177 });
-      return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B],
+      return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B], phases: ["strecken", "beugen"],
         props: [...machineSeat(46, 69, 38.8, 47, 0), { k: "dumbbell", at: mid, a: (J) => J.n.aL + 90 }],
         muscles: ["triceps"], trace: { at: g("n"), off: -6 } };
     }
     const base = P(STAND, { hx: 46, tr: 12, nA: [49, AY], fA: [47.5, AY], nk: 4 });
-    const A = P(base, { nU: 8, nL: 128, fU: 7, fL: 127 });
-    const B = P(base, { nU: 6, nL: 8, fU: 5, fL: 7 });
+    const A = P(base, { nU: 8, nL: 140, fU: 7, fL: 139 });
+    const B = P(base, { nU: 4, nL: 2, fU: 3, fL: 1 });
     const py = pulleyPos(84, H(o, "hoch"), -1);
     return { label: "Trizepsdrücken", frame: FR_STAND, frames: [A, B],
       props: [tower(84, H(o, "hoch"), -1), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
@@ -428,7 +429,7 @@ export const PATTERNS = {
   /** Seitheben (Frontansicht); variant "circle" = Armkreisen */
   latRaise(o) {
     const eq = o.equipment || "kurzhantel";
-    const top = o.variant === "circle" ? 168 : 86;
+    const top = o.variant === "circle" ? 168 : 90;
     const A = P(FSTAND, { lU: 8, lL: 8, rU: 8, rL: 8 });
     const B = P(FSTAND, { lU: top, lL: top - 8, rU: top, rL: top - 8 });
     const props = [];
@@ -536,15 +537,16 @@ export const PATTERNS = {
     } else if (eq === "band") props.push({ k: "band", from: g("l"), to: g("r"), sag: 0.5, layer: "front" });
     else if (eq === "maschine") props.push({ k: "frame", d: "M12 94V24H88V94", sw: 2.2 }, { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
     else if (eq === "kurzhantel") props.push(db("l"), db("r"));
-    return { label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
+    return { phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
       muscles: ["shoulders", "back"], trace: { at: g("r"), off: -6 } };
   },
 
   /** Face Pull am Kabel (Seitenansicht) */
   facePull(o) {
     const base = P(STAND, { hx: 44, tr: -4, nA: [48, AY], fA: [38, AY], fF: 70 });
-    const A = P(base, { nW: [67.5, 32], fW: [67, 32.4] });
-    const B = P(base, { nW: [52, 27], fW: [51.5, 27.4], nEb: 1, fEb: 1 });
+    // Start: Arme lang zur Rolle; Ende: Hände neben dem Kopf, Ellbogen hoch und hinten
+    const A = P(base, { nU: 92, nUl: 1, nW: [69, 32.5], fU: 92, fUl: 1, fW: [68.5, 32.9] });
+    const B = P(base, { nU: -112, nUl: 0.62, nWr: [3.6, 7.4], fU: -112, fUl: 0.62, fWr: [3.2, 7.4] });
     const py = pulleyPos(86, H(o, "hoch") === "hoch" ? 26 : H(o, "hoch"), -1);
     return { label: "Face Pull", frame: FR_STAND, frames: [A, B],
       props: [tower(86, py[1], -1), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
@@ -570,7 +572,7 @@ export const PATTERNS = {
       const A = P(base, { tr: 22, nk: 6 });
       const B = P(base, { hx: 43.5, hy: 71, tr: 82, sp: 3.4, nk: 22 });
       const py = pulleyPos(84, "hoch", -1);
-      return { label: "Kabel-Crunch kniend", frame: FR_STAND, frames: [A, B],
+      return { label: "Kabel-Crunch kniend", frame: FR_STAND, frames: [A, B], emph: ["torso"],
         props: [{ k: "mat", x: 20, w: 50 }, tower(84, "hoch", -1), { k: "cable", from: py, to: mid, handle: "Seil" }],
         muscles: ["abs"], trace: { at: (J) => J.Hd, off: 8 } };
     }
@@ -584,7 +586,7 @@ export const PATTERNS = {
     const base = { hx: 56, hy: 87, nA: [72, AY], fA: [70.5, AY], nWr: [-4.5, 8.5], fWr: [-4.8, 8.5], nEb: 1, fEb: 1 };
     const A = P(base, { tr: -90, nk: 0 });
     const B = P(base, { tr: -58, sp: 2.4, nk: 18 });
-    return { label: "Crunch", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 14, w: 72 }], muscles: ["abs"],
+    return { label: "Crunch", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 14, w: 72 }], muscles: ["abs"], emph: ["torso"],
       trace: { at: (J) => J.S, off: 7 } };
   },
 
@@ -628,7 +630,7 @@ export const PATTERNS = {
     if (o.variant === "heel") {
       const A = { hx: 52, hy: 87, tr: -90, nA: [67, AY], fA: [65.5, AY], nU: -88, nL: -88, fU: -88, fL: -88, nF: 80 };
       const B = P(A, { nA: [88.4, 90.5], nF: 60 });
-      return { label: "Heel Slides", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 10, w: 82 }],
+      return { label: "Heel Slides", frame: FR_FLOOR, frames: [A, B], phases: ["Ferse weg", "zurück"], props: [{ k: "mat", x: 10, w: 82 }],
         muscles: ["abs"], timing: T(0.4, 1.2, 0.5, 1.2), pelvic: true, trace: { at: (J) => J.n.A, off: 6 } };
     }
     const A = { hx: 56, hy: 87, tr: -90, nT: 180, nS: 90, fT: 178, fS: 88, nF: 90, fF: 90, nU: 180, nL: 180, fU: 178, fL: 178 };
@@ -780,7 +782,7 @@ export const PATTERNS = {
   catCow() {
     const A = P(QUAD, { sp: -2.4, nk: -30 });
     const B = P(QUAD, { sp: 3.4, nk: 38, hy: QUAD.hy - 1 });
-    return { label: "Katze-Kuh", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 12, w: 74 }],
+    return { label: "Katze-Kuh", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 12, w: 74 }], emph: ["torso"],
       timing: T(0.5, 1.5, 0.6, 1.5), muscles: ["lowerback"] };
   },
 
@@ -806,6 +808,7 @@ export const PATTERNS = {
       const close = { lT: 6, lS: 2, rT: 6, rS: 2 }, open = { lT: 64, lS: 8, rT: 64, rS: 8 };
       const A = P(seat, add2 ? open : close), B = P(seat, add2 ? close : open);
       return { label: add2 ? "Adduktoren" : "Abduktoren", view: "front", frame: FR_STAND, frames: [A, B],
+        phases: add2 ? ["Knie zusammen", "öffnen"] : ["Knie auseinander", "zurück"],
         props: [{ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "pad", x: 50, y: 69, w: 26, h: 4 },
           { k: "frame", d: "M50 71V94", sw: 2.2 },
           { k: "pad", at: (J) => add(J.l.K, [add2 ? 3.4 : -3.8, 0]), w: 3, h: 8, layer: "front" },
@@ -826,6 +829,7 @@ export const PATTERNS = {
       props = [tower(10, "tief", 1), { k: "cable", from: pulleyPos(10, "tief", 1), to: (J) => J.r.A, handle: "Fußschlaufe", layer: "back" }];
     }
     return { label: addn ? "Adduktion am Kabel" : "Abduktion am Kabel", view: "front", frame: FR_STAND, frames: [A, B], props,
+      phases: addn ? ["Bein zur Mitte", "zurück"] : ["Bein zur Seite", "zurück"],
       muscles: addn ? ["quads"] : ["glutes"], trace: { at: (J) => (addn ? J.l.A : J.r.A), off: -6 } };
   },
 
@@ -860,7 +864,8 @@ export const PATTERNS = {
     }
     const In = P(A, { br: 1, pf: 0 }), Out = P(A, { br: 0, pf: 1 });
     if (v === "kind") { In.hy -= 1.2; In.sp = 2.4; }
-    return { label: pelvic ? "Beckenboden & Atmung" : "Atmung", view, frame, frames: [In, Out], props,
+    return { phases: pelvic ? ["ausatmen & anspannen", "einatmen & lösen"] : ["ausatmen", "einatmen"],
+      label: pelvic ? "Beckenboden & Atmung" : "Atmung", view, frame, frames: [In, Out], props,
       timing: T(0.3, 2.6, 0.4, 2.2), breath: true, pelvic, muscles: [], reducedPose: In };
   },
 };
@@ -885,10 +890,31 @@ export const PATTERN_NAMES = Object.keys(PATTERNS);
  * Unbekannte Muster fallen auf "breathing" (ruhig, ungefährlich) zurück.
  */
 export function buildPattern(name, opts = {}) {
-  const fn = PATTERNS[name] || PATTERNS.breathing;
-  const d = fn(opts) || {};
+  const key = PATTERNS[name] ? name : "breathing";
+  const d = PATTERNS[key](opts) || {};
+  // Tempo: Arbeitsphase etwas langsamer, kurze Pausen an Start und Ende (gut zum Mitschauen)
+  const t = { ...(d.timing || T()) };
+  if (t.up < 1.9) { t.up *= 1.25; t.down *= 1.15; }
+  t.hold0 = Math.max(t.hold0, 0.45); t.hold1 = Math.max(t.hold1, 0.45);
   return {
-    view: "side", frame: FR_STAND, loop: "pingpong", timing: T(), ease: "sine",
-    props: [], muscles: [], ...d, name: PATTERNS[name] ? name : "breathing",
+    view: "side", frame: FR_STAND, loop: "pingpong", ease: "sine",
+    props: [], muscles: [], phases: PHASES[key], ...d, timing: t, name: key,
   };
 }
+
+/** Phasen-Beschriftung je Muster: [Start → Ende, zurück]. Muster können eigene setzen. */
+export const PHASES = {
+  squat: ["runter", "hoch"], hinge: ["Hüfte zurück", "aufrichten"], lunge: ["Schritt & runter", "zurück"],
+  splitsquat: ["runter", "hoch"], hipthrust: ["Hüfte hoch", "senken"], pushH: ["drücken", "zurück"],
+  dip: ["runter", "hoch"], pushV: ["hochdrücken", "senken"], pullH: ["ziehen", "zurück"], pullV: ["ziehen", "zurück"],
+  legRaise: ["Beine hoch", "senken"], curl: ["hoch", "runter"], triExt: ["runterdrücken", "zurück"],
+  latRaise: ["seitlich hoch", "senken"], frontRaise: ["nach vorn hoch", "senken"], uprightRow: ["hochziehen", "senken"],
+  shrug: ["Schultern hoch", "senken"], fly: ["zusammen", "öffnen"], rearFly: ["auseinander", "zurück"],
+  facePull: ["zum Gesicht", "zurück"], pullover: ["runterziehen", "zurück"], crunch: ["einrollen", "ablegen"],
+  plank: ["halten", "ruhig atmen"], sidePlank: ["Hüfte hoch", "senken"], birdDog: ["Arm & Bein strecken", "zurück"],
+  deadBug: ["strecken", "zurück"], kickback: ["Bein nach hinten", "zurück"], calfRaise: ["Fersen hoch", "senken"],
+  legPress: ["wegdrücken", "beugen"], legExt: ["strecken", "beugen"], legCurl: ["beugen", "strecken"],
+  rotation: ["diagonal ziehen", "zurück"], pallof: ["wegdrücken", "zurück"], carry: ["gehen"], march: ["marschieren"],
+  catCow: ["Katzenbuckel", "Hohlkreuz"], clamshell: ["Knie öffnen", "schließen"], hipAbd: ["Bein zur Seite", "zurück"],
+  sway: ["Becken links", "rechts"], breathing: ["ausatmen", "einatmen"],
+};

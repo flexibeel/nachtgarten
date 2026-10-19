@@ -325,7 +325,9 @@ const HL_FRONT = {
 /**
  * Erstellt die Figur in den gegebenen Ebenen.
  * layers: {farLeg, farArm, torso, head, nearLeg, nearArm}
- * opts: {view, back, detail, muscles, breath, pelvic}
+ * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost}
+ *   moving: Set bewegter Segmente ("n.thigh", "f.fore", "l.upper", "torso", …) → Altrosa-Betonung
+ *   ghost:  ganze Figur einfarbig als „Geist“ (Endpose)
  * Gibt {update(J)} zurück.
  */
 function createFigure(layers, opts = {}) {
@@ -336,6 +338,8 @@ function createFigure(layers, opts = {}) {
   const sides = view === "front" ? ["l", "r"] : ["f", "n"];
   const parts = {};
   const hls = []; // {spec, el, side}
+  const mv = opts.moving || new Set();
+  const M = (key) => (mv.has(key) ? " nga-move" : "");
 
   for (const s of sides) {
     const far = view === "side" && s === "f";
@@ -344,12 +348,12 @@ function createFigure(layers, opts = {}) {
     // Rückansicht: Arme hinter dem Rumpf (Hände vor dem Körper sind verdeckt)
     const armG = el("g", { class: cls }, view === "side" ? (far ? layers.farArm : layers.nearArm) : opts.back ? layers.farArm : layers.nearArm);
     const P = (parts[s] = {
-      thigh: el("line", { "stroke-width": WID.thigh }, legG),
-      shin: el("line", { "stroke-width": WID.shin }, legG),
-      foot: el("line", { "stroke-width": WID.foot }, legG),
-      upper: el("line", { "stroke-width": WID.upper }, armG),
-      fore: el("line", { "stroke-width": WID.fore }, armG),
-      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" }, armG),
+      thigh: el("line", { "stroke-width": WID.thigh, class: M(s + ".thigh") }, legG),
+      shin: el("line", { "stroke-width": WID.shin, class: M(s + ".shin") }, legG),
+      foot: el("line", { "stroke-width": WID.foot, class: M(s + ".foot") }, legG),
+      upper: el("line", { "stroke-width": WID.upper, class: M(s + ".upper") }, armG),
+      fore: el("line", { "stroke-width": WID.fore, class: M(s + ".fore") }, armG),
+      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
       legG, armG,
     });
     for (const m of muscles) for (const spec of HL[m]) {
@@ -366,7 +370,7 @@ function createFigure(layers, opts = {}) {
   }
 
   const torsoG = el("g", { class: "nga-limb" }, layers.torso);
-  const torso = el(view === "front" ? "line" : "path", {
+  const torso = el(view === "front" ? "line" : "path", { class: M("torso").trim(),
     "stroke-width": view === "front" ? WID.torsoFront : WID.torso, fill: "none" }, torsoG);
   for (const m of muscles) for (const spec of HL[m]) {
     if (spec.seg !== "torso") continue;
@@ -379,6 +383,7 @@ function createFigure(layers, opts = {}) {
   if (opts.breath) breathEl = el("ellipse", { class: "nga-breath" }, torsoG);
   if (opts.pelvic) pelvicEl = el("ellipse", { class: "nga-pelvic", rx: 2.6, ry: 1.5 }, torsoG);
 
+  if (opts.ghost) for (const k in layers) layers[k].classList.add("nga-ghost");
   const headG = el("g", { class: "nga-head" }, layers.head);
   const cheeks = [];
   el("circle", { r: SEG.headR, cx: 0, cy: 0, class: "nga-skull" }, headG);
@@ -845,7 +850,7 @@ const PATTERNS = {
       Object.assign(B, { nU: 84, nL: 88, fU: 80, fL: 84 });
     }
     if (o.chair) { props.unshift({ k: "chair", x: 33, y: 73.5 }); Object.assign(B, { hx: 36, hy: 68, tr: 34 }); }
-    return { label: "Kniebeuge", frame: FR_STAND, frames: [A, B], props, muscles: ["quads", "glutes"],
+    return { label: "Kniebeuge", frame: FR_STAND, frames: [A, B], props, muscles: ["quads", "glutes"], emph: ["legs"],
       trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -865,7 +870,7 @@ const PATTERNS = {
     } else if (eq === "koerper") {
       Object.assign(A, { nWr: [8, -7], fWr: [7.5, -7] }); Object.assign(B, { nWr: [8, -7], fWr: [7.5, -7] });
     } else props.push(...held(eq));
-    return { label: deep ? "Kreuzheben" : "Hüftbeuge", frame: FR_STAND, frames: [A, B], props,
+    return { label: deep ? "Kreuzheben" : "Hüftbeuge", frame: FR_STAND, frames: [A, B], props, emph: ["torso"],
       muscles: ["hams", "glutes", "lowerback"], trace: { at: (J) => J.S, off: -6 } };
   },
 
@@ -884,7 +889,7 @@ const PATTERNS = {
       M = P(A, { hx: 45, hy: HY + 1.5, nA: [54, 80] });
       B = P(A, { hx: 47, hy: 70.5, tr: 6, nA: [62.5, AY], fA: [26, 89.6], fF: 30 });
     }
-    return { label: "Ausfallschritt", frame: FR_STAND, frames: [A, M, B], props: held(eq),
+    return { label: "Ausfallschritt", frame: FR_STAND, frames: [A, M, B], props: held(eq), emph: ["legs"],
       timing: T(0.3, 1.0, 0.35, 1.0), muscles: ["quads", "glutes"], trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -896,12 +901,12 @@ const PATTERNS = {
     if (o.variant === "kneel") {
       const A = P(base, { hx: 42, hy: 67, tr: 0, fA: [22, 89.8], fF: 0 });
       const B = P(A, { hx: 46.5, hy: 68.5, tr: -6 });
-      return { label: "Halbkniestand", frame: FR_STAND, frames: [A, B], timing: T(0.6, 1.4, 0.8, 1.4),
+      return { label: "Halbkniestand", frame: FR_STAND, frames: [A, B], phases: ["Hüfte vor", "zurück"], timing: T(0.6, 1.4, 0.8, 1.4),
         props: [{ k: "mat", x: 14, w: 60 }], muscles: ["quads"] };
     }
     const A = P(base, { hx: 45, hy: 57.5, tr: 2 });
     const B = P(A, { hx: 45.5, hy: 71 });
-    return { label: "Split Squat", frame: FR_STAND, frames: [A, B], props: held(eq),
+    return { label: "Split Squat", frame: FR_STAND, frames: [A, B], props: held(eq), emph: ["legs"],
       muscles: ["quads", "glutes"], trace: { at: (J) => J.H, off: 7 } };
   },
 
@@ -943,6 +948,7 @@ const PATTERNS = {
         const props = wall ? [{ k: "wall", x: 80 }] : [{ k: "pad", x: 88, y: 64.6, w: 30, h: 3.2, r: 1.2 },
           { k: "frame", d: "M78 66V94M98 66V94", sw: 2 }];
         return { label: wall ? "Liegestütz an der Wand" : "Liegestütz erhöht", frame: FR_STAND, frames: [A, B], props,
+          phases: ["wegdrücken", "zurück"],
           muscles: ["chest", "triceps"], trace: { at: (J) => J.S, off: -7 } };
       }
       const knee = v === "knee";
@@ -958,14 +964,14 @@ const PATTERNS = {
       };
       const A = P(A0, fix(A0), { nW: [67, 91.4], fW: [66.4, 91.6], nEb: 1, fEb: 1, nk: -10 });
       const B = P(B0, fix(B0), { nW: [67, 91.4], fW: [66.4, 91.6], nEb: 1, fEb: 1, nk: -10 });
-      return { label: knee ? "Liegestütz auf den Knien" : "Liegestütz", frame: FR_FLOOR, frames: [A, B],
+      return { label: knee ? "Liegestütz auf den Knien" : "Liegestütz", frame: FR_FLOOR, frames: [A, B], phases: ["hochdrücken", "senken"],
         props: [{ k: "mat", x: 8, w: 76 }], muscles: ["chest", "triceps", "shoulders"], trace: { at: (J) => J.S, off: -7 } };
     }
     if (eq === "maschine" || (eq === "kabel" && v !== "stand")) {
       // Sitzend: Brustpresse an der Maschine
       const base = { hx: 46, hy: 64.5, tr: -6, nA: [64, AY], fA: [62.5, AY], nk: 4 };
-      const A = P(base, { nW: [57, 47], fW: [56.4, 47.4] });
-      const B = P(base, { nW: [68.5, 47.5], fW: [68, 47.8] });
+      const A = P(base, { nW: [54, 47.5], fW: [53.4, 47.9] });
+      const B = P(base, { nW: [68.8, 47.5], fW: [68.3, 47.8] });
       const props = [...machineSeat(46, 69, 38.8, 47, -6),
         { k: "frame", d: "M84 94V16H70", sw: 2.2 }, { k: "grip", at: g("n"), pivot: [70, 16] }];
       return { label: "Brustpresse", frame: FR_STAND, frames: [A, B], props, muscles: ["chest", "triceps"],
@@ -998,7 +1004,7 @@ const PATTERNS = {
       B = P(base, { nU: 178, nUl: 1, nW: [37.5, 43.6], fU: 178, fUl: 1, fW: [37.1, 44] });
     }
     props.push(...held(eq === "kurzhantel" ? "kurzhantel" : eq === "sz" ? "sz" : "langhantel"));
-    return { label: "Bankdrücken", frame: FR_FLOOR, frames: [A, B], props, muscles: ["chest", "triceps", "shoulders"],
+    return { label: "Bankdrücken", frame: FR_FLOOR, frames: [A, B], props, phases: ["hochdrücken", "senken"], muscles: ["chest", "triceps", "shoulders"],
       trace: { at: g("n"), off: 7 } };
   },
 
@@ -1037,8 +1043,8 @@ const PATTERNS = {
     const eq = o.equipment || "langhantel";
     if (eq === "kabel" || eq === "band" && o.variant === "seated") {
       const base = { hx: 34, hy: 77, nA: [69, 79.5], fA: [68, 80], nF: 80, fF: 80 };
-      const A = P(base, { tr: 22, nW: [64, 64], fW: [63.5, 64.4] });
-      const B = P(base, { tr: -6, nW: [47.5, 66], fW: [47, 66.4] });
+      const A = P(base, { tr: 30, nW: [66.5, 64], fW: [66, 64.4] });
+      const B = P(base, { tr: -10, nW: [46.5, 66], fW: [46, 66.4] });
       if (o.uni) { A.fW = [52, 70]; B.fW = [52, 70]; }
       const py = [84.6, 70];
       const props = [{ k: "pad", x: 34, y: 82.6, w: 18, h: 3.4 }, { k: "frame", d: "M28 84V94M40 84V94", sw: 2 },
@@ -1088,12 +1094,12 @@ const PATTERNS = {
       const bar = [52, 13];
       const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 10, nS: -22, fT: 6, fS: -28, nk: -6 };
       const B = P(A, { hy: 41, nk: -14, nEb: 1, fEb: 1 });
-      return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B],
+      return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B], phases: ["hochziehen", "runter"],
         props: [{ k: "pullbar", x: bar[0], y: bar[1] }], muscles: ["back", "biceps"], trace: { at: (J) => J.S, off: -7 } };
     }
     const base = { hx: 48, hy: 66.5, nA: [66, AY], fA: [64.5, AY], nk: -6 };
-    const A = P(base, { tr: -4, nW: [52, 20], fW: [51.6, 20.4] });
-    const B = P(base, { tr: -16, nW: [50.5, 45], fW: [50, 45.4] });
+    const A = P(base, { tr: 0, nW: [52.5, 19], fW: [52.1, 19.4] });
+    const B = P(base, { tr: -20, nW: [49.5, 45.5], fW: [49, 45.9] });
     const handle = HD(o, "Lat-Stange");
     const props = [{ k: "pad", x: 48, y: 71, w: 17, h: 3.4 }, { k: "frame", d: "M48 73V94M30 94V6H54", sw: 2.2 },
       { k: "pad", x: 64.5, y: 58.4, w: 9, h: 3.6, r: 1.8 }, { k: "frame", d: "M64.5 60.4V64", sw: 1.6 },
@@ -1132,7 +1138,7 @@ const PATTERNS = {
     const seated = !!o.seated;
     const base = seated ? { hx: 42, hy: 65.5, tr: 0, nA: [60, AY], fA: [58.5, AY] } : P(STAND, { hx: 47 });
     let A = P(base, { nU: 4, nL: 4, fU: 3, fL: 3 });
-    let B = P(base, { nU: 14, nL: 150, fU: 13, fL: 149 });
+    let B = P(base, { nU: 18, nL: 156, fU: 17, fL: 155 });
     const props = seated ? [{ k: "chair", x: 40, y: 72 }] : [];
     if (v === "bayes") { // hinter dem Körper, Kabel von hinten
       Object.assign(base, { nA: [58, AY], fA: [38, AY], fF: 70 });
@@ -1160,7 +1166,7 @@ const PATTERNS = {
         const A = P(base, { nU: 154, nL: 296, fU: 153, fL: 295 });
         const B = P(base, { nU: 154, nL: 160, fU: 153, fL: 159 });
         const py = pulleyPos(14, H(o, "mittel"));
-        return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B],
+        return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B], phases: ["strecken", "beugen"],
           props: [tower(14, H(o, "mittel")), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
           muscles: ["triceps"], trace: { at: g("n"), off: 6 } };
       }
@@ -1168,13 +1174,13 @@ const PATTERNS = {
       const base = { hx: 46, hy: 64.5, tr: 0, nA: [64, AY], fA: [62.5, AY] };
       const A = P(base, { nU: 176, nL: 322, fU: 175, fL: 321 });
       const B = P(base, { nU: 176, nL: 178, fU: 175, fL: 177 });
-      return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B],
+      return { label: "Trizepsstrecken über Kopf", frame: FR_STAND, frames: [A, B], phases: ["strecken", "beugen"],
         props: [...machineSeat(46, 69, 38.8, 47, 0), { k: "dumbbell", at: mid, a: (J) => J.n.aL + 90 }],
         muscles: ["triceps"], trace: { at: g("n"), off: -6 } };
     }
     const base = P(STAND, { hx: 46, tr: 12, nA: [49, AY], fA: [47.5, AY], nk: 4 });
-    const A = P(base, { nU: 8, nL: 128, fU: 7, fL: 127 });
-    const B = P(base, { nU: 6, nL: 8, fU: 5, fL: 7 });
+    const A = P(base, { nU: 8, nL: 140, fU: 7, fL: 139 });
+    const B = P(base, { nU: 4, nL: 2, fU: 3, fL: 1 });
     const py = pulleyPos(84, H(o, "hoch"), -1);
     return { label: "Trizepsdrücken", frame: FR_STAND, frames: [A, B],
       props: [tower(84, H(o, "hoch"), -1), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
@@ -1184,7 +1190,7 @@ const PATTERNS = {
   /** Seitheben (Frontansicht); variant "circle" = Armkreisen */
   latRaise(o) {
     const eq = o.equipment || "kurzhantel";
-    const top = o.variant === "circle" ? 168 : 86;
+    const top = o.variant === "circle" ? 168 : 90;
     const A = P(FSTAND, { lU: 8, lL: 8, rU: 8, rL: 8 });
     const B = P(FSTAND, { lU: top, lL: top - 8, rU: top, rL: top - 8 });
     const props = [];
@@ -1292,15 +1298,16 @@ const PATTERNS = {
     } else if (eq === "band") props.push({ k: "band", from: g("l"), to: g("r"), sag: 0.5, layer: "front" });
     else if (eq === "maschine") props.push({ k: "frame", d: "M12 94V24H88V94", sw: 2.2 }, { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
     else if (eq === "kurzhantel") props.push(db("l"), db("r"));
-    return { label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
+    return { phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
       muscles: ["shoulders", "back"], trace: { at: g("r"), off: -6 } };
   },
 
   /** Face Pull am Kabel (Seitenansicht) */
   facePull(o) {
     const base = P(STAND, { hx: 44, tr: -4, nA: [48, AY], fA: [38, AY], fF: 70 });
-    const A = P(base, { nW: [67.5, 32], fW: [67, 32.4] });
-    const B = P(base, { nW: [52, 27], fW: [51.5, 27.4], nEb: 1, fEb: 1 });
+    // Start: Arme lang zur Rolle; Ende: Hände neben dem Kopf, Ellbogen hoch und hinten
+    const A = P(base, { nU: 92, nUl: 1, nW: [69, 32.5], fU: 92, fUl: 1, fW: [68.5, 32.9] });
+    const B = P(base, { nU: -112, nUl: 0.62, nWr: [3.6, 7.4], fU: -112, fUl: 0.62, fWr: [3.2, 7.4] });
     const py = pulleyPos(86, H(o, "hoch") === "hoch" ? 26 : H(o, "hoch"), -1);
     return { label: "Face Pull", frame: FR_STAND, frames: [A, B],
       props: [tower(86, py[1], -1), { k: "cable", from: py, to: mid, handle: HD(o, "Seil") }],
@@ -1326,7 +1333,7 @@ const PATTERNS = {
       const A = P(base, { tr: 22, nk: 6 });
       const B = P(base, { hx: 43.5, hy: 71, tr: 82, sp: 3.4, nk: 22 });
       const py = pulleyPos(84, "hoch", -1);
-      return { label: "Kabel-Crunch kniend", frame: FR_STAND, frames: [A, B],
+      return { label: "Kabel-Crunch kniend", frame: FR_STAND, frames: [A, B], emph: ["torso"],
         props: [{ k: "mat", x: 20, w: 50 }, tower(84, "hoch", -1), { k: "cable", from: py, to: mid, handle: "Seil" }],
         muscles: ["abs"], trace: { at: (J) => J.Hd, off: 8 } };
     }
@@ -1340,7 +1347,7 @@ const PATTERNS = {
     const base = { hx: 56, hy: 87, nA: [72, AY], fA: [70.5, AY], nWr: [-4.5, 8.5], fWr: [-4.8, 8.5], nEb: 1, fEb: 1 };
     const A = P(base, { tr: -90, nk: 0 });
     const B = P(base, { tr: -58, sp: 2.4, nk: 18 });
-    return { label: "Crunch", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 14, w: 72 }], muscles: ["abs"],
+    return { label: "Crunch", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 14, w: 72 }], muscles: ["abs"], emph: ["torso"],
       trace: { at: (J) => J.S, off: 7 } };
   },
 
@@ -1384,7 +1391,7 @@ const PATTERNS = {
     if (o.variant === "heel") {
       const A = { hx: 52, hy: 87, tr: -90, nA: [67, AY], fA: [65.5, AY], nU: -88, nL: -88, fU: -88, fL: -88, nF: 80 };
       const B = P(A, { nA: [88.4, 90.5], nF: 60 });
-      return { label: "Heel Slides", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 10, w: 82 }],
+      return { label: "Heel Slides", frame: FR_FLOOR, frames: [A, B], phases: ["Ferse weg", "zurück"], props: [{ k: "mat", x: 10, w: 82 }],
         muscles: ["abs"], timing: T(0.4, 1.2, 0.5, 1.2), pelvic: true, trace: { at: (J) => J.n.A, off: 6 } };
     }
     const A = { hx: 56, hy: 87, tr: -90, nT: 180, nS: 90, fT: 178, fS: 88, nF: 90, fF: 90, nU: 180, nL: 180, fU: 178, fL: 178 };
@@ -1536,7 +1543,7 @@ const PATTERNS = {
   catCow() {
     const A = P(QUAD, { sp: -2.4, nk: -30 });
     const B = P(QUAD, { sp: 3.4, nk: 38, hy: QUAD.hy - 1 });
-    return { label: "Katze-Kuh", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 12, w: 74 }],
+    return { label: "Katze-Kuh", frame: FR_FLOOR, frames: [A, B], props: [{ k: "mat", x: 12, w: 74 }], emph: ["torso"],
       timing: T(0.5, 1.5, 0.6, 1.5), muscles: ["lowerback"] };
   },
 
@@ -1562,6 +1569,7 @@ const PATTERNS = {
       const close = { lT: 6, lS: 2, rT: 6, rS: 2 }, open = { lT: 64, lS: 8, rT: 64, rS: 8 };
       const A = P(seat, add2 ? open : close), B = P(seat, add2 ? close : open);
       return { label: add2 ? "Adduktoren" : "Abduktoren", view: "front", frame: FR_STAND, frames: [A, B],
+        phases: add2 ? ["Knie zusammen", "öffnen"] : ["Knie auseinander", "zurück"],
         props: [{ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "pad", x: 50, y: 69, w: 26, h: 4 },
           { k: "frame", d: "M50 71V94", sw: 2.2 },
           { k: "pad", at: (J) => add(J.l.K, [add2 ? 3.4 : -3.8, 0]), w: 3, h: 8, layer: "front" },
@@ -1582,6 +1590,7 @@ const PATTERNS = {
       props = [tower(10, "tief", 1), { k: "cable", from: pulleyPos(10, "tief", 1), to: (J) => J.r.A, handle: "Fußschlaufe", layer: "back" }];
     }
     return { label: addn ? "Adduktion am Kabel" : "Abduktion am Kabel", view: "front", frame: FR_STAND, frames: [A, B], props,
+      phases: addn ? ["Bein zur Mitte", "zurück"] : ["Bein zur Seite", "zurück"],
       muscles: addn ? ["quads"] : ["glutes"], trace: { at: (J) => (addn ? J.l.A : J.r.A), off: -6 } };
   },
 
@@ -1616,7 +1625,8 @@ const PATTERNS = {
     }
     const In = P(A, { br: 1, pf: 0 }), Out = P(A, { br: 0, pf: 1 });
     if (v === "kind") { In.hy -= 1.2; In.sp = 2.4; }
-    return { label: pelvic ? "Beckenboden & Atmung" : "Atmung", view, frame, frames: [In, Out], props,
+    return { phases: pelvic ? ["ausatmen & anspannen", "einatmen & lösen"] : ["ausatmen", "einatmen"],
+      label: pelvic ? "Beckenboden & Atmung" : "Atmung", view, frame, frames: [In, Out], props,
       timing: T(0.3, 2.6, 0.4, 2.2), breath: true, pelvic, muscles: [], reducedPose: In };
   },
 };
@@ -1641,15 +1651,36 @@ const PATTERN_NAMES = Object.keys(PATTERNS);
  * Unbekannte Muster fallen auf "breathing" (ruhig, ungefährlich) zurück.
  */
 function buildPattern(name, opts = {}) {
-  const fn = PATTERNS[name] || PATTERNS.breathing;
-  const d = fn(opts) || {};
+  const key = PATTERNS[name] ? name : "breathing";
+  const d = PATTERNS[key](opts) || {};
+  // Tempo: Arbeitsphase etwas langsamer, kurze Pausen an Start und Ende (gut zum Mitschauen)
+  const t = { ...(d.timing || T()) };
+  if (t.up < 1.9) { t.up *= 1.25; t.down *= 1.15; }
+  t.hold0 = Math.max(t.hold0, 0.45); t.hold1 = Math.max(t.hold1, 0.45);
   return {
-    view: "side", frame: FR_STAND, loop: "pingpong", timing: T(), ease: "sine",
-    props: [], muscles: [], ...d, name: PATTERNS[name] ? name : "breathing",
+    view: "side", frame: FR_STAND, loop: "pingpong", ease: "sine",
+    props: [], muscles: [], phases: PHASES[key], ...d, timing: t, name: key,
   };
 }
 
-return { PATTERNS, PATTERN_NAMES, buildPattern };
+/** Phasen-Beschriftung je Muster: [Start → Ende, zurück]. Muster können eigene setzen. */
+const PHASES = {
+  squat: ["runter", "hoch"], hinge: ["Hüfte zurück", "aufrichten"], lunge: ["Schritt & runter", "zurück"],
+  splitsquat: ["runter", "hoch"], hipthrust: ["Hüfte hoch", "senken"], pushH: ["drücken", "zurück"],
+  dip: ["runter", "hoch"], pushV: ["hochdrücken", "senken"], pullH: ["ziehen", "zurück"], pullV: ["ziehen", "zurück"],
+  legRaise: ["Beine hoch", "senken"], curl: ["hoch", "runter"], triExt: ["runterdrücken", "zurück"],
+  latRaise: ["seitlich hoch", "senken"], frontRaise: ["nach vorn hoch", "senken"], uprightRow: ["hochziehen", "senken"],
+  shrug: ["Schultern hoch", "senken"], fly: ["zusammen", "öffnen"], rearFly: ["auseinander", "zurück"],
+  facePull: ["zum Gesicht", "zurück"], pullover: ["runterziehen", "zurück"], crunch: ["einrollen", "ablegen"],
+  plank: ["halten", "ruhig atmen"], sidePlank: ["Hüfte hoch", "senken"], birdDog: ["Arm & Bein strecken", "zurück"],
+  deadBug: ["strecken", "zurück"], kickback: ["Bein nach hinten", "zurück"], calfRaise: ["Fersen hoch", "senken"],
+  legPress: ["wegdrücken", "beugen"], legExt: ["strecken", "beugen"], legCurl: ["beugen", "strecken"],
+  rotation: ["diagonal ziehen", "zurück"], pallof: ["wegdrücken", "zurück"], carry: ["gehen"], march: ["marschieren"],
+  catCow: ["Katzenbuckel", "Hohlkreuz"], clamshell: ["Knie öffnen", "schließen"], hipAbd: ["Bein zur Seite", "zurück"],
+  sway: ["Becken links", "rechts"], breathing: ["ausatmen", "einatmen"],
+};
+
+return { PATTERNS, PATTERN_NAMES, buildPattern, PHASES };
 })();
 
 /* src/ui/anim/pixel.js */
@@ -1667,15 +1698,15 @@ const __m4 = (() => {
 
 /** Namen der Farb-Variablen (ohne „--anim-“), die die Palette bilden. */
 const PALETTE_VARS = ["figure", "figure-far", "head", "face", "work", "sprout", "weight", "weight-back",
-  "env", "env-line", "cable", "band", "floor", "mat", "hole"];
+  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace"];
 /** Gewichte für die Mehrheitswahl: feine Details setzen sich eher durch. */
-const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.3, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3 };
+const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.4, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3, trace: 2.6, ghost: 0.8 };
 
 /** Liest die aktuellen Farbwerte (Theme-abhängig) am Element. */
 function resolveVars(elm) {
   const cs = getComputedStyle(elm);
   const out = {};
-  for (const n of PALETTE_VARS.concat(["trace"])) out[n] = cs.getPropertyValue("--anim-" + n).trim() || "#888";
+  for (const n of PALETTE_VARS) out[n] = cs.getPropertyValue("--anim-" + n).trim() || "#888";
   return out;
 }
 
@@ -1700,7 +1731,9 @@ function bakeCss(css, vars) {
 const PIXEL_CSS = `
 .nga .nga-cable{stroke-width:1.7}
 .nga .nga-env,.nga .nga-tower{stroke:none}
-.nga .nga-plate-ring,.nga .nga-trace,.nga .nga-trace-head{display:none}
+.nga .nga-plate-ring{display:none}
+.nga .nga-trace{stroke-width:1.9;stroke-dasharray:2.2 2.4;stroke-linecap:butt;opacity:1}
+.nga .nga-trace-head{opacity:1}
 .nga .nga-floor{stroke-width:1.7}
 .nga .nga-dbbar{stroke-width:2}
 .nga .nga-band{stroke-width:2}
@@ -1801,21 +1834,24 @@ const { PALETTE_VARS, PALETTE_WEIGHTS, PIXEL_CSS, resolveVars, parseColor, bakeC
 const ANIM_VARS_CSS = `
 :where(:root){
   --anim-figure:#8C807A; --anim-figure-far:#C9BEB8; --anim-head:#F6EFEA; --anim-face:#6A5F5A;
-  --anim-work:#C4877A; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
+  --anim-work:#A9695D; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
   --anim-env:#EFE7E2; --anim-env-line:#D2C7C1; --anim-cable:#9A8F8A; --anim-band:#9DAA8F;
   --anim-floor:#E2D8D2; --anim-mat:#E3E8DD; --anim-trace:#B58C83; --anim-hole:#FFFCFA;
+  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7;
 }
 @media (prefers-color-scheme:dark){:where(:root:not([data-theme="light"])){
   --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
-  --anim-work:#D9A79B; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
+  --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
   --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
+  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
 }}
 :where(:root[data-theme="dark"]){
   --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
-  --anim-work:#D9A79B; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
+  --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
   --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
+  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
 }`;
 /** Regeln für die Szene (Farben nur über --anim-*). */
 const ANIM_RULES_CSS = `
@@ -1863,7 +1899,17 @@ const ANIM_RULES_CSS = `
 .nga .nga-gripbar{fill:var(--anim-weight)}
 .nga .nga-trace{stroke:var(--anim-trace);fill:none;stroke-width:1.1;stroke-linecap:round;stroke-dasharray:.1 2.6;opacity:.75}
 .nga .nga-trace-head{fill:var(--anim-trace);opacity:.8}
-.nga .nga-ghost{opacity:.16}
+.nga .nga-limb .nga-move{stroke:var(--anim-move)}
+.nga .nga-far .nga-move{stroke:var(--anim-move-far)}
+.nga .nga-hand.nga-move{fill:var(--anim-move)}
+.nga .nga-far .nga-hand.nga-move{fill:var(--anim-move-far)}
+.nga .nga-ghost line,.nga .nga-ghost path{stroke:var(--anim-ghost)!important}
+.nga .nga-ghost circle,.nga .nga-ghost .nga-sprout path{fill:var(--anim-ghost)!important;stroke:var(--anim-ghost)!important}
+.nga .nga-ghost .nga-sprout .nga-sprout-stem{fill:none!important}
+.nga-phase{display:flex;justify-content:center;gap:.5em;font-size:.8rem;line-height:1.3;color:var(--anim-figure);margin-top:4px;min-height:1.3em}
+.nga-phase span{opacity:.5;transition:opacity .25s,color .25s}
+.nga-phase span.on{opacity:1;color:var(--anim-trace);font-weight:700}
+.nga-phase i{font-style:normal;opacity:.4}
 .nga .nga-pairarrow{fill:none;stroke:var(--anim-trace);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .nga--thumb .nga-trace,.nga--thumb .nga-trace-head{display:none}
 .nga-px{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
@@ -1929,25 +1975,76 @@ function phase(def, time) {
 }
 
 
+/** Richtung: 0 = Start → Ende (inkl. Halt davor), 1 = zurück (inkl. Halt am Ende). */
+function phaseDir(def, time) {
+  if (def.loop === "cycle") return 0;
+  const T = def.timing, c = time % (T.hold0 + T.up + T.hold1 + T.down);
+  return c < T.hold0 + T.up ? 0 : 1;
+}
+
 /* --------------------------------------------------------------- Szene */
 
 const LAYERS = ["ghost", "back", "trace", "farLeg", "farArm", "farProp", "torso", "head", "mid", "nearLeg", "nearArm", "front"];
 
+/**
+ * Welche Segmente bewegen sich deutlich? (Winkeländerung > 26° zwischen den Posen)
+ * def.emph kann das überschreiben: Liste aus "legs", "arms", "torso", "nArm", "fLeg", "rArm", …
+ */
+function movingSegments(def) {
+  const sides = def.view === "front" ? ["l", "r"] : ["n", "f"];
+  const out = new Set();
+  if (def.emph) {
+    for (const t of def.emph) {
+      if (t === "torso") { out.add("torso"); continue; }
+      const one = /^[nflr][A-Z]/.test(t); // z. B. "nArm" = nur nahe Seite
+      const grp = (one ? t.slice(1) : t).toLowerCase();
+      const ss = one ? [t[0]] : sides;
+      const segs = grp === "legs" || grp === "leg" ? ["thigh", "shin", "foot"] : ["upper", "fore"];
+      for (const s of ss) for (const g of segs) out.add(s + "." + g);
+    }
+    return out;
+  }
+  if (def.frames.length < 2) return out;
+  const ang = (p, q) => Math.atan2(q[1] - p[1], q[0] - p[0]) * 57.2958;
+  const segs = { thigh: ["hip", "K"], shin: ["K", "A"], foot: ["heel", "toe"], upper: ["root", "E"], fore: ["E", "W"] };
+  const J0 = solve(def.frames[0], def.view);
+  for (const f of def.frames.slice(1)) {
+    const J = solve(f, def.view);
+    for (const s of sides) for (const g in segs) {
+      const [a, b] = segs[g];
+      let d = Math.abs(ang(J[s][a], J[s][b]) - ang(J0[s][a], J0[s][b])) % 360;
+      if (d > 180) d = 360 - d;
+      if (d > 26) out.add(s + "." + g);
+    }
+  }
+  return out;
+}
+
+/** Bewegt sich die Figur überhaupt nennenswert? (für Geist/Pfeil) */
+function hasMotion(def) {
+  if (def.loop === "cycle" || def.frames.length < 2 || def.breath) return false;
+  const a = solve(def.frames[0], def.view), b = solve(def.frames[def.frames.length - 1], def.view);
+  const pts = (J) => [J.H, J.S, J.Hd, ...[].concat(...(def.view === "front" ? ["l", "r"] : ["n", "f"]).map((s) => [J[s].W, J[s].A, J[s].K, J[s].E]))];
+  const pa = pts(a), pb = pts(b);
+  return pa.some((p, i) => Math.hypot(p[0] - pb[i][0], p[1] - pb[i][1]) > 5);
+}
+
 /** Baut eine Szene (Figur + Geräte) in eine Gruppe. */
-function buildScene(parent, def, { detail, ghost, pixel }) {
+function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true }) {
   const L = {};
   for (const n of LAYERS) L[n] = el("g", { class: "nga-l-" + n }, parent);
   if (def.floor !== false) {
-    const [vx, , vw] = def.frame;
+    const [vx, , vw] = frame || def.frame;
     el("line", { x1: vx + 3, x2: vx + vw - 3, y1: GROUND + 0.7, y2: GROUND + 0.7, class: "nga-floor" }, L.back);
   }
   const equip = createEquipment(L, def.props, { detail });
-  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
-  if (ghost && def.frames.length > 1) {
+  const moving = emphasis ? movingSegments(def) : new Set();
+  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving,
+    muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
+  if (ghost && hasMotion(def)) { // Endpose als einfarbige Silhouette ganz hinten
     const gl = {};
     for (const n of ["farLeg", "farArm", "torso", "head", "nearLeg", "nearArm"]) gl[n] = el("g", {}, L.ghost);
-    L.ghost.setAttribute("class", "nga-ghost");
-    createFigure(gl, { view: def.view, back: def.back, detail: false }).update(solve(def.frames[def.frames.length - 1], def.view));
+    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true }).update(solve(def.frames[def.frames.length - 1], def.view));
   }
   return {
     L,
@@ -1961,9 +2058,9 @@ function buildScene(parent, def, { detail, ghost, pixel }) {
 }
 
 /** Bewegungspfad (gepunktete Linie mit kleiner Pfeilspitze) für def.trace. */
-function drawTrace(layer, def) {
+function drawTrace(layer, def, headR = 2.6) {
   const tr = def.trace;
-  if (!tr) return;
+  if (!tr || !hasMotion(def)) return;
   const list = Array.isArray(tr) ? tr : [tr];
   const n = def.frames.length - 1;
   for (const t of list) {
@@ -1985,7 +2082,7 @@ function drawTrace(layer, def) {
     const e = sel[sel.length - 1], p = sel[sel.length - 2];
     const a = Math.atan2(e[1] - p[1], e[0] - p[0]);
     const h = (ang, r) => [e[0] + Math.cos(ang) * r, e[1] + Math.sin(ang) * r];
-    const q1 = h(a + Math.PI * 0.8, 2.6), q2 = h(a - Math.PI * 0.8, 2.6);
+    const q1 = h(a + Math.PI * 0.8, headR), q2 = h(a - Math.PI * 0.8, headR);
     el("path", { class: "nga-trace-head", d: `M${e[0].toFixed(2)} ${e[1].toFixed(2)}L${q1[0].toFixed(2)} ${q1[1].toFixed(2)}L${q2[0].toFixed(2)} ${q2[1].toFixed(2)}Z` }, layer);
   }
 }
@@ -2010,7 +2107,7 @@ const reducedMQ = typeof matchMedia === "function" ? matchMedia("(prefers-reduce
  * Enger, quadratischer Bildausschnitt um die Figur über alle Posen –
  * für Mini-Vorschauen, damit die Figur das kleine Feld gut ausfüllt.
  */
-function autoFrame(def, pad = 4) {
+function autoFrame(def, pad = 4, anchors = false) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   const take = (p, r = 0) => {
     if (!p) return;
@@ -2025,6 +2122,11 @@ function autoFrame(def, pad = 4) {
       [L.E, L.W, L.G, L.K, L.A, L.toe, L.heel].forEach((p) => take(p, 3.5));
     }
   }
+  if (anchors) for (const pr of def.props || []) {
+    // feste Kabel-/Band-Ankerpunkte (Umlenkrolle) sollen sichtbar bleiben
+    if ((pr.k === "cable" || pr.k === "band") && Array.isArray(pr.from)) take(pr.from, 3);
+    if (pr.k === "pullbar") take([pr.x, pr.y], 3);
+  }
   if (def.floor !== false) y1 = Math.max(y1, GROUND + 2);
   const side = Math.max(x1 - x0, y1 - y0) + pad * 2;
   const cx = (x0 + x1) / 2;
@@ -2035,7 +2137,7 @@ function autoFrame(def, pad = 4) {
 /** Größen in Pixeln. */
 const SIZES = { thumb: 56, small: 120, large: 280 };
 /** Rastergröße (Pixel je Kante) für den Pixel-Look. */
-const GRID = { thumb: 32, large: 64 };
+const GRID = { thumb: 32, large: 88 };
 
 /* ------------------------------------------------------- Vektor-Darstellung */
 
@@ -2046,13 +2148,14 @@ function vectorRunner(wrap, def, o) {
   svg.setAttribute("focusable", "false");
   svg.setAttribute("viewBox", o.frame.join(" "));
   wrap.appendChild(svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame });
   if (o.arrow) drawTrace(scene.L.trace, def);
   let lastS = -1;
   scene.render(def.frames[0]);
   return {
     draw(time) {
       const s = phase(def, time);
+      o.onPhase && o.onPhase(time);
       if (Math.abs(s - lastS) < 1e-4) return; // in Haltephasen nichts neu zeichnen
       lastS = s;
       scene.render(poseAt(def.frames, s));
@@ -2067,14 +2170,14 @@ function vectorRunner(wrap, def, o) {
       wrap.appendChild(s2);
       if (o.thumb) {
         s2.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
-        buildScene(el("g", {}, s2), def, { detail: false }).render(def.reducedPose || last);
+        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame }).render(def.reducedPose || last);
         return;
       }
       wrap.classList.add("nga-pair");
       const gap = w * 0.16;
       s2.setAttribute("viewBox", `${x} ${y} ${w * 2 + gap} ${h}`);
-      buildScene(el("g", {}, s2), def, { detail: true }).render(def.frames[0]);
-      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true }).render(last);
+      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame }).render(def.frames[0]);
+      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame }).render(last);
       const ax = x + w + gap / 2, ay = y + h * 0.5;
       el("path", { class: "nga-pairarrow", d: `M${ax - 4} ${ay}h8m-3 -3l3 3l-3 3` }, s2);
     },
@@ -2090,8 +2193,8 @@ const spriteCache = new Map();
 function spritePositions(def) {
   const n = def.frames.length - 1;
   if (def.loop === "cycle") { const K = 8; return Array.from({ length: K }, (_, i) => (i / K) * n); }
-  const slow = def.timing.up >= 1.6;
-  const K = slow ? 5 : n > 1 ? 7 : 6;
+  const slow = def.timing.up >= 1.9;
+  const K = slow ? 5 : n > 1 ? 8 : 7;
   return Array.from({ length: K }, (_, i) => (i / (K - 1)) * n);
 }
 
@@ -2113,7 +2216,8 @@ function pixelRunner(wrap, def, o) {
   svg.setAttribute("viewBox", o.frame.join(" "));
   svg.setAttribute("width", grid); svg.setAttribute("height", grid);
   const style = el("style", {}, svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame });
+  if (o.arrow) drawTrace(scene.L.trace, def, 3.8); // Pixel-Bewegungsspur
 
   async function prepare() {
     const my = ++token;
@@ -2171,6 +2275,7 @@ function pixelRunner(wrap, def, o) {
   return {
     draw(time) {
       const s = phase(def, time);
+      o.onPhase && o.onPhase(time);
       const i = def.loop === "cycle" ? Math.floor((s / n) * K + 1e-6) % K : Math.round((s / n) * (K - 1));
       show(i);
     },
@@ -2190,8 +2295,9 @@ function pixelRunner(wrap, def, o) {
  *   size: "thumb" | "small" | "large" | Zahl (px)
  *   renderer: "pixel" (Standard, Sprite-Look) | "vector" (glatt, stufenlos)
  *   muscles: überschreibt die getönten Muskeln; label: Bildbeschreibung
- *   arrow: Bewegungspfeil (nur vector, Standard: groß ja), ghost: Endpose als Schatten (vector)
- *   grid: Pixelraster (Standard 64 groß / 32 klein)
+ *   arrow: Bewegungsspur mit Pfeil (Standard: groß ja), ghost: Endpose als blasse Silhouette (Standard: groß ja)
+ *   phases: Phasen-Beschriftung unter der großen Ansicht („runter · hoch“, Standard: groß ja)
+ *   grid: Pixelraster (Standard 88 groß / 32 klein)
  *   reduced: true/false erzwingt bzw. verhindert die ruhige Darstellung
  *   offset: Startversatz in Sekunden (damit nicht alle im Gleichtakt laufen)
  * @returns {{play():void, pause():void, toggle():void, seek(sec:number):void, destroy():void, playing:boolean, def:object}}
@@ -2205,7 +2311,8 @@ function createExerciseAnim(host, cfg = {}) {
   const px = typeof size === "number" ? size : SIZES[size] || SIZES.large;
   const thumb = px <= 72;
   const reduced = cfg.reduced ?? !!(reducedMQ && reducedMQ.matches);
-  const frame = thumb ? def.thumbFrame || autoFrame(def) : def.frame;
+  // Ausschnitt: Mini eng um die Figur, groß etwas luftiger inkl. Kabelrollen
+  const frame = thumb ? def.thumbFrame || autoFrame(def) : def.largeFrame || autoFrame(def, 7, true);
   const renderer = cfg.renderer === "vector" ? "vector" : "pixel";
 
   const wrap = document.createElement("div");
@@ -2215,8 +2322,29 @@ function createExerciseAnim(host, cfg = {}) {
   wrap.setAttribute("aria-label", cfg.label || def.label || "Übungsanimation");
   host.appendChild(wrap);
 
-  const o = { thumb, frame, ghost: cfg.ghost, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
-    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb]) };
+  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
+    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow]) };
+  // Phasen-Beschriftung (z. B. „runter · hoch“): aktive Richtung wird betont
+  let phaseEl = null;
+  if ((cfg.phases ?? !thumb) && !reduced && def.phases) {
+    phaseEl = document.createElement("div");
+    phaseEl.className = "nga-phase";
+    phaseEl.setAttribute("aria-hidden", "true");
+    const labels = def.loop === "cycle" ? [def.phases[0]] : def.phases;
+    labels.forEach((t, i) => {
+      if (i) phaseEl.append(Object.assign(document.createElement("i"), { textContent: "·" }));
+      phaseEl.append(Object.assign(document.createElement("span"), { textContent: t }));
+    });
+    wrap.after(phaseEl);
+    let last = -1;
+    const spans = phaseEl.querySelectorAll("span");
+    o.onPhase = (time) => {
+      const d = phaseDir(def, time);
+      if (d === last) return;
+      last = d;
+      spans.forEach((sp, i) => sp.classList.toggle("on", i === d || spans.length === 1));
+    };
+  }
   const runner = renderer === "pixel" ? pixelRunner(wrap, def, o) : vectorRunner(wrap, def, o);
   const inst = { def, playing: false, renderer };
 
@@ -2258,13 +2386,13 @@ function createExerciseAnim(host, cfg = {}) {
   inst.destroy = () => {
     inst.pause(); io && io.disconnect();
     document.removeEventListener("visibilitychange", onVis);
-    runner.destroy(); wrap.remove();
+    runner.destroy(); wrap.remove(); phaseEl && phaseEl.remove();
   };
   sync();
   return inst;
 }
 
-return { ANIM_VARS_CSS, ANIM_RULES_CSS, ANIM_CSS, injectAnimCss, lerpPose, phase, autoFrame, SIZES, GRID, createExerciseAnim, poseAt };
+return { ANIM_VARS_CSS, ANIM_RULES_CSS, ANIM_CSS, injectAnimCss, lerpPose, phase, phaseDir, movingSegments, autoFrame, SIZES, GRID, createExerciseAnim, poseAt };
 })();
 
 /* src/data/exercise-map.js */

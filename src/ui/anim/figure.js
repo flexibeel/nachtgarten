@@ -232,7 +232,9 @@ const HL_FRONT = {
 /**
  * Erstellt die Figur in den gegebenen Ebenen.
  * layers: {farLeg, farArm, torso, head, nearLeg, nearArm}
- * opts: {view, back, detail, muscles, breath, pelvic}
+ * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost}
+ *   moving: Set bewegter Segmente ("n.thigh", "f.fore", "l.upper", "torso", …) → Altrosa-Betonung
+ *   ghost:  ganze Figur einfarbig als „Geist“ (Endpose)
  * Gibt {update(J)} zurück.
  */
 export function createFigure(layers, opts = {}) {
@@ -243,6 +245,8 @@ export function createFigure(layers, opts = {}) {
   const sides = view === "front" ? ["l", "r"] : ["f", "n"];
   const parts = {};
   const hls = []; // {spec, el, side}
+  const mv = opts.moving || new Set();
+  const M = (key) => (mv.has(key) ? " nga-move" : "");
 
   for (const s of sides) {
     const far = view === "side" && s === "f";
@@ -251,12 +255,12 @@ export function createFigure(layers, opts = {}) {
     // Rückansicht: Arme hinter dem Rumpf (Hände vor dem Körper sind verdeckt)
     const armG = el("g", { class: cls }, view === "side" ? (far ? layers.farArm : layers.nearArm) : opts.back ? layers.farArm : layers.nearArm);
     const P = (parts[s] = {
-      thigh: el("line", { "stroke-width": WID.thigh }, legG),
-      shin: el("line", { "stroke-width": WID.shin }, legG),
-      foot: el("line", { "stroke-width": WID.foot }, legG),
-      upper: el("line", { "stroke-width": WID.upper }, armG),
-      fore: el("line", { "stroke-width": WID.fore }, armG),
-      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" }, armG),
+      thigh: el("line", { "stroke-width": WID.thigh, class: M(s + ".thigh") }, legG),
+      shin: el("line", { "stroke-width": WID.shin, class: M(s + ".shin") }, legG),
+      foot: el("line", { "stroke-width": WID.foot, class: M(s + ".foot") }, legG),
+      upper: el("line", { "stroke-width": WID.upper, class: M(s + ".upper") }, armG),
+      fore: el("line", { "stroke-width": WID.fore, class: M(s + ".fore") }, armG),
+      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
       legG, armG,
     });
     for (const m of muscles) for (const spec of HL[m]) {
@@ -273,7 +277,7 @@ export function createFigure(layers, opts = {}) {
   }
 
   const torsoG = el("g", { class: "nga-limb" }, layers.torso);
-  const torso = el(view === "front" ? "line" : "path", {
+  const torso = el(view === "front" ? "line" : "path", { class: M("torso").trim(),
     "stroke-width": view === "front" ? WID.torsoFront : WID.torso, fill: "none" }, torsoG);
   for (const m of muscles) for (const spec of HL[m]) {
     if (spec.seg !== "torso") continue;
@@ -286,6 +290,7 @@ export function createFigure(layers, opts = {}) {
   if (opts.breath) breathEl = el("ellipse", { class: "nga-breath" }, torsoG);
   if (opts.pelvic) pelvicEl = el("ellipse", { class: "nga-pelvic", rx: 2.6, ry: 1.5 }, torsoG);
 
+  if (opts.ghost) for (const k in layers) layers[k].classList.add("nga-ghost");
   const headG = el("g", { class: "nga-head" }, layers.head);
   const cheeks = [];
   el("circle", { r: SEG.headR, cx: 0, cy: 0, class: "nga-skull" }, headG);
