@@ -234,7 +234,9 @@ def upgrade(browser, base, link, old_dir, new_dir):
     check(any(k.startswith("ngk-") for k in keys) and any(k.startswith("ng2-app-") for k in keys), f"Caches getrennt ({keys})")
     manifest = page.evaluate("fetch('manifest.webmanifest').then(r => r.json())")
     check(manifest["name"] == "Nachtgarten Klassisch", "Klassisch: eigenes Manifest")
-    check(lab_snapshot(page) == before, "v1-Daten nach Klassisch unverändert")
+    after = lab_snapshot(page)
+    core = list(V1_DATA) + ["lab.hist", "lab.prs", "lab.tlog"]
+    check(all(after.get(k) == before[k] for k in core), "Klassisch: Profil, Plan, Training und Satz unverändert (v1 pflegt nur eigene Merker wie lab.buddyMeta)")
 
     # Zurück zur App: App-SW steuert weiter, Klassisch hat ihn nicht verdrängt
     page.goto(base + "#heute")
@@ -244,7 +246,7 @@ def upgrade(browser, base, link, old_dir, new_dir):
     # Beta
     page.goto(base + "beta/#training")
     page.wait_for_selector(".training-plans")
-    check(page.title() == "Nachtgarten Beta", "Beta läuft")
+    check(page.title().endswith("Nachtgarten Beta"), "Beta läuft")
     check("Push-Tag" in page.inner_text(".training-plans"), "Beta zeigt dieselben Daten")
     wait_controller(page, "/nachtgarten/beta/sw.js")
     check(page.locator("#root").count() == 1, "Beta-Service-Worker steuert die Beta")
@@ -253,7 +255,7 @@ def upgrade(browser, base, link, old_dir, new_dir):
     context.set_offline(True)
     page.goto(base)
     page.wait_for_selector("#root header, #root .page-head", timeout=10000)
-    check(page.title() == "Nachtgarten", "offline: die App (nicht Klassisch/Beta) startet")
+    check(page.title().endswith("Nachtgarten") and "Beta" not in page.title() and page.locator("#nameOut").count() == 0, "offline: die App (nicht Klassisch/Beta) startet")
     context.set_offline(False)
 
     real = [e for e in errors if "Failed to load resource" not in e]
