@@ -41,6 +41,8 @@
   --muted: #6F6661;
   --soft: #EAE2DC;
   --segment-track: #EAE2DC;
+  --bar: #F5F1EE;              /* Tab- und Aktionsleiste: deckend, nichts scheint durch */
+  --tab-indicator: #F1E3DE;
   --segment-thumb: #FFFCFA;
   --accent: #B58C83;          /* Altrosa: Fortschritt, erledigt, Schmuck */
   --accent-strong: #93695F;   /* Altrosa kräftig: Hauptknopf (weiße Schrift 4,7:1) */
@@ -120,6 +122,7 @@
   --dur-1: 140ms;
   --dur-2: 240ms;
   --dur-3: 380ms;
+  --dur-nav: 220ms;            /* Seitenwechsel vor/zurück */
 
   /* Ebenen */
   --z-tabbar: 20;
@@ -128,81 +131,86 @@
   --z-toast: 90;
 }
 
-/* Dunkel: weiches, warmes Grau – bewusst kein Fast-Schwarz. */
+/* Dunkel: weiches, warmes Grau (Hintergrund #2A2626, Karte #343030) – bewusst kein Fast-Schwarz.
+   Text ≥ 4,5:1 auf Hintergrund, Karte und --soft. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #232020;
-  --card: #2C2828;
-  --line: #3A3433;
-  --line-strong: #4A4241;
+  --bg: #2A2626;
+  --card: #343030;
+  --line: #3F3A39;
+  --line-strong: #504948;
   --text: #EEE7E3;
-  --muted: #ABA19C;
-  --soft: #3A3433;
-  --segment-track: #1E1B1B;
-  --segment-thumb: #474040;
+  --muted: #B3A9A4;           /* 4,5:1 auch auf --soft */
+  --soft: #3F3A39;
+  --bar: #2A2626;
+  --tab-indicator: #4D3F3D;
+  --segment-track: #232020;
+  --segment-thumb: #4A4342;
   --accent: #D3A99F;
   --accent-strong: #D3A99F;
-  --accent-ink: #DEB5AB;
-  --accent-soft: #463A38;
+  --accent-ink: #E2BBB1;
+  --accent-soft: #4D3F3D;
   --on-accent: #2A201E;
   --sage: #AFBCA2;
-  --sage-ink: #B7C4AA;
-  --sage-soft: #353A31;
-  --danger: #E8A091;
-  --danger-soft: #4A3330;
-  --scrim: rgb(20 17 17 / 0.5);
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.12);
-  --shadow-2: 0 -2px 28px -10px rgb(0 0 0 / 0.5);
-  --shadow-toast: 0 12px 30px -12px rgb(0 0 0 / 0.6);
-  --focus: #DEB5AB;
+  --sage-ink: #BFCBB2;
+  --sage-soft: #3A4036;
+  --danger: #EBA698;
+  --danger-soft: #533A36;
+  --scrim: rgb(24 20 20 / 0.5);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.14);
+  --shadow-2: 0 -2px 28px -10px rgb(0 0 0 / 0.45);
+  --shadow-toast: 0 12px 30px -12px rgb(0 0 0 / 0.55);
+  --focus: #E2BBB1;
 
   --keimling-body: #AFBCA2;
   --keimling-shade: #93A186;
   --keimling-leaf: #9DB08D;
   --keimling-stem: #8A9C7C;
-  --keimling-eye: #262222;
+  --keimling-eye: #2A2626;
   --keimling-cheek: #D3A99F;
   --keimling-bloom: #D3A99F;
-  --keimling-ground: rgb(0 0 0 / 0.18);
+  --keimling-ground: rgb(0 0 0 / 0.16);
   --keimling-shine: rgb(255 255 255 / 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']):not([data-theme='dark']) {
     color-scheme: dark;
-    --bg: #232020;
-    --card: #2C2828;
-    --line: #3A3433;
-    --line-strong: #4A4241;
+    --bg: #2A2626;
+    --card: #343030;
+    --line: #3F3A39;
+    --line-strong: #504948;
     --text: #EEE7E3;
-    --muted: #ABA19C;
-    --soft: #3A3433;
-  --segment-track: #1E1B1B;
-  --segment-thumb: #474040;
+    --muted: #B3A9A4;           /* 4,5:1 auch auf --soft */
+    --soft: #3F3A39;
+    --bar: #2A2626;
+    --tab-indicator: #4D3F3D;
+    --segment-track: #232020;
+    --segment-thumb: #4A4342;
     --accent: #D3A99F;
     --accent-strong: #D3A99F;
-    --accent-ink: #DEB5AB;
-    --accent-soft: #463A38;
+    --accent-ink: #E2BBB1;
+    --accent-soft: #4D3F3D;
     --on-accent: #2A201E;
     --sage: #AFBCA2;
-    --sage-ink: #B7C4AA;
-    --sage-soft: #353A31;
-    --danger: #E8A091;
-    --danger-soft: #4A3330;
-    --scrim: rgb(20 17 17 / 0.5);
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.12);
-    --shadow-2: 0 -2px 28px -10px rgb(0 0 0 / 0.5);
-    --shadow-toast: 0 12px 30px -12px rgb(0 0 0 / 0.6);
-    --focus: #DEB5AB;
+    --sage-ink: #BFCBB2;
+    --sage-soft: #3A4036;
+    --danger: #EBA698;
+    --danger-soft: #533A36;
+    --scrim: rgb(24 20 20 / 0.5);
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.14);
+    --shadow-2: 0 -2px 28px -10px rgb(0 0 0 / 0.45);
+    --shadow-toast: 0 12px 30px -12px rgb(0 0 0 / 0.55);
+    --focus: #E2BBB1;
 
     --keimling-body: #AFBCA2;
     --keimling-shade: #93A186;
     --keimling-leaf: #9DB08D;
     --keimling-stem: #8A9C7C;
-    --keimling-eye: #262222;
+    --keimling-eye: #2A2626;
     --keimling-cheek: #D3A99F;
     --keimling-bloom: #D3A99F;
-    --keimling-ground: rgb(0 0 0 / 0.18);
+    --keimling-ground: rgb(0 0 0 / 0.16);
     --keimling-shine: rgb(255 255 255 / 0.22);
   }
 }
@@ -212,5 +220,6 @@
     --dur-1: 0ms;
     --dur-2: 0ms;
     --dur-3: 0ms;
+    --dur-nav: 0ms;
   }
 }

@@ -94,3 +94,32 @@ export function sportTarget(enabled) {
   if (enabled.includes('train')) return 'live';
   return null;
 }
+
+/** Reihenfolge der Tabs (Routen); Unbekanntes reiht sich dahinter ein. */
+export const TAB_ORDER = Object.freeze(['heute', 'training', 'fokus', 'mama', 'ideen']);
+/** Mehr Tabs passen auf einem Handy nicht gut nebeneinander. */
+export const MAX_TABS = 5;
+
+/**
+ * Tab-Leiste: „Heute“ und die Tabs der eingeschalteten Module in fester Reihenfolge,
+ * höchstens MAX_TABS. „Profil“ kommt dazu, solange noch Platz ist (sonst über den Avatar).
+ * @template {{route: string}} T
+ * @param {T[]} tabs           Heute + Modul-Tabs (beliebige Reihenfolge)
+ * @param {T} [profile]        Profil-Tab
+ * @param {{order?: readonly string[], max?: number}} [options]
+ * @returns {T[]}
+ */
+export function arrangeTabs(tabs, profile, { order = TAB_ORDER, max = MAX_TABS } = {}) {
+  const rank = (/** @type {T} */ tab) => {
+    const i = order.indexOf(tab.route);
+    return i < 0 ? order.length : i;
+  };
+  const seen = new Set();
+  const sorted = tabs
+    .filter((tab) => !seen.has(tab.route) && seen.add(tab.route))
+    .map((tab, i) => ({ tab, i }))
+    .sort((a, b) => rank(a.tab) - rank(b.tab) || a.i - b.i)
+    .map((x) => x.tab)
+    .slice(0, max);
+  return profile && sorted.length < max ? [...sorted, profile] : sorted;
+}

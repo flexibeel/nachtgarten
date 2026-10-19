@@ -16,20 +16,88 @@ export const REST_OPTIONS = Object.freeze([60, 90, 120, 180]);
 export const REST_ADD = 30;
 export const MAX_REST = 600;
 
-/** Startgewicht ohne Verlauf, je Gerät (SPEC 3.9.7, Soll). */
-export const START_WEIGHT = Object.freeze({
-  'Körpergewicht': 0,
-  'Bänder': 0,
-  Eigenes: 0,
-  Sonstiges: 0,
-  Kurzhanteln: 5,
-  Kettlebell: 8,
-  Kabelzug: 10,
-  Maschinen: 10,
-  'SZ-Stange': 10,
-  Langhantel: 20,
-  Klimmzugstange: 0,
+/**
+ * Geräteart je Gerätename der App (deutsch, wie in data/library.js und exercise-db.js).
+ * Was hier fehlt (Sonstiges, Eigenes, Unbekanntes), hat keine sinnvolle Vorgabe.
+ */
+export const GEAR_KIND = Object.freeze({
+  Langhantel: 'barbell',
+  Multipresse: 'barbell',
+  'SZ-Stange': 'ezbar',
+  Kurzhanteln: 'dumbbell',
+  Kurzhantel: 'dumbbell',
+  Kabelzug: 'cable',
+  Maschinen: 'machine',
+  Maschine: 'machine',
+  Kettlebell: 'kettlebell',
+  'Körpergewicht': 'bodyweight',
+  Klimmzugstange: 'bodyweight',
+  'Bänder': 'band',
+  Band: 'band',
 });
+
+/** Startgewicht ohne Verlauf je Geräteart in kg (SPEC 3.9.7). */
+export const START_WEIGHT = Object.freeze({
+  barbell: 20,
+  ezbar: 10,
+  dumbbell: 8,
+  cable: 15,
+  machine: 15,
+  kettlebell: 12,
+  bodyweight: 0,
+  band: 0,
+});
+
+/** @param {string|undefined} gear */
+export const gearKind = (gear) => /** @type {Record<string, string>} */ (GEAR_KIND)[gear ?? ''] ?? null;
+
+/** Übung ohne Zusatzlast (Gewichtsfeld zeigt „Körpergewicht“). @param {string|undefined} gear */
+export const isBodyweightGear = (gear) => gearKind(gear) === 'bodyweight';
+
+/**
+ * Startgewicht für eine Übung ohne eigenen Verlauf: nach Geräteart, sonst das zuletzt
+ * benutzte Gewicht (z. B. „Sonstiges“), ohne beides 0.
+ * @param {string|undefined} gear
+ * @param {number|null} [lastUsed]
+ */
+export function defaultWeight(gear, lastUsed = null) {
+  const kind = gearKind(gear);
+  if (kind && kind in START_WEIGHT) return /** @type {Record<string, number>} */ (START_WEIGHT)[kind];
+  return Number.isFinite(lastUsed) && /** @type {number} */ (lastUsed) >= 0 ? /** @type {number} */ (lastUsed) : 0;
+}
+
+/**
+ * Zuletzt benutztes Gewicht über alle Übungen: letzter Satz im laufenden Training,
+ * sonst der jüngste Verlaufseintrag (Datum, dann Reihenfolge). null = noch nie trainiert.
+ * @param {{liveSets?: {weight: number}[], history?: Record<string, SetRecord[]>}} input
+ */
+export function lastUsedWeight({ liveSets = [], history = {} }) {
+  const live = liveSets[liveSets.length - 1];
+  if (live) return live.weight;
+  let best = /** @type {SetRecord|null} */ (null);
+  for (const list of Object.values(history)) {
+    const last = list[list.length - 1];
+    if (last && (!best || last.date > best.date || (last.date === best.date && (last.session ?? 0) > (best.session ?? 0)))) best = last;
+  }
+  return best ? best.weight : null;
+}
+
+/**
+ * „Letztes Mal“: Sätze des letzten früheren Trainingstags, zusammengefasst als
+ * Anzahl × Wiederholungen · Gewicht (schwerstes Gewicht, beste Wdh. damit).
+ * @param {SetRecord[]} history   Verlauf der Übung, chronologisch
+ * @param {string} today
+ * @returns {{sets: number, reps: number, weight: number}|null}
+ */
+export function lastSessionSummary(history, today) {
+  const before = history.filter((x) => x.date !== today);
+  if (!before.length) return null;
+  const date = before[before.length - 1].date;
+  const sets = before.filter((x) => x.date === date);
+  const weight = Math.max(...sets.map((x) => x.weight));
+  const reps = Math.max(...sets.filter((x) => x.weight === weight).map((x) => x.reps));
+  return { sets: sets.length, reps, weight };
+}
 
 /**
  * @typedef {object} LiveUi
@@ -99,11 +167,12 @@ export function restProgress(rest, now) {
  * @param {string} [input.goal]
  * @param {'low'|'ok'|'high'|null} [input.form]
  * @param {number} [input.step]
+ * @param {number|null} [input.lastUsed]      zuletzt benutztes Gewicht (für Geräte ohne Vorgabe)
  */
-export function prefill({ history, gear, target = null, repRange, goal, form = null, step }) {
+export function prefill({ history, gear, target = null, repRange, goal, form = null, step, lastUsed = null }) {
   const last = history[history.length - 1];
   const range = repRangeOrDefault(repRange, goal);
-  let weight = last ? last.weight : START_WEIGHT[gear] ?? 0;
+  let weight = last ? last.weight : defaultWeight(gear, lastUsed);
   weight = applyDailyForm(weight, form, { hasHistory: !!last, step: stepOrDefault(step) });
   const fromTarget = target ? targetLowReps(target) : null;
   const reps = fromTarget ?? (last ? last.reps : range[0]);
@@ -142,6 +211,18 @@ export function queueProgress(live) {
   const total = items.reduce((a, it) => a + it.sets, 0);
   const done = items.reduce((a, it) => a + Math.min(it.sets, setsDone(live, it.exercise)), 0);
   return { done, total };
+}
+
+/**
+ * Punkte für den Satz-Fortschritt einer Übung: erledigt, aktuell, offen.
+ * Mit Soll aus dem Plan so viele Punkte wie Sätze (plus Zusatzsätze), frei: erledigte + ein offener.
+ * @param {number} done
+ * @param {number|null} target   Soll-Sätze (null = freies Training)
+ * @returns {('done'|'current'|'open')[]}
+ */
+export function setDots(done, target) {
+  const total = target ? Math.max(target, done) : done + 1;
+  return Array.from({ length: Math.min(total, 12) }, (_, i) => (i < done ? 'done' : i === done ? 'current' : 'open'));
 }
 
 /**

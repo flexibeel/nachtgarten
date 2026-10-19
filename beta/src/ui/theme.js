@@ -16,7 +16,7 @@ export const themeOptions = () => [
 ];
 
 /** Hintergrundfarben aus tokens.css für die Statusleiste. */
-export const THEME_COLORS = Object.freeze({ light: '#F5F1EE', dark: '#232020' });
+export const THEME_COLORS = Object.freeze({ light: '#F5F1EE', dark: '#2A2626' });
 
 /**
  * Tatsächlich sichtbares Design (rein, getestet).

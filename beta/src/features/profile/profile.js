@@ -9,7 +9,7 @@ import { COMPANION_NAME_MAX, withCompanion } from '../../domain/companion.js';
 import { speciesInfo } from '../../data/companions.js';
 import { goalLabel, goalOptions } from '../../data/goals.js';
 import { TONES, companionLine } from '../../data/texts/companion.js';
-import { t } from '../../data/texts/i18n.js';
+import { t, tList } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { chipGroup, segmented } from '../../ui/chips.js';
 import { switchRow, textField } from '../../ui/fields.js';
@@ -17,7 +17,7 @@ import { companionFigure } from '../../ui/companion.js';
 import { icon } from '../../ui/icons.js';
 import { openSheet } from '../../ui/sheet.js';
 import { toast } from '../../ui/toast.js';
-import { companionStage, isPlain, setPlain } from '../companion/companion-state.js';
+import { companionStage, isPlain, setPlain, stageName } from '../companion/companion-state.js';
 import { companionPicker } from '../companion/picker.js';
 import { mamaForm } from '../mama/mama-setup.js';
 import { openOnboarding } from '../onboarding/onboarding.js';
@@ -140,9 +140,26 @@ export function openProfile(ctx) {
 }
 
 /**
+ * Profil als eigene Seite (Tab „Profil“, wenn in der Tab-Leiste Platz ist).
+ * @param {AppContext} ctx
+ * @param {HTMLElement} view
+ * @returns {() => void}
+ */
+export function mountProfilePage(ctx, view) {
+  /** @type {(() => void)[]} */
+  const cleanups = [];
+  const page = h('div', { class: 'profile profile-page' },
+    h('header', { class: 'page-head' }, h('h1', { class: 'page-title', text: t('view.profil') })),
+    buildProfile(ctx, null, cleanups),
+  );
+  view.append(page);
+  return () => cleanups.forEach((fn) => fn());
+}
+
+/**
  * Inhalt des Profils.
  * @param {AppContext} ctx
- * @param {import('../../ui/sheet.js').Sheet} sheet
+ * @param {import('../../ui/sheet.js').Sheet|null} sheet   null: als eigene Seite (Tab „Profil“)
  * @param {(() => void)[]} cleanups   wird befüllt
  * @returns {Node[]}
  */
@@ -236,12 +253,30 @@ function buildProfile(ctx, sheet, cleanups) {
       text: t('profile.restart'),
       on: {
         click: async () => {
-          await sheet.close('restart');
+          await sheet?.close('restart');
           openOnboarding(ctx);
         },
       },
     }),
   ];
+}
+
+/**
+ * Stufe der Verbindung (steht nur hier, nicht an der Sprechblase auf „Heute“).
+ * @param {AppContext} ctx
+ */
+function bondRow(ctx) {
+  const value = h('p', { class: 'profile-bond-value' });
+  const paint = () => {
+    const stage = companionStage(ctx);
+    const total = tList(`species.${ctx.companion().species}.stages`).length || 4;
+    value.textContent = t('companion.bondValue', { stage: stageName(ctx, stage), n: stage, total });
+  };
+  paint();
+  return {
+    el: h('div', { class: 'setting profile-bond' }, h('p', { class: 'setting-label', text: t('companion.bond') }), value, h('p', { class: 'field-hint', text: t('companion.bondHint') })),
+    paint,
+  };
 }
 
 /**
@@ -256,6 +291,7 @@ function companionSection(ctx, { updateCompanion, paintSample, sample, cleanups 
     details.hidden = isPlain(ctx);
     if (details.hidden) return replace(details);
     const companion = ctx.companion();
+    const bond = bondRow(ctx);
     const name = textField({
       label: t('companion.name'),
       value: companion.name,
@@ -278,9 +314,11 @@ function companionSection(ctx, { updateCompanion, paintSample, sample, cleanups 
           name.input.value = ctx.companion().name;
           name.input.placeholder = speciesInfo(species).defaultName;
           paintSample();
+          bond.paint();
         },
       }),
       name,
+      bond.el,
       h(
         'div',
         { class: 'setting' },

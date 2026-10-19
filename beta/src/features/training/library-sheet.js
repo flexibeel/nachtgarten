@@ -223,6 +223,20 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
 }
 
 /**
+ * Animation zu einer Übung (Muster, Gerät, Optionen) – für „So geht’s“ und das Live-Training.
+ * @param {import('./exercises.js').LibExercise} ex
+ * @param {{attachment?: string, height?: string}} [prefs]
+ */
+export function animConfig(ex, prefs = {}) {
+  const cable = ex.gear === 'Kabelzug';
+  const attachment = prefs.attachment ?? ex.attachment;
+  const height = cable ? prefs.height ?? 'mittel' : null;
+  return ex.pattern
+    ? { pattern: ex.pattern, equipment: mapExercise(ex).equipment, options: {} }
+    : mapExercise({ ...ex, name: [ex.name, ex.en].filter(Boolean).join(' ') }, { handle: attachment, height: height ?? undefined });
+}
+
+/**
  * „So geht’s“: Animation, Name, Gerät (mit Kabel-Aufsatz und Rollenhöhe), Muskeln, Hinweise.
  * @param {AppContext} ctx
  * @param {string} id
@@ -264,9 +278,7 @@ export function openExerciseDetail(ctx, id, { onPick } = {}) {
   });
   let anim = null;
   try {
-    const map = ex.pattern
-      ? { pattern: ex.pattern, equipment: mapExercise(ex).equipment, options: {} }
-      : mapExercise({ ...ex, name: [ex.name, ex.en].filter(Boolean).join(' ') }, { handle: attachment, height: height ?? undefined });
+    const map = animConfig(ex, prefs);
     anim = createExerciseAnim(stage, { ...map, size: 200, label: t('library.animLabel', { name: ex.name }), muscles: ex.muscles });
   } catch {
     stage.hidden = true;

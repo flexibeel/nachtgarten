@@ -6,7 +6,7 @@ import { prefersReducedMotion } from '../../core/platform.js';
 import { t } from '../../data/texts/i18n.js';
 import { replace } from '../../ui/dom.js';
 import { companionSpeech } from '../../ui/companion.js';
-import { isPlain, lineFor, stageName, visitCompanion } from '../companion/companion-state.js';
+import { isPlain, lineFor, visitCompanion } from '../companion/companion-state.js';
 import { reactivePart } from '../part.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
@@ -41,7 +41,8 @@ export function companionPart(ctx) {
         stage: snap.stage,
         mood: waking ? 'tired' : snap.mood,
         line: waking ? t('companion.wake') : lineFor(ctx, snap.context, { count: snap.redirects }),
-        caption: t('companion.caption', { name, stage: stageName(ctx, snap.stage) }),
+        // Nur der Name: die Stufe der Verbindung steht im Profil (eine Angabe weniger im Blick).
+        caption: name,
         onTap: () => {
           taps += 1;
           const context = taps % 3 === 0 && snap.context !== 'sleepy' ? snap.context : 'tap';

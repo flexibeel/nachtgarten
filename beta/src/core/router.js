@@ -44,18 +44,44 @@ export function resolveHash(hash, { routes, aliases = {}, fallback }) {
  */
 
 /**
- * @param {RouteTable & {onRoute: (route: Route, previous: Route|null) => void, location?: Location, history?: History, window?: Window}} options
+ * Richtung eines Wechsels aus der Position im Verlauf (für Vor-/Zurück-Übergänge).
+ * @param {number|null} entry   gespeicherte Position des neuen Eintrags (null = neuer Eintrag)
+ * @param {number} index        bisherige Position
+ * @returns {{direction: 'forward'|'back'|'none', index: number}}
+ */
+export function historyStep(entry, index) {
+  if (entry == null) return { direction: 'forward', index: index + 1 };
+  return { direction: entry < index ? 'back' : entry > index ? 'forward' : 'none', index: entry };
+}
+
+/**
+ * @param {RouteTable & {onRoute: (route: Route, previous: Route|null, info: {direction: 'forward'|'back'|'none'}) => void, location?: Location, history?: History, window?: Window}} options
  * @returns {Router}
  */
 export function createRouter({ onRoute, location = globalThis.location, history = globalThis.history, window: win = globalThis.window, ...table }) {
   /** @type {Route|null} */
   let current = null;
+  /** Position im Verlauf; steht als `ngIndex` im Verlaufseintrag (so erkennt „Zurück“ sich selbst). */
+  let index = 0;
+  const entryIndex = () => {
+    const state = history.state;
+    return state && typeof state.ngIndex === 'number' ? state.ngIndex : null;
+  };
 
   const handle = () => {
     const next = resolveHash(location.hash, table);
     const previous = current;
     current = next;
-    onRoute(next, previous);
+    let direction = /** @type {'forward'|'back'|'none'} */ ('none');
+    if (previous) {
+      const step = historyStep(entryIndex(), index);
+      direction = step.direction;
+      index = step.index;
+    } else {
+      index = entryIndex() ?? 0;
+    }
+    if (entryIndex() !== index) history.replaceState({ ...(history.state ?? {}), ngIndex: index }, '');
+    onRoute(next, previous, { direction });
   };
 
   return {
@@ -65,7 +91,7 @@ export function createRouter({ onRoute, location = globalThis.location, history 
       const hash = `#${name}${query}`;
       if (location.hash === hash) return;
       if (replace) {
-        history.replaceState(null, '', hash);
+        history.replaceState({ ngIndex: index }, '', hash);
         handle();
       } else {
         location.hash = hash;

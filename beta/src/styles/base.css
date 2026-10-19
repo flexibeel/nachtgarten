@@ -118,7 +118,9 @@ svg {
   padding-bottom: calc(var(--safe-bottom) + var(--space-8));
 }
 
-/* Leichter Übergang zwischen Ansichten (View Transitions; ohne Unterstützung sofort) */
+/* Übergänge zwischen Ansichten (View Transitions; ohne Unterstützung oder mit
+   reduzierter Bewegung sofort). data-nav setzt die Shell:
+   push = tiefer (neue Seite schiebt sich von rechts herein), pop = zurück, fade = Tab-Wechsel. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: var(--dur-2);
@@ -129,6 +131,29 @@ svg {
 }
 ::view-transition-new(root) {
   animation-name: view-in;
+}
+:root[data-nav='push']::view-transition-old(root),
+:root[data-nav='push']::view-transition-new(root),
+:root[data-nav='pop']::view-transition-old(root),
+:root[data-nav='pop']::view-transition-new(root) {
+  animation-duration: var(--dur-nav);
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+}
+:root[data-nav='push']::view-transition-old(root) {
+  animation-name: nav-behind-out;
+}
+:root[data-nav='push']::view-transition-new(root) {
+  animation-name: nav-front-in;
+  box-shadow: -12px 0 32px -16px rgb(0 0 0 / 0.25);
+}
+:root[data-nav='pop']::view-transition-old(root) {
+  z-index: 1;
+  animation-name: nav-front-out;
+  box-shadow: -12px 0 32px -16px rgb(0 0 0 / 0.25);
+}
+:root[data-nav='pop']::view-transition-new(root) {
+  animation-name: nav-behind-in;
 }
 ::view-transition-group(tabbar) {
   animation: none;
@@ -146,6 +171,28 @@ svg {
 @keyframes view-out {
   to {
     opacity: 0;
+  }
+}
+@keyframes nav-front-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes nav-front-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes nav-behind-out {
+  to {
+    opacity: 0.55;
+    transform: translateX(-24%);
+  }
+}
+@keyframes nav-behind-in {
+  from {
+    opacity: 0.55;
+    transform: translateX(-24%);
   }
 }
 

@@ -31,18 +31,18 @@ export const ANIM_VARS_CSS = `
   --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7;
 }
 @media (prefers-color-scheme:dark){:where(:root:not([data-theme="light"])){
-  --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
+  --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
-  --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
-  --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
-  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
+  --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
+  --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C;
 }}
 :where(:root[data-theme="dark"]){
-  --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
+  --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
-  --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
-  --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
-  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
+  --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
+  --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C;
 }`;
 /** Regeln für die Szene (Farben nur über --anim-*). */
 export const ANIM_RULES_CSS = `
