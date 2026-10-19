@@ -65,6 +65,8 @@ export const LEGACY_KEYS = Object.freeze({
   'lab.lastCard': 'lastCard',
   'lab.likes': 'ideas',
   'lab.motto': 'motto',
+  'lab.lang': 'settings', // Sprache der Übungsnamen in v1 → Sprache der Oberfläche
+  'lab.installSkip': 'settings', // „Später“ beim Installations-Hinweis: in v2 ohne Bedeutung
 });
 
 const GOALS = ['Muskelaufbau', 'Kraft', 'Abnehmen', 'Fit bleiben', 'Ausdauer'];
@@ -144,12 +146,12 @@ function convertModules(foci) {
 }
 
 function convertSettings(v) {
-  const has = ['lab.theme', 'lab.view', 'lab.startView', 'lab.rest', 'lab.timeOn', 'lab.lockTrain', 'lab.foci', 'lab.focus']
+  const has = ['lab.theme', 'lab.view', 'lab.startView', 'lab.rest', 'lab.timeOn', 'lab.lockTrain', 'lab.foci', 'lab.focus', 'lab.lang']
     .some((k) => v[k] !== undefined);
   if (!has) return undefined;
   const legacyFoci = Array.isArray(v['lab.focus']) ? strArray(v['lab.focus']) : null;
   return {
-    lang: 'de',
+    lang: v['lab.lang'] === 'en' ? 'en' : 'de',
     theme: v['lab.theme'] === 'light' || v['lab.theme'] === 'dark' ? v['lab.theme'] : 'system',
     view: v['lab.view'] === 'profi' ? 'profi' : 'einfach',
     startView: START_VIEWS.includes(v['lab.startView']) ? v['lab.startView'] : 'heute',

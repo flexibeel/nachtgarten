@@ -3002,3 +3002,33 @@
 .editor-session-view .editor-name {
   font-size: clamp(1.75rem, 7.6vw, 2.2rem);
 }
+
+/* Brücke zur klassischen Version */
+.classic-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+}
+.classic-title {
+  font-weight: var(--fw-medium);
+}
+.classic-what,
+.classic-lead {
+  color: var(--muted);
+}
+.classic-note {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.placeholder .classic-card .button {
+  margin-top: 0;
+}
+.classic-open {
+  justify-content: space-between;
+}
+.classic-card-compact {
+  margin-top: var(--space-4);
+}

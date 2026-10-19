@@ -5,6 +5,7 @@
  * #fokus / #umlenken       → Woche, Zeitkonto, Einrichtung des iPhone-Kurzbefehls.
  */
 
+import { classicCard } from '../classic/classic.js';
 import { clock } from '../../core/format.js';
 import { copyText, haptic, openExternal, prefersReducedMotion } from '../../core/platform.js';
 import { monday } from '../../core/dates.js';
@@ -63,7 +64,7 @@ function mountOverview(ctx, view) {
     h('button', { type: 'button', class: 'button button-primary button-wide', on: { click: () => openGuide(ctx) } }, icon('phone'), h('span', { text: t('gate.setup') })),
     h('a', { class: 'button button-quiet button-wide', href: '#umlenken?von=probe' }, h('span', { text: t('gate.preview') })),
   );
-  view.append(head, stats.el, actions);
+  view.append(head, stats.el, actions, classicCard({ hash: 'umlenken', what: t('classic.fokus'), compact: true }));
   return () => stats.destroy?.();
 }
 
