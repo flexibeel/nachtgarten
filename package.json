@@ -1,0 +1,10 @@
+{
+  "name": "nachtgarten",
+  "version": "2.0.0-dev",
+  "private": true,
+  "description": "Nachtgarten v2 – persönliche Begleiter-App (PWA), Domain- und Kernlogik",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/unit/**/*.test.js\""
+  }
+}
