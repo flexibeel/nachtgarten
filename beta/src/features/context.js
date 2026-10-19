@@ -8,6 +8,7 @@ import { createStore, localStorageAdapter } from '../core/store.js';
 import { dateKey } from '../core/dates.js';
 import { applyTheme } from '../ui/theme.js';
 import { companionOf } from '../domain/companion.js';
+import { setLang } from '../data/texts/i18n.js';
 
 /** @typedef {import('../core/store.js').Store} Store */
 /** @typedef {import('../core/store.js').AreaName} AreaName */
@@ -25,6 +26,7 @@ import { companionOf } from '../domain/companion.js';
  * @property {(name: string, options?: {replace?: boolean}) => void} go       navigieren (vom Router gesetzt)
  * @property {(areas: AreaName[], fn: () => void) => () => void} watch       auf Speicher-Änderungen hören
  * @property {(setting: 'system'|'light'|'dark') => void} setTheme
+ * @property {(lang: 'de'|'en') => void} setLanguage   Sprache speichern, anwenden, alles neu zeichnen
  * @property {() => void} reload    alles neu aufbauen (nach Wiederherstellen/Löschen)
  */
 
@@ -56,6 +58,11 @@ export function createContext({ registry, adapter = localStorageAdapter(), now =
       store.settings.update((s) => ({ ...s, theme: setting }));
       applyTheme(setting);
       bus.emit('theme', setting);
+    },
+    setLanguage(lang) {
+      const applied = setLang(lang);
+      store.settings.update((s) => ({ ...s, lang: applied }));
+      bus.emit('lang', applied);
     },
     reload: () => bus.emit('reload'),
   };

@@ -3,6 +3,7 @@
  */
 
 import { haptic } from '../../core/platform.js';
+import { t } from '../../data/texts/i18n.js';
 import { FOCUS_MAX_LENGTH, currentFocus, setFocus, toggleFocusDone } from '../../domain/today.js';
 import { h, replace } from '../../ui/dom.js';
 import { card, cardAction } from '../../ui/card.js';
@@ -28,14 +29,14 @@ export function focusPart(ctx) {
 
       if (!focus.text || editing) {
         const form = inlineForm({
-          label: 'Eine Sache heute',
-          placeholder: 'Was ist heute wirklich wichtig?',
-          buttonLabel: 'Festhalten',
+          label: t('oneThing.title'),
+          placeholder: t('oneThing.placeholder'),
+          buttonLabel: t('oneThing.add'),
           maxlength: FOCUS_MAX_LENGTH,
           value: focus.text,
           onSubmit: save,
         });
-        replace(el, card({ title: 'Eine Sache heute', className: 'one-thing' }, form));
+        replace(el, card({ title: t('oneThing.title'), className: 'one-thing' }, form));
         if (editing) requestAnimationFrame(() => form.input.focus());
         return;
       }
@@ -47,7 +48,7 @@ export function focusPart(ctx) {
           class: ['one-thing-check', focus.done && 'is-done'],
           role: 'checkbox',
           'aria-checked': String(focus.done),
-          'aria-label': `Erledigt: ${focus.text}`,
+          'aria-label': t('oneThing.done', { text: focus.text }),
           on: {
             click: () => {
               haptic(focus.done ? 'tap' : 'success');
@@ -59,14 +60,14 @@ export function focusPart(ctx) {
         h('span', { class: 'one-thing-text', text: focus.text }),
       );
       const edit = cardAction(
-        'Ändern',
+        t('common.edit'),
         () => {
           editing = true;
           part.repaint?.();
         },
         'edit',
       );
-      replace(el, card({ title: 'Eine Sache heute', className: ['one-thing', focus.done && 'is-done'].filter(Boolean).join(' '), action: edit }, toggle));
+      replace(el, card({ title: t('oneThing.title'), className: ['one-thing', focus.done && 'is-done'].filter(Boolean).join(' '), action: edit }, toggle));
     },
     'heute-one-thing',
   );

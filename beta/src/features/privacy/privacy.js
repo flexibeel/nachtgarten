@@ -5,7 +5,7 @@
 
 import { backupFilename, createBackup, parseBackup, restoreBackup } from '../../domain/backup.js';
 import { pickTextFile, saveFile, haptic } from '../../core/platform.js';
-import { text } from '../../data/texts/de.js';
+import { locale, t } from '../../data/texts/i18n.js';
 import { h } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
 import { confirmSheet } from '../../ui/sheet.js';
@@ -13,9 +13,8 @@ import { toast } from '../../ui/toast.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
-export const PRIVACY_LINE = 'Alles bleibt nur auf diesem Gerät. Kein Konto, kein Upload.';
-
-const dateFormat = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+/** @param {Date} date */
+const formatDate = (date) => new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
 
 /**
  * Sicherung als Datei speichern (Download, auf dem Handy wahlweise Teilen-Menü).
@@ -30,9 +29,9 @@ export async function saveBackup(ctx) {
   });
   if (result === 'downloaded' || result === 'shared') {
     haptic('success');
-    toast('Sicherung gespeichert');
+    toast(t('backup.saved'));
   } else if (result === 'failed') {
-    toast('Speichern hat nicht geklappt. Bitte noch einmal versuchen.');
+    toast(t('backup.saveFailed'));
   }
 }
 
@@ -46,20 +45,19 @@ export async function loadBackup(ctx) {
   const parsed = parseBackup(file.text);
   if (!parsed.ok) {
     haptic('warning');
-    toast(text(parsed.error));
+    toast(t(parsed.error));
     return;
   }
-  const when = parsed.created ? ` vom ${dateFormat.format(parsed.created)}` : '';
   const ok = await confirmSheet({
-    title: 'Sicherung laden?',
-    message: `Die Sicherung${when} ersetzt alles, was gerade in der App gespeichert ist.`,
-    confirmLabel: 'Sicherung laden',
+    title: t('backup.confirmTitle'),
+    message: parsed.created ? t('backup.confirmTextDated', { date: formatDate(parsed.created) }) : t('backup.confirmText'),
+    confirmLabel: t('backup.load'),
   });
   if (!ok) return;
   restoreBackup(ctx.store, parsed.data, ctx.now());
   haptic('success');
   ctx.reload();
-  toast('Sicherung geladen');
+  toast(t('backup.loaded'));
 }
 
 /**
@@ -70,11 +68,9 @@ export async function loadBackup(ctx) {
 export async function wipeAll(ctx) {
   const hasLegacy = Object.keys(ctx.store.readLegacy()).length > 0;
   const ok = await confirmSheet({
-    title: 'Alles löschen?',
-    message:
-      'Profil, Trainings, Gewohnheit, Notizen und Einstellungen werden von diesem Gerät gelöscht. Das lässt sich nicht rückgängig machen. Speichere vorher eine Sicherung, wenn du etwas behalten willst.' +
-      (hasLegacy ? ' Die Daten der bisherigen Nachtgarten-Version bleiben unberührt.' : ''),
-    confirmLabel: 'Alles löschen',
+    title: t('wipe.title'),
+    message: hasLegacy ? `${t('wipe.text')} ${t('wipe.legacy')}` : t('wipe.text'),
+    confirmLabel: t('wipe.button'),
     danger: true,
   });
   if (!ok) return;
@@ -82,7 +78,7 @@ export async function wipeAll(ctx) {
   const stamp = new Date(ctx.now()).toISOString();
   ctx.store.meta.set({ ...ctx.store.meta.get(), createdAt: stamp, migratedFromV1: hasLegacy ? stamp : null });
   ctx.reload();
-  toast('Alles gelöscht');
+  toast(t('wipe.done'));
 }
 
 /**
@@ -95,13 +91,13 @@ export function privacyPanel(ctx) {
   return h(
     'div',
     { class: 'privacy' },
-    h('p', { class: 'privacy-line' }, icon('lock', { size: 18 }), h('span', { text: PRIVACY_LINE })),
+    h('p', { class: 'privacy-line' }, icon('lock', { size: 18 }), h('span', { text: t('privacy.line') })),
     h(
       'div',
       { class: 'list-buttons' },
-      action('Sicherung speichern', 'download', () => saveBackup(ctx)),
-      action('Sicherung laden', 'upload', () => loadBackup(ctx)),
-      action('Alles löschen', 'trash', () => wipeAll(ctx), true),
+      action(t('backup.save'), 'download', () => saveBackup(ctx)),
+      action(t('backup.load'), 'upload', () => loadBackup(ctx)),
+      action(t('wipe.button'), 'trash', () => wipeAll(ctx), true),
     ),
   );
 }

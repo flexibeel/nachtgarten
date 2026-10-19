@@ -3,6 +3,7 @@
  */
 
 import { prefersReducedMotion } from '../../core/platform.js';
+import { t } from '../../data/texts/i18n.js';
 import { replace } from '../../ui/dom.js';
 import { companionSpeech } from '../../ui/companion.js';
 import { lineFor, stageName, visitCompanion } from '../companion/companion-state.js';
@@ -35,8 +36,8 @@ export function companionPart(ctx) {
         name,
         stage: snap.stage,
         mood: waking ? 'tired' : snap.mood,
-        line: waking ? '…hm? Oh!' : lineFor(ctx, snap.context, { count: snap.redirects }),
-        caption: `${name}, ${stageName(ctx, snap.stage)}`,
+        line: waking ? t('companion.wake') : lineFor(ctx, snap.context, { count: snap.redirects }),
+        caption: t('companion.caption', { name, stage: stageName(ctx, snap.stage) }),
         onTap: () => {
           taps += 1;
           const context = taps % 3 === 0 && snap.context !== 'sleepy' ? snap.context : 'tap';

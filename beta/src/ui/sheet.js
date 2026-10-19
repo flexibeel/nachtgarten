@@ -6,6 +6,7 @@
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { haptic, prefersReducedMotion } from '../core/platform.js';
+import { t } from '../data/texts/i18n.js';
 
 /** @type {Sheet[]} */
 const stack = [];
@@ -44,7 +45,7 @@ export function openSheet({ title, content = [], actions, hideTitle = false, dis
 
   const heading = h('h2', { id: titleId, class: ['sheet-title', hideTitle && 'visually-hidden'], text: title });
   const closeButton = dismissible
-    ? h('button', { type: 'button', class: 'icon-button sheet-close', 'aria-label': 'Schließen' }, icon('close'))
+    ? h('button', { type: 'button', class: 'icon-button sheet-close', 'aria-label': t('common.close') }, icon('close'))
     : null;
   const handle = h('div', { class: 'sheet-handle', 'aria-hidden': 'true' });
   const header = h('header', { class: 'sheet-header' }, handle, heading, closeButton);
@@ -225,7 +226,7 @@ export const hasOpenSheet = () => stack.length > 0;
  * @param {boolean} [options.danger]
  * @returns {Promise<boolean>}
  */
-export function confirmSheet({ title, message, confirmLabel, cancelLabel = 'Abbrechen', danger = false }) {
+export function confirmSheet({ title, message, confirmLabel, cancelLabel = t('common.cancel'), danger = false }) {
   return new Promise((resolve) => {
     let result = false;
     const confirm = h('button', { type: 'button', class: ['button', danger ? 'button-danger' : 'button-primary'], text: confirmLabel });

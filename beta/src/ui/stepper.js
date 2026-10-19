@@ -4,6 +4,7 @@
 
 import { formatNumber, round } from '../core/format.js';
 import { haptic } from '../core/platform.js';
+import { t } from '../data/texts/i18n.js';
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { openNumpad } from './numpad.js';
@@ -35,9 +36,9 @@ export function stepper({ label, value, min = 0, max = 999, step = 1, decimals =
   const show = (v) => (format ? format(v) : formatNumber(v, decimals));
   const valueText = h('span', { class: 'stepper-number' });
   const unitText = unit ? h('span', { class: 'stepper-unit', text: unit }) : null;
-  const valueButton = h('button', { type: 'button', class: 'stepper-value', 'aria-label': `${label}: eintippen` }, valueText, unitText);
-  const minus = h('button', { type: 'button', class: 'stepper-button', 'aria-label': `${label} verringern` }, icon('minus'));
-  const plus = h('button', { type: 'button', class: 'stepper-button', 'aria-label': `${label} erhöhen` }, icon('plus'));
+  const valueButton = h('button', { type: 'button', class: 'stepper-value', 'aria-label': t('stepper.type', { label }) }, valueText, unitText);
+  const minus = h('button', { type: 'button', class: 'stepper-button', 'aria-label': t('stepper.less', { label }) }, icon('minus'));
+  const plus = h('button', { type: 'button', class: 'stepper-button', 'aria-label': t('stepper.more', { label }) }, icon('plus'));
   const el = h('div', { class: 'stepper', role: 'group', 'aria-label': label }, minus, valueButton, plus);
 
   const paint = () => {

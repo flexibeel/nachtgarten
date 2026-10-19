@@ -7,8 +7,9 @@ import { haptic } from '../../core/platform.js';
 import { moveTile, toggleModule } from '../../domain/modules.js';
 import { COMPANION_NAME_MAX, withCompanion } from '../../domain/companion.js';
 import { SPECIES, speciesInfo } from '../../data/companions.js';
-import { GOALS, goalLabel } from '../../data/goals.js';
+import { goalLabel, goalOptions } from '../../data/goals.js';
 import { TONES, companionLine } from '../../data/texts/companion.js';
+import { t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { chipGroup, segmented } from '../../ui/chips.js';
 import { switchRow, textField } from '../../ui/fields.js';
@@ -20,7 +21,7 @@ import { companionStage } from '../companion/companion-state.js';
 import { mamaForm } from '../mama/mama-setup.js';
 import { openOnboarding } from '../onboarding/onboarding.js';
 import { privacyPanel } from '../privacy/privacy.js';
-import { settingRow, startViewControl, themeControl } from '../settings/controls.js';
+import { languageControl, settingRow, startViewControl, themeControl } from '../settings/controls.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -38,14 +39,14 @@ const section = (title, ...children) => h('section', { class: 'profile-section' 
  */
 export function openMamaSheet(ctx) {
   const form = mamaForm({ initial: ctx.store.mama.get(), today: ctx.today() });
-  const save = h('button', { type: 'button', class: 'button button-primary button-wide', text: 'Speichern' });
-  const sheet = openSheet({ title: 'Schwangerschaft & Rückbildung', content: form.el, actions: save });
+  const save = h('button', { type: 'button', class: 'button button-primary button-wide', text: t('common.save') });
+  const sheet = openSheet({ title: t('mama.title'), content: form.el, actions: save });
   save.addEventListener('click', () => {
     const result = form.result();
     if (!result.ok) return haptic('warning');
     ctx.store.mama.set(result.state);
     haptic('success');
-    sheet.close('save').then(() => toast('Gespeichert'));
+    sheet.close('save').then(() => toast(t('common.saved')));
   });
 }
 
@@ -54,7 +55,7 @@ export function openMamaSheet(ctx) {
  * @param {AppContext} ctx
  */
 function tileOrderList(ctx) {
-  const list = h('ol', { class: 'order-list', 'aria-label': 'Reihenfolge auf Heute' });
+  const list = h('ol', { class: 'order-list', 'aria-label': t('profile.orderList') });
   const paint = () => {
     const { enabledModules, tileOrder } = ctx.store.settings.get();
     const tiles = ctx.registry.tiles(enabledModules, tileOrder);
@@ -71,7 +72,7 @@ function tileOrderList(ctx) {
           type: 'button',
           class: 'icon-button',
           dataset: { move: `${tile.id}:${delta}` },
-          'aria-label': `${tile.title} ${delta < 0 ? 'nach oben' : 'nach unten'}`,
+          'aria-label': t(delta < 0 ? 'profile.up' : 'profile.down', { title: t(tile.titleKey) }),
           disabled: delta < 0 ? i === 0 : i === tiles.length - 1,
           on: { click: () => move(tile.id, delta) },
         },
@@ -79,7 +80,7 @@ function tileOrderList(ctx) {
       );
     replace(
       list,
-      tiles.map((tile, i) => h('li', { class: 'order-item' }, h('span', { class: 'order-title', text: tile.title }), arrow(tile, -1, i), arrow(tile, 1, i))),
+      tiles.map((tile, i) => h('li', { class: 'order-item' }, h('span', { class: 'order-title', text: t(tile.titleKey) }), arrow(tile, -1, i), arrow(tile, 1, i))),
     );
   };
   paint();
@@ -88,12 +89,45 @@ function tileOrderList(ctx) {
 
 /** @param {AppContext} ctx */
 export function openProfile(ctx) {
+  /** @type {(() => void)[]} */
+  let cleanups = [];
+  const sheet = openSheet({
+    title: t('profile.title'),
+    size: 'tall',
+    className: 'profile',
+    onClose: () => {
+      offLang();
+      cleanups.forEach((fn) => fn());
+    },
+  });
+  const paint = () => {
+    cleanups.forEach((fn) => fn());
+    cleanups = [];
+    sheet.setTitle(t('profile.title'));
+    sheet.body.replaceChildren(...buildProfile(ctx, sheet, cleanups));
+  };
+  // Sprache gewechselt: Inhalt neu, Bildlauf bleibt.
+  const offLang = ctx.bus.on('lang', () => {
+    const top = sheet.body.scrollTop;
+    paint();
+    sheet.body.scrollTop = top;
+  });
+  paint();
+  return sheet;
+}
+
+/**
+ * Inhalt des Profils.
+ * @param {AppContext} ctx
+ * @param {import('../../ui/sheet.js').Sheet} sheet
+ * @param {(() => void)[]} cleanups   wird befüllt
+ * @returns {Node[]}
+ */
+function buildProfile(ctx, sheet, cleanups) {
   const { store, registry } = ctx;
   const profile = store.profile.get() ?? emptyProfile();
   const buddy = store.buddy.get();
   const companion = ctx.companion();
-  /** @type {(() => void)[]} */
-  const cleanups = [];
 
   const updateProfile = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), ...patch }));
   const updateCompanion = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), companion: withCompanion(p, patch) }));
@@ -103,8 +137,8 @@ export function openProfile(ctx) {
   const figure = h('span', { class: 'profile-figure' });
   const paintHead = () => {
     const p = store.profile.get() ?? emptyProfile();
-    hello.textContent = p.name ? `Hi ${p.name}!` : 'Hi!';
-    goalLine.textContent = p.goal ? goalLabel(p.goal) : 'Kein Ziel gewählt, auch okay.';
+    hello.textContent = p.name ? t('profile.hi', { name: p.name }) : t('profile.hiAnon');
+    goalLine.textContent = p.goal ? goalLabel(p.goal) : t('profile.noGoal');
     const c = ctx.companion();
     replace(figure, companionFigure({ species: c.species, mood: 'happy', stage: companionStage(ctx), label: c.name }));
   };
@@ -114,24 +148,27 @@ export function openProfile(ctx) {
   const sample = h('p', { class: 'tone-sample' });
   const paintSample = () => {
     const c = ctx.companion();
-    sample.textContent = `„${companionLine('liveSet3', { species: c.species, name: c.name, tone: store.buddy.get().tone, user: store.profile.get()?.name ?? '', random: () => 0 })}“`;
+    sample.textContent = t('common.quote', {
+      text: companionLine('liveSet3', { species: c.species, name: c.name, tone: store.buddy.get().tone, user: store.profile.get()?.name ?? '', random: () => 0 }),
+    });
   };
   paintSample();
 
-  const mamaEdit = h('button', { type: 'button', class: 'link-button', text: 'Angaben zu Schwangerschaft & Rückbildung', on: { click: () => openMamaSheet(ctx) } });
+  const mamaEdit = h('button', { type: 'button', class: 'link-button', text: t('profile.mamaEdit'), on: { click: () => openMamaSheet(ctx) } });
   const paintMamaLink = () => (mamaEdit.hidden = !ctx.hasModule('mama'));
   paintMamaLink();
 
   const theme = themeControl(ctx);
   const start = startViewControl(ctx);
+  const lang = languageControl(ctx);
   const order = tileOrderList(ctx);
-  cleanups.push(theme.destroy, start.destroy, order.destroy);
+  cleanups.push(theme.destroy, start.destroy, lang.destroy, order.destroy);
 
   const modules = chipGroup({
-    label: 'Was ist dir wichtig?',
+    label: t('profile.modules'),
     variant: 'card',
     multiple: true,
-    options: registry.list().map((m) => ({ value: m.id, label: m.label, hint: m.hint, icon: m.icon })),
+    options: registry.list().map((m) => ({ value: m.id, label: t(m.labelKey), hint: t(m.hintKey), icon: m.icon })),
     selected: ctx.modules(),
     onChange: (selected) => {
       const before = ctx.modules();
@@ -145,44 +182,44 @@ export function openProfile(ctx) {
     },
   });
 
-  const content = [
+  return [
     h('div', { class: 'profile-head' }, figure, h('div', { class: 'profile-head-text' }, hello, goalLine)),
     section(
-      'Du',
+      t('profile.you'),
       textField({
-        label: 'Name',
+        label: t('profile.name'),
         value: profile.name,
-        placeholder: 'Dein Name oder Spitzname',
+        placeholder: t('profile.namePlaceholder'),
         maxlength: 24,
         autocomplete: 'given-name',
         onInput: (v) => updateProfile({ name: v.trim() }),
       }),
       settingRow(
-        'Ziel',
+        t('profile.goal'),
         chipGroup({
-          label: 'Ziel',
-          options: GOALS.map((g) => ({ value: g.id, label: g.label })),
+          label: t('profile.goal'),
+          options: goalOptions().map(({ value, label }) => ({ value, label })),
           selected: profile.goal ? [profile.goal] : [],
           onChange: ([v]) => updateProfile({ goal: v ?? '' }),
         }),
       ),
     ),
-    section('Was ist dir wichtig?', modules, mamaEdit),
-    section('Heute anordnen', order.el),
+    section(t('profile.modules'), modules, mamaEdit),
+    section(t('profile.order'), order.el),
     section(
-      'Begleiter',
+      t('companion.section'),
       switchRow({
-        label: 'Begleiter zeigen',
-        hint: 'Auf „Heute“ und ab und zu im Training.',
+        label: t('companion.show'),
+        hint: t('companion.showHint'),
         checked: buddy.on,
         onChange: (on) => store.buddy.update((b) => ({ ...b, on })),
       }),
       SPECIES.length > 1
         ? settingRow(
-            'Art',
+            t('companion.species'),
             chipGroup({
-              label: 'Art',
-              options: SPECIES.map((sp) => ({ value: sp.id, label: sp.label })),
+              label: t('companion.species'),
+              options: SPECIES.map((sp) => ({ value: sp.id, label: t(`species.${sp.id}`) })),
               selected: [companion.species],
               allowEmpty: false,
               onChange: ([species]) => {
@@ -193,7 +230,7 @@ export function openProfile(ctx) {
           )
         : null,
       textField({
-        label: 'Name',
+        label: t('companion.name'),
         value: companion.name,
         placeholder: speciesInfo(companion.species).defaultName,
         maxlength: COMPANION_NAME_MAX,
@@ -205,10 +242,10 @@ export function openProfile(ctx) {
       h(
         'div',
         { class: 'setting' },
-        h('p', { class: 'setting-label', text: 'Ton' }),
+        h('p', { class: 'setting-label', text: t('companion.tone') }),
         segmented({
-          label: 'Ton',
-          options: TONES.map((t) => ({ value: t.id, label: t.label })),
+          label: t('companion.tone'),
+          options: TONES.map((id) => ({ value: id, label: t(`tone.${id}`) })),
           value: buddy.tone,
           onChange: (tone) => {
             store.buddy.update((b) => ({ ...b, tone }));
@@ -218,12 +255,12 @@ export function openProfile(ctx) {
         sample,
       ),
     ),
-    section('Ansicht', theme.el, start.el),
-    section('Deine Daten', privacyPanel(ctx)),
+    section(t('profile.view'), lang.el, theme.el, start.el),
+    section(t('data.title'), privacyPanel(ctx)),
     h('button', {
       type: 'button',
       class: 'link-button profile-restart',
-      text: 'Einrichtung noch einmal durchgehen',
+      text: t('profile.restart'),
       on: {
         click: async () => {
           await sheet.close('restart');
@@ -232,13 +269,4 @@ export function openProfile(ctx) {
       },
     }),
   ];
-
-  const sheet = openSheet({
-    title: 'Dein Profil',
-    content,
-    size: 'tall',
-    className: 'profile',
-    onClose: () => cleanups.forEach((fn) => fn()),
-  });
-  return sheet;
 }

@@ -149,6 +149,7 @@ function convertSettings(v) {
   if (!has) return undefined;
   const legacyFoci = Array.isArray(v['lab.focus']) ? strArray(v['lab.focus']) : null;
   return {
+    lang: 'de',
     theme: v['lab.theme'] === 'light' || v['lab.theme'] === 'dark' ? v['lab.theme'] : 'system',
     view: v['lab.view'] === 'profi' ? 'profi' : 'einfach',
     startView: START_VIEWS.includes(v['lab.startView']) ? v['lab.startView'] : 'heute',

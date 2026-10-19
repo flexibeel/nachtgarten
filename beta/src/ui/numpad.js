@@ -5,6 +5,7 @@
 
 import { formatNumber, parseDecimal } from '../core/format.js';
 import { haptic } from '../core/platform.js';
+import { t } from '../data/texts/i18n.js';
 import { h } from './dom.js';
 import { icon } from './icons.js';
 import { openSheet } from './sheet.js';
@@ -58,13 +59,13 @@ export function openNumpad({ title, value = null, unit = '', decimals = 0, min =
         k
           ? h(
               'button',
-              { type: 'button', class: 'numpad-key', dataset: { key: k }, 'aria-label': k === 'back' ? 'Löschen' : k === ',' ? 'Komma' : k },
+              { type: 'button', class: 'numpad-key', dataset: { key: k }, 'aria-label': k === 'back' ? t('numpad.backspace') : k === ',' ? t('numpad.comma') : k },
               k === 'back' ? icon('backspace') : k,
             )
           : h('span', { 'aria-hidden': 'true' }),
       ),
     );
-    const accept = h('button', { type: 'button', class: 'button button-primary button-wide', text: 'Übernehmen' });
+    const accept = h('button', { type: 'button', class: 'button button-primary button-wide', text: t('numpad.accept') });
 
     const paint = () => {
       display.textContent = text || '0';
@@ -95,7 +96,7 @@ export function openNumpad({ title, value = null, unit = '', decimals = 0, min =
     const submit = () => {
       const n = parseDecimal(text || '0');
       if (!Number.isFinite(n) || n < min || n > max) {
-        error.textContent = `Bitte eine Zahl von ${formatNumber(min, decimals)} bis ${formatNumber(max, decimals)}.`;
+        error.textContent = t('numpad.range', { min: formatNumber(min, decimals), max: formatNumber(max, decimals) });
         haptic('warning');
         return;
       }

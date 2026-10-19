@@ -7,7 +7,7 @@
 import { buddySnapshot } from '../../domain/buddy.js';
 import { monday, toDate, todayIdx } from '../../core/dates.js';
 import { companionLine } from '../../data/texts/companion.js';
-import { speciesInfo } from '../../data/companions.js';
+import { tList } from '../../data/texts/i18n.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -57,7 +57,7 @@ export const companionStage = (ctx) => snapshot(ctx, () => 0).snap.stage;
  * @param {AppContext} ctx
  * @param {number} stage
  */
-export const stageName = (ctx, stage) => speciesInfo(ctx.companion().species).stageNames[stage - 1] ?? '';
+export const stageName = (ctx, stage) => tList(`species.${ctx.companion().species}.stages`)[stage - 1] ?? '';
 
 /**
  * Satz in eingestellter Art und Tonlage.

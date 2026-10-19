@@ -3,6 +3,7 @@
  */
 
 import { haptic } from '../../core/platform.js';
+import { t } from '../../data/texts/i18n.js';
 import { DUMP_MAX_LENGTH, addDump, removeDump, restoreDump } from '../../domain/today.js';
 import { h, replace } from '../../ui/dom.js';
 import { card } from '../../ui/card.js';
@@ -14,15 +15,15 @@ import { inlineForm } from '../../ui/fields.js';
 
 /** @param {AppContext} ctx */
 export function dumpPart(ctx) {
-  const list = h('ul', { class: 'dump-list', 'aria-label': 'Abgeladene Gedanken' });
+  const list = h('ul', { class: 'dump-list', 'aria-label': t('dump.list') });
 
   const remove = (index) => {
     const dump = ctx.store.dump.get();
     const removed = dump[index];
     ctx.store.dump.set(removeDump(dump, index));
     haptic('tap');
-    toast('Gedanke gelöscht', {
-      action: { label: 'Rückgängig', onClick: () => ctx.store.dump.set(restoreDump(ctx.store.dump.get(), index, removed)) },
+    toast(t('dump.deleted'), {
+      action: { label: t('common.undo'), onClick: () => ctx.store.dump.set(restoreDump(ctx.store.dump.get(), index, removed)) },
     });
   };
 
@@ -37,7 +38,7 @@ export function dumpPart(ctx) {
             'li',
             { class: 'dump-item' },
             h('span', { class: 'dump-text', text: thought }),
-            h('button', { type: 'button', class: 'icon-button icon-button-small', 'aria-label': `Löschen: ${thought}`, on: { click: () => remove(index) } }, icon('close', { size: 18 })),
+            h('button', { type: 'button', class: 'icon-button icon-button-small', 'aria-label': t('dump.deleteLabel', { text: thought }), on: { click: () => remove(index) } }, icon('close', { size: 18 })),
           ),
         )
         .reverse(),
@@ -45,9 +46,9 @@ export function dumpPart(ctx) {
   };
 
   const form = inlineForm({
-    label: 'Gedanken abladen',
-    placeholder: 'Was geht dir im Kopf herum?',
-    buttonLabel: 'Abladen',
+    label: t('dump.inputLabel'),
+    placeholder: t('dump.placeholder'),
+    buttonLabel: t('dump.add'),
     maxlength: DUMP_MAX_LENGTH,
     onSubmit: (value) => {
       ctx.store.dump.set(addDump(ctx.store.dump.get(), value));
@@ -60,7 +61,7 @@ export function dumpPart(ctx) {
   const el = h(
     'div',
     { class: 'heute-dump' },
-    card({ title: 'Kurz abladen', variant: 'soft', className: 'dump' }, h('p', { class: 'card-hint', text: 'Raus aus dem Kopf, rein in die Liste.' }), form, list),
+    card({ title: t('dump.title'), variant: 'soft', className: 'dump' }, h('p', { class: 'card-hint', text: t('dump.hint') }), form, list),
   );
   return { el, destroy: off };
 }

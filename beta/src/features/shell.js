@@ -8,13 +8,14 @@ import { prefersReducedMotion } from '../core/platform.js';
 import { h, replace } from '../ui/dom.js';
 import { icon } from '../ui/icons.js';
 import { mountHeute } from './heute/heute.js';
+import { t } from '../data/texts/i18n.js';
 
 /** @typedef {import('./context.js').AppContext} AppContext */
 /** @typedef {import('../core/router.js').Route} Route */
 /** @typedef {import('./registry.js').ViewDef} ViewDef */
 
 /** @type {ViewDef} */
-const HEUTE = { route: 'heute', title: 'Nachtgarten', tab: { label: 'Heute', icon: 'heute' }, mount: mountHeute };
+const HEUTE = { route: 'heute', titleKey: 'app.name', tab: { labelKey: 'tab.heute', icon: 'heute' }, mount: mountHeute };
 
 /**
  * Routen-Tabelle für den Router.
@@ -39,11 +40,11 @@ function viewFor(ctx, name) {
  */
 export function createShell(ctx, root) {
   const main = h('main', { class: 'view', id: 'view', tabindex: '-1' });
-  const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Hauptbereiche', 'data-toast-avoid': '' });
+  const tabbar = h('nav', { class: 'tabbar', 'aria-label': t('nav.label'), 'data-toast-avoid': '' });
   const app = h('div', { class: 'app' }, main, tabbar);
   replace(root, app);
   // Name aus index.html (die Beta heißt „Nachtgarten Beta“).
-  const appTitle = document.title || 'Nachtgarten';
+  const appTitle = document.title || t('app.name');
 
   /** @type {(() => void) | void} */
   let cleanup;
@@ -56,12 +57,12 @@ export function createShell(ctx, root) {
     tabbar.style.setProperty('--tabs', String(tabs.length));
     replace(
       tabbar,
-      tabs.map((t) =>
+      tabs.map((tab) =>
         h(
           'a',
-          { class: 'tab', href: `#${t.route}`, 'aria-current': t.route === active ? 'page' : null },
-          icon(t.icon, { size: 24 }),
-          h('span', { class: 'tab-label', text: t.label }),
+          { class: 'tab', href: `#${tab.route}`, 'aria-current': tab.route === active ? 'page' : null },
+          icon(tab.icon, { size: 24 }),
+          h('span', { class: 'tab-label', text: t(tab.labelKey) }),
         ),
       ),
     );
@@ -78,7 +79,7 @@ export function createShell(ctx, root) {
     app.dataset.route = view.route;
     tabbar.hidden = chrome !== 'tabs';
     paintTabs();
-    document.title = view === HEUTE ? appTitle : `${view.title} · ${appTitle}`;
+    document.title = view === HEUTE ? appTitle : `${t(view.titleKey)} · ${appTitle}`;
     cleanup = view.mount(ctx, main, route);
   };
 
@@ -86,6 +87,12 @@ export function createShell(ctx, root) {
   ctx.watch(['settings'], () => {
     if (current !== HEUTE && !ctx.registry.view(current.route, ctx.store.settings.get().enabledModules)) ctx.go('heute');
     else paintTabs();
+  });
+
+  // Sprache gewechselt: Tab-Leiste und aktuelle Ansicht neu.
+  ctx.bus.on('lang', () => {
+    tabbar.setAttribute('aria-label', t('nav.label'));
+    render({ name: current.route, params: {} });
   });
 
   return {
