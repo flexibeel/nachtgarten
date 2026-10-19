@@ -1,5 +1,10 @@
 import re,shutil,os,hashlib,json
 src=open("src/app.html").read()
+# Version der deutschen Übungsanleitungen (demos/i18n) für ?v= im Nachladen; demos/ wird nie gelöscht
+_h=hashlib.sha1()
+for _f in sorted(os.listdir("demos/i18n")) if os.path.isdir("demos/i18n") else []:
+  _h.update(open(os.path.join("demos/i18n",_f),"rb").read())
+src=src.replace("__EXI18N_V__",_h.hexdigest()[:10])
 # remove Google Fonts links
 src=re.sub(r'<link[^>]+fonts\.googleapis\.com[^>]*>\s*','',src)
 src=re.sub(r'<link[^>]+fonts\.gstatic\.com[^>]*>\s*','',src)
@@ -47,8 +52,8 @@ json.dump(man,open("manifest.webmanifest","w"),ensure_ascii=False,indent=1)
 ver=hashlib.sha1(out.encode()).hexdigest()[:10]
 sw=f'''const V="ng-{ver}";const SHELL=["./","index.html","manifest.webmanifest","fonts/bricolage.woff","fonts/onest.woff","fonts/jetbrains.woff","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
 self.addEventListener("install",e=>{{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))}});
-self.addEventListener("activate",e=>{{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k!=="ng-demos").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))}});
-self.addEventListener("fetch",e=>{{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin)return;
+self.addEventListener("activate",e=>{{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("ng-")&&k!==V&&k!=="ng-demos").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))}});
+self.addEventListener("fetch",e=>{{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin||u.pathname.includes("/beta/"))return;
  if(u.pathname.includes("/demos/")){{e.respondWith(caches.open("ng-demos").then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(n=>{{if(n.ok)c.put(e.request,n.clone());return n}}))));return}}
  if(e.request.mode==="navigate"){{e.respondWith(fetch(e.request).then(n=>{{caches.open(V).then(c=>c.put("index.html",n.clone()));return n}}).catch(()=>caches.match("index.html")));return}}
  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))}});
