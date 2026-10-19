@@ -7,7 +7,9 @@
  * Jeder Renderer ist eine reine Funktion (data, opts) → Canvas.
  *   laufSticker   a) transparenter Aufkleber: Route als ein Pinselstrich + drei Zahlen
  *   laufKarte     b) Route als Sternbild, mit Mondphase zur Laufzeit
- *   kraftKarte    c) Körperbeet (kompakt) bzw. Programmheft (detailliert)
+ *   kraftKarte    c) Körperbeet (kompakt) bzw. Programmheft mit Mini-Posen (detailliert)
+ *   bewegungsStudie  g) die Hauptübung als Serienfotografie mit dem Pixel-Mannequin (kraftbilder.js)
+ *   sammelKarte   h) jede Übung eine Sammelkarte; detailliert der ganze Kartensatz (kraftbilder.js)
  *   pixelStempel  d) Briefmarke mit Pixel-Garten und Begleiter, Poststempel
  *   minimalTypo   e) nur Ziffern, wie ein Plakat (auch als Bestwert-Karte)
  *   tempoWelle    f) generative Linien aus dem Tempo je Kilometer
@@ -16,344 +18,37 @@
  *   theme: 'hell'|'dunkel', transparent?: boolean,
  *   format?: 'story' (1080×1920, Standard) | 'feed' (1080×1350) | 'kompakt' (nur Sticker: eng zugeschnitten),
  *   detail?: 'kompakt' (Standard) | 'detailliert', focus?: 'bestwert',
- *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', sealRows?: string[] (9 × 9, „#“ ausgespart), companion?: {rows, colors}
+ *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', sealRows?: string[] (9 × 9, „#“ ausgespart),
+ *   companion?: {species?, rows?, colors?} (species → Siegel aus dem Begleiter, rows → Figur in der Briefmarke),
+ *   runnerSeal?: boolean (Laufkarten: zweites Siegel mit der Läuferin; Standard bei Lauf-Vorlagen)
  * }
  * Schriften vorher laden (ensureFonts). In der Story bleibt alles Beschriftete in der
  * sicheren Zone (oben 250 px, unten 340 px frei).
  */
 
 import {
-  chaikin, fit, hashOf, isLoop, markersEvery, project, pathLength, seeded, simplify, simplifyTo,
+  chaikin, fit, isLoop, markersEvery, project, simplify, simplifyTo,
 } from './geo.js';
 import {
   facts, fmtCoord, fmtDateShort, fmtInt, fmtMonth, fmtPace, fmtTime, moonName, moonPhase,
   musclesText, paceProfile, setsCompact, setsText, summarizeStrength, suggestCards, MUSCLE_NAMES,
 } from './data.js';
-import { drawFigure, figureSize } from './figur.js';
+import { drawRunner } from './laeufer.js';
+import { SHARED_PALETTE, SPECIES } from '../companion/sprites.js';
+import { bewegungsStudie, drawBodyPair, drawPoseThumb, koerperbeet, sammelKarte } from './kraftbilder.js';
+
+export { bewegungsStudie, koerperbeet, sammelKarte } from './kraftbilder.js';
 
 export * from './data.js';
 
-export const W = 1080;
-export const H = 1920;
-/** Sichere Zone der Instagram-Story: hier liegt alles Wichtige. */
-export const SAFE = { top: 250, bottom: H - 340, left: 72, right: W - 72 };
-/** Formate. Im Feed wird die Story-Zone (250…1580) auf 90 % gesetzt; eigene Layouts nutzen FRAME. */
-export const FORMATS = { story: { w: 1080, h: 1920 }, feed: { w: 1080, h: 1350 } };
-/** Inhaltsrahmen je Format (für Vorlagen mit eigenem Feed-Layout). */
-export const FRAME = { story: { top: SAFE.top, bottom: SAFE.bottom }, feed: { top: 84, bottom: 1350 - 70 } };
-const FEED_K = 0.9;
-const FEED_T = [FEED_K, 0, 0, FEED_K, (W - W * FEED_K) / 2, 76 - SAFE.top * FEED_K];
-const M = 96; // Seitenrand für Text
+import {
+  FORMATS, FRAME, M, SAFE, SANS, SERIF, W, begin, blossom, breathingWidth, brushStroke, fitSize, fontOf,
+  hairline, makeCanvas, measure, paper, seal, signature, statRow, withShadow, write, writeRun,
+} from './ink.js';
 
-export const SERIF = "'Instrument Serif', 'Iowan Old Style', Georgia, serif";
-export const SANS = "'Nunito Sans', system-ui, sans-serif";
-
-/** Abendruhe-Palette, je Thema. „ink“ ist die Schriftfarbe. */
-export const PALETTES = {
-  hell: {
-    paper: '#F5F1EE', paper2: '#EEE6E0', ink: '#2E2A28', muted: '#7D746F', faint: '#B7ADA7',
-    rose: '#B58C83', roseInk: '#A0766C', sage: '#9DAA8F', soft: '#EAE2DC', line: '#DDD3CD',
-  },
-  dunkel: {
-    paper: '#211E1E', paper2: '#1C1A1A', ink: '#EEE7E3', muted: '#ABA19C', faint: '#6E6562',
-    rose: '#D3A99F', roseInk: '#D3A99F', sage: '#AFBCA2', soft: '#383332', line: '#3A3433',
-  },
-};
-
-// ───────────────────────────── Grundwerkzeuge ─────────────────────────────
-
-function makeCanvas(w, h, opts = {}) {
-  if (opts.createCanvas) return opts.createCanvas(w, h);
-  if (typeof document !== 'undefined') {
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    return c;
-  }
-  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
-  throw new Error('Kein Canvas verfügbar – bitte opts.createCanvas übergeben.');
-}
-
-/** Startet eine Karte. size überschreibt das Format (dann keine Feed-Verkleinerung). */
-function begin(data, opts, size) {
-  const theme = opts.theme === 'dunkel' || opts.theme === 'dark' ? 'dunkel' : 'hell';
-  const pal = PALETTES[theme];
-  const fmt = opts.format === 'feed' ? 'feed' : 'story';
-  const { w, h } = size || FORMATS[fmt];
-  const canvas = makeCanvas(w, h, opts);
-  const ctx = canvas.getContext('2d');
-  const seed = hashOf([String(data.start || data.date || ''), data.distanceM || 0, data.title || '', opts.template || '']);
-  const rand = seeded(seed);
-  ctx.textBaseline = 'alphabetic';
-  const stage = () => { if (fmt === 'feed' && !size) ctx.setTransform(...FEED_T); };
-  return { canvas, ctx, pal, theme, rand, seed, transparent: !!opts.transparent, w, h, fmt, stage, detailed: opts.detail === 'detailliert' };
-}
-
-const fontOf = ({ px, serif = true, italic = false, weight = 400 }) =>
-  `${italic ? 'italic ' : ''}${weight} ${Math.round(px * 10) / 10}px ${serif ? SERIF : SANS}`;
-
-/** letterSpacing gibt es in Safari erst ab 18.4 – sonst setzen wir Zeichen für Zeichen. */
-const hasTracking = (ctx) => 'letterSpacing' in ctx;
-function setTracking(ctx, px) { if (hasTracking(ctx)) ctx.letterSpacing = `${px}px`; }
-
-function trackedWidth(ctx, str, tracking) {
-  if (!tracking) return ctx.measureText(str).width;
-  if (hasTracking(ctx)) { setTracking(ctx, tracking); const w = ctx.measureText(str).width; setTracking(ctx, 0); return w; }
-  const chars = [...str];
-  return chars.reduce((a, ch) => a + ctx.measureText(ch).width, 0) + tracking * chars.length;
-}
-
-/** Schreibt einen Text; gibt die Breite zurück. o: {px, serif, italic, weight, color, align, alpha, tracking} */
-function write(ctx, str, x, y, o) {
-  ctx.font = fontOf(o);
-  ctx.fillStyle = o.color;
-  const prev = ctx.globalAlpha;
-  if (o.alpha != null) ctx.globalAlpha = prev * o.alpha;
-  const tr = o.tracking || 0;
-  const w = trackedWidth(ctx, str, tr);
-  if (!tr || hasTracking(ctx)) {
-    setTracking(ctx, tr);
-    ctx.textAlign = o.align || 'left';
-    // Mit Laufweite hängt der Browser rechts einen Abstand an – ausgleichen.
-    const shift = tr && o.align === 'right' ? -tr : tr && o.align === 'center' ? -tr / 2 : 0;
-    ctx.fillText(str, x + shift, y);
-    setTracking(ctx, 0);
-  } else {
-    ctx.textAlign = 'left';
-    let cx = o.align === 'right' ? x - w : o.align === 'center' ? x - w / 2 : x;
-    for (const ch of str) { ctx.fillText(ch, cx, y); cx += ctx.measureText(ch).width + tr; }
-  }
-  ctx.globalAlpha = prev;
-  return w;
-}
-
-function measure(ctx, str, o) {
-  ctx.font = fontOf(o);
-  return trackedWidth(ctx, str, o.tracking || 0);
-}
-
-/** Mehrere Textstücke auf einer Grundlinie (z. B. „7,42“ + kursives „km“). */
-function writeRun(ctx, parts, x, y, align = 'left') {
-  const widths = parts.map((p) => measure(ctx, p.t, p));
-  const total = widths.reduce((a, w, i) => a + w + (parts[i].gap || 0), 0);
-  let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
-  parts.forEach((p, i) => {
-    cx += p.gap || 0;
-    write(ctx, p.t, cx, y, { ...p, align: 'left' });
-    cx += widths[i];
-  });
-  return total;
-}
-
-/** Größte Schriftgröße, bei der `str` in `maxW` passt (höchstens maxPx). */
-function fitSize(ctx, str, maxW, o, maxPx) {
-  const w = measure(ctx, str, { ...o, px: 100, tracking: (o.trackingEm || 0) * 100 });
-  return Math.min(maxPx, (maxW / (w || 1)) * 100);
-}
-
-/** Papier: weicher Verlauf, Vignette, feines Korn. */
-function paper(ctx, pal, theme, rand, opts, w, h) {
-  const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, theme === 'dunkel' ? '#282424' : '#F7F3F0');
-  g.addColorStop(0.6, pal.paper);
-  g.addColorStop(1, pal.paper2);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-  const v = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.2, w / 2, h * 0.5, h * 0.78);
-  v.addColorStop(0, 'rgba(0,0,0,0)');
-  v.addColorStop(1, theme === 'dunkel' ? 'rgba(0,0,0,0.26)' : 'rgba(90,70,60,0.07)');
-  ctx.fillStyle = v;
-  ctx.fillRect(0, 0, w, h);
-  grain(ctx, theme, rand, opts, w, h);
-}
-
-/** Korn: kleine Kachel mit Zufallspunkten, als Muster über die ganze Fläche. */
-function grain(ctx, theme, rand, opts, w, h) {
-  const S = 160;
-  const tile = makeCanvas(S, S, opts);
-  const t = tile.getContext('2d');
-  const img = t.createImageData(S, S);
-  const d = img.data;
-  for (let i = 0; i < S * S; i++) {
-    const r = rand();
-    const light = r > 0.5;
-    const c = light ? 255 : 0;
-    d[i * 4] = c; d[i * 4 + 1] = c; d[i * 4 + 2] = c;
-    const base = theme === 'dunkel' ? (light ? 12 : 18) : (light ? 26 : 14);
-    d[i * 4 + 3] = Math.round(base * Math.abs(r - 0.5) * 2 * (rand() < 0.5 ? 1 : 0.4));
-  }
-  t.putImageData(img, 0, 0);
-  const pat = ctx.createPattern(tile, 'repeat');
-  if (!pat) return;
-  ctx.fillStyle = pat;
-  ctx.fillRect(0, 0, w, h);
-}
-
-function withShadow(ctx, color, blur, fn) {
-  if (!color) { fn(); return; }
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = blur;
-  ctx.shadowOffsetY = Math.round(blur / 8);
-  fn();
-  ctx.restore();
-}
-
-function hairline(ctx, x1, y, x2, color, alpha = 1, width = 1.5) {
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
-  ctx.restore();
-}
-
-/** Werte nebeneinander: Zahl in der Serife, darunter ein ruhiges Etikett. */
-function statRow(ctx, stats, x1, x2, y, pal, { px = 76, labelPx = 27, align = 'spread', color, muted } = {}) {
-  const n = stats.length;
-  const colW = (x2 - x1) / n;
-  stats.forEach((s, i) => {
-    let x; let a;
-    if (align === 'center') { x = x1 + colW * (i + 0.5); a = 'center'; } else if (align === 'spread') {
-      a = i === 0 ? 'left' : i === n - 1 && n > 1 ? 'right' : 'center';
-      x = a === 'left' ? x1 : a === 'right' ? x2 : (x1 + x2) / 2;
-    } else { x = x1 + colW * i; a = 'left'; }
-    const parts = [{ t: s.value, px, color: color || pal.ink }];
-    if (s.unit) parts.push({ t: s.unit, px: px * 0.46, italic: true, color: muted || pal.muted, gap: px * 0.1 });
-    writeRun(ctx, parts, x, y, a);
-    write(ctx, s.label, x, y + labelPx + 20, { px: labelPx, serif: false, color: muted || pal.muted, align: a });
-  });
-}
-
-// ───────────────────────────── Pinselstrich ─────────────────────────────
-
-/** Eine einzige, gefüllte Linie mit wechselnder Breite – widthAt(t), t ∈ [0, 1]. */
-function brushStroke(ctx, pts, widthAt, color) {
-  if (pts.length < 2) return;
-  const total = pathLength(pts) || 1;
-  const left = []; const right = [];
-  let acc = 0;
-  for (let i = 0; i < pts.length; i++) {
-    if (i) acc += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
-    const a = pts[Math.max(0, i - 1)];
-    const b = pts[Math.min(pts.length - 1, i + 1)];
-    let nx = -(b[1] - a[1]); let ny = b[0] - a[0];
-    const nl = Math.hypot(nx, ny) || 1;
-    nx /= nl; ny /= nl;
-    const w = widthAt(acc / total) / 2;
-    left.push([pts[i][0] + nx * w, pts[i][1] + ny * w]);
-    right.push([pts[i][0] - nx * w, pts[i][1] - ny * w]);
-  }
-  ctx.fillStyle = color;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(left[0][0], left[0][1]);
-  for (const p of left) ctx.lineTo(p[0], p[1]);
-  for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i][0], right[i][1]);
-  ctx.closePath();
-  ctx.fill();
-  const z = pts[pts.length - 1];
-  ctx.beginPath(); ctx.arc(pts[0][0], pts[0][1], widthAt(0) / 2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(z[0], z[1], widthAt(1) / 2, 0, Math.PI * 2); ctx.fill();
-}
-
-/** Breite: an den Enden schmal (Ansetzen/Abheben), dazwischen „atmet“ sie mit dem Tempo. */
-function breathingWidth(base, paces) {
-  const n = paces.length;
-  const min = Math.min(...paces); const max = Math.max(...paces);
-  const span = max - min || 1;
-  return (t) => {
-    const taper = Math.max(0, Math.min(1, t / 0.05, (1 - t) / 0.07));
-    const ease = Math.sin((taper * Math.PI) / 2);
-    let pace = 0.5;
-    if (n > 1) {
-      const f = t * (n - 1);
-      const i = Math.min(n - 2, Math.floor(f));
-      const s = (1 - Math.cos((f - i) * Math.PI)) / 2;
-      pace = ((paces[i] * (1 - s) + paces[i + 1] * s) - min) / span;
-    }
-    return base * (0.28 + 0.72 * ease) * (0.8 + 0.4 * pace); // langsamer = mehr Druck
-  };
-}
-
-// ───────────────────────────── Siegel & Signatur ─────────────────────────────
-
-/** Pixel-Motive fürs Siegel (9 × 9, „#“ = ausgespart). */
-export const SEALS = {
-  keim: [
-    '.........',
-    '.##...##.',
-    '#..#.#..#',
-    '.#..#..#.',
-    '..#.#.#..',
-    '....#....',
-    '....#....',
-    '..#####..',
-    '.........',
-  ],
-  mond: [
-    '...###...',
-    '..##.....',
-    '.##......',
-    '.##....#.',
-    '.##......',
-    '.##......',
-    '..##.....',
-    '...###...',
-    '.........',
-  ],
-  elli: [
-    '.........',
-    '...####..',
-    '..######.',
-    '.###.##.#',
-    '.######.#',
-    '.######.#',
-    '.#.##.#..',
-    '.#.##.#..',
-    '.........',
-  ],
-};
-
-/** Das Siegel: ein kleiner Pixel-Stempel in Altrosa, Motiv ausgespart – wie der rote Stempel unter einem Holzschnitt. */
-function seal(ctx, x, y, size, pal, rand, opts, motif = 'keim') {
-  const rows = opts.sealRows || SEALS[motif] || SEALS.keim;
-  const n = 11;
-  const p = Math.max(1, Math.round(size / n));
-  const S = p * n;
-  const c = makeCanvas(S, S, opts);
-  const s = c.getContext('2d');
-  s.fillStyle = pal.rose;
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      if ((i === 0 || i === n - 1) && (j === 0 || j === n - 1)) continue;
-      s.globalAlpha = 0.8 + rand() * 0.2;
-      s.fillRect(i * p, j * p, p, p);
-    }
-  }
-  s.globalAlpha = 1;
-  s.globalCompositeOperation = 'destination-out';
-  rows.forEach((row, j) => [...row].forEach((ch, i) => {
-    if (ch === '#') s.fillRect((i + 1) * p, (j + 1) * p, p, p);
-  }));
-  s.globalAlpha = 0.45;
-  for (let k = 0; k < 3; k++) s.fillRect(Math.floor(rand() * n) * p, Math.floor(rand() * n) * p, p, p);
-  ctx.drawImage(c, Math.round(x), Math.round(y));
-  return S;
-}
-
-/** Signatur: Siegel + „nachtgarten“ kursiv, klein. y ist die Grundlinie. */
-function signature(ctx, x, y, pal, rand, opts, { align = 'right', px = 32, color } = {}) {
-  const word = 'nachtgarten';
-  const o = { px, italic: true, color: color || pal.muted };
-  const tw = measure(ctx, word, o);
-  const sz = Math.round((px * 1.1) / 11) * 11;
-  const gap = Math.round(px * 0.4);
-  const total = sz + gap + tw;
-  const x0 = align === 'right' ? x - total : align === 'center' ? x - total / 2 : x;
-  seal(ctx, x0, y - sz + Math.round(px * 0.12), sz, pal, rand, opts, opts.seal);
-  write(ctx, word, x0 + sz + gap, y, o);
-  return total;
-}
+export {
+  W, H, SAFE, FORMATS, FRAME, SERIF, SANS, PALETTES, SEALS,
+} from './ink.js';
 
 // ───────────────────────────── Mond ─────────────────────────────
 
@@ -400,23 +95,21 @@ export function detailRows(data) {
   }));
 }
 
-/** Kleine Pixel-Blüte (Markierung für Bestwert / schnellsten Kilometer). */
-function blossom(ctx, x, y, p, pal, heart) {
-  ctx.fillStyle = pal.rose;
-  ctx.fillRect(x, y - p, p, p); ctx.fillRect(x - p, y, p, p); ctx.fillRect(x + p, y, p, p); ctx.fillRect(x, y + p, p, p);
-  ctx.fillStyle = heart || pal.paper;
-  ctx.fillRect(x, y, p, p);
-}
 
 /**
  * Detail-Zeilen wie ein Programmheft: Name links, Punktlinie, Wert rechts,
  * darunter klein die Muskeln bzw. das Gewicht. Gibt die benutzte Höhe zurück.
  */
-function drawRows(ctx, rows, x1, x2, y, rowH, pal, { px = 46, subPx = 26, index = true, compact = false } = {}) {
-  const ix = index ? Math.round(px * 1.1) : 0;
+function drawRows(ctx, rows, x1, x2, y, rowH, pal, { px = 46, subPx = 26, index = true, compact = false, icon = null } = {}) {
+  const ix = icon ? icon.size + Math.round(px * 0.6) : index ? Math.round(px * 1.1) : 0;
   rows.forEach((r, k) => {
     const base = y + k * rowH + px * 0.8;
-    if (index) write(ctx, String(k + 1), x1, base, { px: px * 0.62, italic: true, color: pal.roseInk });
+    if (icon) {
+      // Mini-Pose mittig zur Zeile (Name + Unterzeile), Nummer klein in der Ecke
+      const mid = compact ? base - px * 0.3 : base + (subPx + 14) / 2 - px * 0.3;
+      const iy = Math.round(mid - icon.size / 2);
+      icon.draw(k, x1, iy);
+    } else if (index) write(ctx, String(k + 1), x1, base, { px: px * 0.62, italic: true, color: pal.roseInk });
     const nameW = write(ctx, r.left, x1 + ix, base, { px, color: pal.ink });
     let after = x1 + ix + nameW + 16;
     if (r.mark) {
@@ -471,7 +164,7 @@ function compactRows(data, rows) {
  * opts.transparent (Standard true); false legt Papier darunter. opts.anchor: 'unten' | 'oben'.
  */
 export function laufSticker(run, opts = {}) {
-  const o = { transparent: true, ...opts, template: 'sticker' };
+  const o = { transparent: true, runnerSeal: true, ...opts, template: 'sticker' };
   const routeH = 420; const blockH = routeH + 60 + 196 + 132 + 152 + 20;
   const compact = o.format === 'kompakt';
   const size = compact ? { w: W, h: blockH + 110 } : null;
@@ -504,6 +197,14 @@ export function laufSticker(run, opts = {}) {
       }
     }
   });
+  // Die Läuferin steht am Ziel, mitten im Schritt – als hätte sie die Linie gerade gezogen
+  if (pts.length) {
+    const z = pts[pts.length - 1];
+    const fig = makeCanvas(160, 200, o);
+    const fc = fig.getContext('2d');
+    drawRunner(fc, 80, 196, 128, transparent ? (light ? 'dunkel' : 'hell') : theme);
+    withShadow(ctx, shadow, 18, () => ctx.drawImage(fig, Math.round(z[0] + 86 - 80), Math.round(z[1] + 14 - 196)));
+  }
   const yHero = top + routeH + 60 + 196;
   withShadow(ctx, shadow, 28, () => {
     if (detailed) write(ctx, f.title, W - M, top + 40, { px: 40, italic: true, color: muted, align: 'right' });
@@ -559,7 +260,7 @@ function circleFit(meters, cx, cy, radius) {
  * Oben die Mondphase zur Laufzeit, unten Koordinaten wie im Sternatlas.
  */
 export function laufKarte(run, opts = {}) {
-  const o = { ...opts, template: 'sternbild' };
+  const o = { runnerSeal: true, ...opts, template: 'sternbild' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   const dark = theme === 'dunkel';
@@ -578,22 +279,27 @@ export function laufKarte(run, opts = {}) {
   const f = facts(run);
   const when = run.start || run.date;
 
-  const R = detailed ? 290 : 370;
-  const cx = W / 2; const cy = SAFE.top + 84 + R;
+  const R = detailed ? 290 : 340;
+  const cx = W / 2; const cy = SAFE.top + 104 + R;
+  // Sternkarte: zwei Ringe mit feiner Gradteilung (wie ein Astrolabium), innen ein gepunkteter Kreis
   ctx.save();
   ctx.strokeStyle = pal.ink;
+  ctx.globalAlpha = dark ? 0.16 : 0.15;
   ctx.lineWidth = 1.4;
-  ctx.globalAlpha = dark ? 0.11 : 0.12;
-  ctx.beginPath(); ctx.arc(cx, cy, R + 20, 0, Math.PI * 2); ctx.stroke();
+  const r1 = R + 18; const r2 = R + 40;
+  ctx.beginPath(); ctx.arc(cx, cy, r1, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r2, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath();
+  for (let d = 0; d < 360; d += 2) {
+    const a = (d * Math.PI) / 180;
+    const len = d % 30 === 0 ? 22 : d % 10 === 0 ? 12 : 6;
+    ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.lineTo(cx + Math.cos(a) * (r1 + len), cy + Math.sin(a) * (r1 + len));
+  }
+  ctx.stroke();
+  ctx.globalAlpha = dark ? 0.12 : 0.11;
   ctx.setLineDash([2, 10]);
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, Math.PI * 2); ctx.stroke();
-  for (let k = 0; k < 6; k++) {
-    const ang = (k * Math.PI) / 6;
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(ang) * (R + 20), cy + Math.sin(ang) * (R + 20));
-    ctx.lineTo(cx - Math.cos(ang) * (R + 20), cy - Math.sin(ang) * (R + 20));
-    ctx.stroke();
-  }
   ctx.setLineDash([]);
   ctx.restore();
 
@@ -645,11 +351,14 @@ export function laufKarte(run, opts = {}) {
   if (route.length) {
     const lat = route.reduce((a, q) => a + q[0], 0) / route.length;
     const lon = route.reduce((a, q) => a + q[1], 0) / route.length;
-    write(ctx, `${fmtCoord(lat, 'N', 'S')}  ·  ${fmtCoord(lon, 'O', 'W')}`, W / 2, cy + R + 76, { px: 26, serif: false, color: pal.muted, align: 'center', tracking: 1 });
+    const yC = cy + R + 104;
+    write(ctx, fmtCoord(lat, 'N', 'S'), W / 2 - 46, yC, { px: 26, serif: false, color: pal.muted, align: 'right', tracking: 1 });
+    write(ctx, fmtCoord(lon, 'O', 'W'), W / 2 + 46, yC, { px: 26, serif: false, color: pal.muted, align: 'left', tracking: 1 });
+    drawRunner(ctx, W / 2, yC + 6, 52, theme);
   }
   const name = run.constellation ? `Sternbild „${run.constellation}“` : f.title;
   if (detailed) {
-    const yT = cy + R + 166;
+    const yT = cy + R + 196;
     write(ctx, name, W / 2, yT, { px: 70, color: pal.ink, align: 'center' });
     write(ctx, `${f.hero.value} km  ·  ${f.stats[0].value}  ·  ${f.stats[1].value} /km`, W / 2, yT + 56, { px: 34, italic: true, color: pal.muted, align: 'center' });
     const rows = detailRows(run);
@@ -658,12 +367,15 @@ export function laufKarte(run, opts = {}) {
     const rowH = Math.min(54, avail / rows.length);
     drawRows(ctx, rows, M + 30, W - M - 30, y0, rowH, pal, { px: Math.min(34, rowH * 0.64), index: false, compact: true });
   } else {
-    const yT = cy + R + 178;
-    write(ctx, name, W / 2, yT, { px: 88, color: pal.ink, align: 'center' });
-    if (run.constellation) write(ctx, f.title, W / 2, yT + 56, { px: 34, italic: true, color: pal.muted, align: 'center' });
-    statRow(ctx, [{ value: f.hero.value, unit: 'km', label: 'Distanz' }, ...f.stats.slice(0, 2)], M, W - M, yT + 170, pal, { px: 70, labelPx: 26, align: 'center' });
+    // Name groß, „Sternbild“ klein darüber – wie die Beschriftung im Sternatlas
+    const yT = cy + R + 104 + 196;
+    const big = run.constellation || f.title;
+    const bPx = fitSize(ctx, big, W - 2 * M, {}, run.constellation ? 150 : 104);
+    if (run.constellation) write(ctx, 'Sternbild', W / 2, yT - bPx * 0.78 - 18, { px: 34, italic: true, color: pal.roseInk, align: 'center' });
+    write(ctx, big, W / 2, yT, { px: bPx, color: pal.ink, align: 'center' });
+    statRow(ctx, [{ value: f.hero.value, unit: 'km', label: 'Distanz' }, ...f.stats.slice(0, 2)], M + 20, W - M - 20, SAFE.bottom - 112, pal, { px: 66, labelPx: 25, align: 'center' });
   }
-  signature(ctx, W / 2, SAFE.bottom - 12, pal, rand, o, { align: 'center', px: 30 });
+  signature(ctx, W / 2, SAFE.bottom - 10, pal, rand, o, { align: 'center', px: 30 });
   return canvas;
 }
 
@@ -676,37 +388,7 @@ export function laufKarte(run, opts = {}) {
  */
 export function kraftKarte(workout, opts = {}) {
   if (opts.detail === 'detailliert') return programmKarte(workout, opts);
-  const o = { ...opts, template: 'kraft' };
-  const { canvas, ctx, pal, theme, rand, seed, transparent, w, h, stage } = begin(workout, o);
-  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
-  stage();
-  const f = facts(workout);
-  const s = f.summary;
-
-  write(ctx, f.line, M, SAFE.top + 34, { px: 30, italic: true, color: pal.muted });
-  const tPx = fitSize(ctx, f.title, W - 2 * M, {}, 120);
-  write(ctx, f.title, M - 4, SAFE.top + 54 + tPx * 0.8, { px: tPx, color: pal.ink });
-
-  const p = 9;
-  const fs = figureSize(p);
-  const gap = 110;
-  const yFig = SAFE.top + 236;
-  const xL = W / 2 - gap / 2 - fs.w; const xR = W / 2 + gap / 2;
-  drawFigure(ctx, 'vorn', xL, yFig, p, s.load, theme, seed);
-  drawFigure(ctx, 'hinten', xR, yFig, p, s.load, theme, seed);
-  const yCap = yFig + fs.h + 46;
-  write(ctx, 'vorn', xL + fs.w / 2, yCap, { px: 30, italic: true, color: pal.muted, align: 'center' });
-  write(ctx, 'hinten', xR + fs.w / 2, yCap, { px: 30, italic: true, color: pal.muted, align: 'center' });
-
-  const blooming = Object.entries(s.load).filter(([, v]) => v >= 0.5).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([m]) => MUSCLE_NAMES[m] || m);
-  const yV = SAFE.bottom - 150;
-  hairline(ctx, M, yV - 104, W - M, pal.ink, 0.14);
-  if (blooming.length) write(ctx, `Es blüht: ${blooming.join(', ')}`, W / 2, yV - 140, { px: 34, italic: true, color: pal.roseInk, align: 'center' });
-  const stats = [{ value: f.hero.value, unit: 'kg', label: 'bewegt' }, f.stats[0]];
-  if (s.top) stats.push({ value: `${fmtInt(s.top.kg)}`, unit: 'kg', label: s.top.name });
-  statRow(ctx, stats, M, W - M, yV, pal, { px: 74, labelPx: 26, align: 'spread' });
-  signature(ctx, W - M, SAFE.bottom - 12, pal, rand, o, { align: 'right', px: 30 });
-  return canvas;
+  return koerperbeet(workout, opts);
 }
 
 /**
@@ -725,13 +407,13 @@ export function programmKarte(workout, opts = {}) {
   const f = facts(workout);
   const x1 = M; const x2 = W - M;
 
-  // Kopf: Datum, Titel, Muskeln – rechts zwei kleine Mannequins
-  const fp = feed ? 3 : 4;
-  const fs = figureSize(fp);
-  const figX = x2 - fs.w * 2 - 10;
+  // Kopf: Datum, Titel, Muskeln – rechts das Mannequin vorn und hinten, getönt
+  const figH = feed ? 190 : 236;
+  const figW = figH * 0.4;
+  const figX = x2 - figW * 2.36 + 6;
   const figY = fr.top + (feed ? 0 : 8);
-  drawFigure(ctx, 'vorn', figX, figY, fp, s.load, theme, seed);
-  drawFigure(ctx, 'hinten', figX + fs.w + 10, figY, fp, s.load, theme, seed);
+  const fs = { h: figH };
+  drawBodyPair(ctx, figX, figY, figH, s.load, theme, { gap: 0.36, seed });
   write(ctx, f.line, x1, fr.top + 34, { px: feed ? 27 : 30, italic: true, color: pal.muted });
   const tPx = fitSize(ctx, f.title, figX - x1 - 30, {}, feed ? 100 : 116);
   const yTitle = fr.top + 34 + 24 + tPx * 0.78;
@@ -749,7 +431,12 @@ export function programmKarte(workout, opts = {}) {
   const avail = footTop - listTop - (feed ? 6 : 16);
   const rowH = Math.min(feed ? 112 : 130, avail / Math.max(1, rows.length));
   const px = Math.max(28, Math.min(feed ? 44 : 50, rowH * 0.42));
-  drawRows(ctx, rows, x1, x2, listTop, rowH, pal, { px, subPx: Math.round(px * 0.58), index: true });
+  const thumb = Math.round(Math.min(rowH * 0.8, px * 1.9));
+  const exs = workout.exercises || [];
+  drawRows(ctx, rows, x1, x2, listTop, rowH, pal, {
+    px, subPx: Math.round(px * 0.58), index: true,
+    icon: { size: thumb, draw: (k, x, y) => exs[k] && drawPoseThumb(ctx, exs[k], x, y, thumb, theme) },
+  });
 
   hairline(ctx, x1, footTop, x2, pal.ink, 0.16);
   const yS = footTop + (feed ? 84 : 100);
@@ -806,6 +493,23 @@ function sprite(ctx, rows, colors, x, y, p) {
     ctx.fillStyle = c;
     ctx.fillRect(x + i * p, y + j * p, p, p);
   }));
+}
+
+/**
+ * Der eigene Begleiter als Pixel-Figur für die Briefmarke (Standbild „stolz“, eng zugeschnitten).
+ * Unbekannte Art → null.
+ */
+export function companionSprite(species) {
+  const sp = species && SPECIES[species];
+  const grid = sp && (sp.frames.proud || sp.frames.idle)[0].grid;
+  if (!grid) return null;
+  const keep = (ch) => ch !== '.' && ch !== 'D'; // ohne Bodenschatten
+  const ys = grid.map((r, y) => ([...r].some(keep) ? y : -1)).filter((y) => y >= 0);
+  const xs = grid.flatMap((r) => [...r].map((ch, x) => (keep(ch) ? x : -1))).filter((x) => x >= 0);
+  const x0 = Math.min(...xs); const x1 = Math.max(...xs);
+  const rows = grid.slice(ys[0], ys[ys.length - 1] + 1).map((r) => [...r.slice(x0, x1 + 1)].map((ch) => (keep(ch) ? ch : '.')).join(''));
+  const pick = (mode) => Object.fromEntries([...Object.entries(sp.palette), ...Object.entries(SHARED_PALETTE)].map(([k, v]) => [k, v[mode]]));
+  return { rows, colors: { hell: pick('light'), dunkel: pick('dark') } };
 }
 
 /** Pixel-Szene: Himmel, Mond in der echten Phase, Sterne, Garten (wächst mit den Einheiten), Elli. */
@@ -884,7 +588,7 @@ function pixelScene(ctx, x0, y0, cols, rowsN, p, theme, data, rand, opts) {
       ctx.fillRect(x0 + (xx - 2) * p, y0 + (yy + 2) * p, p, p);
     }
   }
-  const comp = opts.companion && opts.companion.rows ? opts.companion : ELLI;
+  const comp = opts.companion && opts.companion.rows ? opts.companion : companionSprite(opts.companion && opts.companion.species) || ELLI;
   const colors = (comp.colors && (comp.colors[theme] || comp.colors.hell)) || {};
   sprite(ctx, comp.rows, colors, x0 + elliX * p, y0 + (groundY - comp.rows.length + 1) * p, p);
 }
@@ -895,7 +599,7 @@ function pixelScene(ctx, x0, y0, cols, rowsN, p, theme, data, rand, opts) {
  * Detailliert: darunter alle Übungen bzw. Kilometer.
  */
 export function pixelStempel(data, opts = {}) {
-  const o = { ...opts, template: 'stempel' };
+  const o = { runnerSeal: data.type !== 'kraft', ...opts, template: 'stempel' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();
@@ -1016,7 +720,7 @@ function arcText(ctx, str, radius, mid, px, top) {
 
 /** Nur Ziffern: eine große Zahl, zwei kleinere darunter – wie ein Plakat. focus 'bestwert' für Rekorde. */
 export function minimalTypo(data, opts = {}) {
-  const o = { ...opts, template: 'typo' };
+  const o = { runnerSeal: data.type !== 'kraft', ...opts, template: 'typo' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();
@@ -1069,7 +773,7 @@ export function minimalTypo(data, opts = {}) {
  * Die Linie in Altrosa ist das echte Tempo, die anderen ihr Echo.
  */
 export function tempoWelle(run, opts = {}) {
-  const o = { ...opts, template: 'welle' };
+  const o = { runnerSeal: true, ...opts, template: 'welle' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();
@@ -1157,6 +861,8 @@ export function tempoWelle(run, opts = {}) {
 export const TEMPLATES = {
   sticker: { name: 'Lauf-Sticker', for: ['lauf'], render: laufSticker, variants: [{ theme: 'dunkel', transparent: true }, { theme: 'hell', transparent: true }, { theme: 'hell', transparent: false }, { theme: 'dunkel', transparent: false }] },
   sternbild: { name: 'Sternbild', for: ['lauf'], render: laufKarte, variants: [{ theme: 'dunkel' }, { theme: 'hell' }] },
+  studie: { name: 'Bewegungsstudie', for: ['kraft'], render: bewegungsStudie, variants: [{ theme: 'hell' }, { theme: 'dunkel' }] },
+  sammel: { name: 'Sammelkarte', for: ['kraft'], render: sammelKarte, variants: [{ theme: 'dunkel' }, { theme: 'hell' }, { theme: 'dunkel', transparent: true }] },
   kraft: { name: 'Körperbeet · Programmheft', for: ['kraft'], render: kraftKarte, variants: [{ theme: 'hell' }, { theme: 'dunkel' }, { theme: 'dunkel', transparent: true }] },
   stempel: { name: 'Briefmarke', for: ['lauf', 'kraft'], render: pixelStempel, variants: [{ theme: 'dunkel' }, { theme: 'hell' }, { theme: 'hell', transparent: true }] },
   typo: { name: 'Plakat', for: ['lauf', 'kraft'], render: minimalTypo, variants: [{ theme: 'hell' }, { theme: 'dunkel' }, { theme: 'dunkel', transparent: true }] },

@@ -250,6 +250,11 @@ export function suggestCards(session, { max = 4 } = {}) {
     const n = (session.exercises || []).length;
     if (s.prs.length) add('typo', 'Bestwert', `Neuer Bestwert: ${s.prs[0].name} ${fmtKg(s.prs[0].kg)} kg`, 100, { focus: 'bestwert' });
     add('kraft', 'Programmheft', 'Alles auf einem Bild – jede Übung, jeder Satz', n >= 4 ? 92 : 62, { detail: 'detailliert' });
+    const hero = s.prs.length ? (session.exercises || []).find((e) => e.pr) : (session.exercises || [])[0];
+    if (hero) {
+      add('studie', 'Bewegungsstudie', s.prs.length ? `Dein Bestwert, Bild für Bild: ${hero.name}` : `${hero.name} als Serienfotografie, Bild für Bild`, s.prs.length ? 91 : 86);
+      add('sammel', 'Sammelkarte', n > 1 ? `Jede Übung eine Karte – heute ${n} für die Sammlung` : 'Deine Übung als Sammelkarte', n >= 3 ? 90 : 70);
+    }
     add('kraft', 'Körperbeet', 'Wo du trainiert hast, blüht es', 80);
     add('stempel', 'Briefmarke', garden ? `Dein Garten: ${garden} ${garden === 1 ? 'Einheit' : 'Einheiten'} im ${fmtMonth(session.start)}` : 'Ein Gruß aus dem Garten', gardenMilestone ? 88 : 66);
     if (!s.prs.length) add('typo', 'Plakat', 'Nur die Zahl, groß', 55);
