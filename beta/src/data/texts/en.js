@@ -532,4 +532,9 @@ export const TEXTS = Object.freeze({
   'share.failed': 'That didn’t work. Please try again.',
   'share.copied': 'Copied. Just paste it into your story.',
   'share.copyFailed': 'Copying isn’t possible here. Save the image instead.',
+  'tile.garden': 'Garden',
+  'garden.label': 'Your garden: {days} training days this month, stage {stage} of 4',
+  'garden.labelOne': 'Your garden: 1 training day this month, stage {stage} of 4',
+  'profile.show': 'Show {title}',
+  'profile.orderHint': 'Use the eye to hide or show a tile.',
 });

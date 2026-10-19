@@ -535,4 +535,9 @@ export const TEXTS = Object.freeze({
   'share.failed': 'Das hat nicht geklappt. Bitte noch einmal.',
   'share.copied': 'Kopiert. In der Story einfach einfügen.',
   'share.copyFailed': 'Kopieren geht hier nicht. Sichere das Bild stattdessen.',
+  'tile.garden': 'Garten',
+  'garden.label': 'Dein Garten: {days} Trainingstage in diesem Monat, Stufe {stage} von 4',
+  'garden.labelOne': 'Dein Garten: 1 Trainingstag in diesem Monat, Stufe {stage} von 4',
+  'profile.show': '{title} zeigen',
+  'profile.orderHint': 'Mit dem Auge blendest du eine Kachel aus oder wieder ein.',
 });

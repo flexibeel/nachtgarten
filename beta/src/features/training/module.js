@@ -8,6 +8,7 @@ import { sportPart } from './sport-tile.js';
 import { weekPart } from './week-tile.js';
 import { mountTraining } from './training.js';
 import { mountLive } from './live.js';
+import { gardenPart } from './garden-tile.js';
 
 /** Module, für die es „Sport starten“ und den Wochenring gibt. */
 const SPORT_MODULES = ['train', 'mama'];
@@ -24,6 +25,7 @@ export const trainingModule = {
     { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: placeholder('kurz', { back: true }) },
   ],
   tiles: [
+    { id: 'garden', titleKey: 'tile.garden', render: gardenPart, modules: SPORT_MODULES },
     { id: 'sport', titleKey: 'tile.sport', render: sportPart, modules: SPORT_MODULES },
     { id: 'week', titleKey: 'tile.week', render: weekPart, modules: SPORT_MODULES },
   ],
