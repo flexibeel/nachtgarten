@@ -10,4 +10,6 @@ export const GEAR = Object.freeze([
   'Maschinen',
   'Klimmzugstange',
   'Bänder',
+  'SZ-Stange',
+  'Kettlebell',
 ]);
