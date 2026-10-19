@@ -6,6 +6,7 @@
 export const COMPANION_DE = Object.freeze({
   lines: {
     ruhig: {
+      gateAsk: ['Ganz ruhig. Was brauchst du gerade wirklich?'],
       morning: ['Guten Morgen{, user}. Ganz in Ruhe ankommen.', 'Neuer Tag. Eine Sache reicht schon.'],
       day: ['Schön, dass du kurz reinschaust.', 'Ein Schluck Wasser wär jetzt nicht verkehrt.'],
       evening: ['Schöner Abend{, user}. Was war heute gut?', 'Langsam runterfahren. Du hast genug getan.'],
@@ -28,6 +29,7 @@ export const COMPANION_DE = Object.freeze({
       welcome: ['Schön, dass du da bist{, user}. Wir wachsen zusammen.'],
     },
     motiv: {
+      gateAsk: ['Kurzer Moment für dich. Du entscheidest.', 'Vielleicht tut dir gerade etwas anderes gut?'],
       morning: ['Guten Morgen{, user}! Heute wird gut.', 'Aufgewacht! Ich bin schon ganz munter.'],
       day: ['Na, wie läuft’s? Du machst das gut.', 'Kleine Schritte zählen. Jeder einzelne.'],
       evening: ['Guten Abend{, user}! Schön, dass du da bist.', 'Der Tag war deiner. Gönn dir Ruhe.'],
@@ -50,6 +52,7 @@ export const COMPANION_DE = Object.freeze({
       welcome: ['Schön, dass du da bist{, user}! Wir wachsen ab jetzt zusammen.'],
     },
     frech: {
+      gateAsk: ['Na? Der Feed läuft nicht weg. Ich schon fast.', 'Erst durchatmen, dann scrollen. Deal?'],
       morning: ['Moin{, user}! Augen auf, Wasser rein, los.', 'Morgen! Ich bin schon wach. Seit Stunden. Glaub ich.'],
       day: ['Na? Ich hab Durst. Du bestimmt auch.', 'Ey, schön dich zu sehen.'],
       evening: ['Abend{, user}! Füße hoch, du Legende.', 'Feierabend? Feierabend.'],

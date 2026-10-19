@@ -235,3 +235,21 @@ export const prefersReducedMotion = () => globalThis.matchMedia?.('(prefers-redu
 
 /** Ist das System gerade dunkel eingestellt? */
 export const prefersDark = () => globalThis.matchMedia?.('(prefers-color-scheme: dark)').matches === true;
+
+/* ------------------------------------------------------- Andere Apps */
+
+/**
+ * Eine andere App öffnen (z. B. instagram://), mit Web-Adresse als Rückfall, falls die App
+ * nicht da ist und die Seite sichtbar bleibt. Tests können `globalThis.__ngOpenExternal` setzen.
+ * @param {string} appUrl
+ * @param {string} webUrl
+ */
+export function openExternal(appUrl, webUrl) {
+  const hook = /** @type {any} */ (globalThis).__ngOpenExternal;
+  if (typeof hook === 'function') return hook(appUrl, webUrl);
+  globalThis.location.href = appUrl;
+  globalThis.setTimeout(() => {
+    if (globalThis.document?.visibilityState === 'visible') globalThis.location.href = webUrl;
+  }, 1200);
+  return undefined;
+}

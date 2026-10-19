@@ -6,6 +6,7 @@
 export const COMPANION_EN = Object.freeze({
   lines: {
     ruhig: {
+      gateAsk: ['Easy now. What do you really need right now?'],
       morning: ['Good morning{, user}. Arrive slowly.', 'A new day. One thing is enough.'],
       day: ['Nice of you to drop by.', 'A sip of water wouldn’t hurt right now.'],
       evening: ['Lovely evening{, user}. What was good today?', 'Wind down slowly. You’ve done enough.'],
@@ -28,6 +29,7 @@ export const COMPANION_EN = Object.freeze({
       welcome: ['Nice to have you here{, user}. We’ll grow together.'],
     },
     motiv: {
+      gateAsk: ['A short moment for you. You decide.', 'Maybe something else would feel good right now?'],
       morning: ['Good morning{, user}! Today will be good.', 'Awake! I’m already full of energy.'],
       day: ['Hey, how’s it going? You’re doing well.', 'Small steps count. Every single one.'],
       evening: ['Good evening{, user}! Nice to see you.', 'The day was yours. Treat yourself to some rest.'],
@@ -50,6 +52,7 @@ export const COMPANION_EN = Object.freeze({
       welcome: ['Nice to have you here{, user}! From now on we grow together.'],
     },
     frech: {
+      gateAsk: ['Hey. The feed isn’t going anywhere.', 'Breathe first, scroll later. Deal?'],
       morning: ['Morning{, user}! Eyes open, water in, let’s go.', 'Morning! I’ve been awake for hours. I think.'],
       day: ['Well? I’m thirsty. Bet you are too.', 'Hey, good to see you.'],
       evening: ['Evening{, user}! Feet up, you legend.', 'Done for the day? Done for the day.'],
