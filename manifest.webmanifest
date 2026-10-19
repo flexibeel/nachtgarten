@@ -1,12 +1,18 @@
 {
  "name": "Nachtgarten",
  "short_name": "Nachtgarten",
- "description": "Dein persönlicher Begleiter für Training, Fokus und Alltag.",
+ "description": "Dein persönlicher Begleiter für Training, Fokus und Alltag. Ohne Konto, alles bleibt auf deinem Gerät.",
+ "id": "./",
  "lang": "de",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",
  "orientation": "portrait",
+ "categories": [
+  "health",
+  "fitness",
+  "lifestyle"
+ ],
  "background_color": "#0F1312",
  "theme_color": "#0F1312",
  "shortcuts": [

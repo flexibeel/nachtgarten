@@ -1,6 +1,7 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><title>Nachtgarten</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0F1312">
+<script>try{if(localStorage.getItem("lab.theme")==="light")document.querySelector('meta[name="theme-color"]').content="#F2F2EE"}catch(e){}</script>
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -8,6 +9,17 @@
 <meta name="description" content="Dein persönlicher Begleiter: Training, Umlenken statt Scrollen, Schwangerschaft & Rückbildung.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1125x2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-1242x2688.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-828x1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+<link rel="apple-touch-startup-image" href="icons/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)">
+
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <style>
 @font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage.woff) format("woff");font-weight:200 800;font-stretch:75% 100%;font-display:swap}
@@ -934,7 +946,44 @@ mark.mout{background:var(--pollen);color:var(--pollen-ink);border-radius:6px;pad
 .sprow{display:flex;flex-direction:column;gap:6px}
 .sprow .seg{flex-wrap:wrap}
 .insthint{z-index:80}
-.steps2{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px;font-size:1.05rem;line-height:1.4}
+.insthint .inner{gap:16px}
+.insthint .obbud .bud{width:70px;height:78px}
+.insthint .obbud .bbl{margin-bottom:12px}
+.insthint h1{font-size:2.1rem;margin:4px 0 6px}
+.ih-head p{margin:0;max-width:34ch}
+.ih-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ih-step{display:grid;grid-template-columns:26px minmax(0,1fr) 116px;align-items:center;gap:12px;padding:9px 9px 9px 12px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}
+.ih-n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--moss-soft);color:var(--moss);font-family:var(--num);font-size:.8rem;font-weight:700;align-self:start;margin-top:1px}
+.ih-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ih-tx b{font-family:var(--display);font-weight:600;font-size:1.02rem;line-height:1.25;text-wrap:balance}
+.ih-tx em{font-style:normal;color:var(--moss)}
+.ih-tx span{font-size:.8rem;line-height:1.3;color:var(--muted);text-wrap:pretty}
+.ih-mk{width:116px;height:auto;display:block;overflow:visible}
+.ih-mk .fr{fill:var(--bg2);stroke:var(--line)}
+.ih-mk .pill{fill:var(--s2);stroke:var(--line);stroke-width:.8}
+.ih-mk .ln{fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.55}
+.ih-mk .ln2{fill:var(--muted);opacity:.28}
+.ih-mk .hl{fill:none;stroke:var(--pollen);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ih-mk .hlf{fill:var(--pollen)}
+.ih-mk .hlrow{fill:var(--pollen-soft);stroke:var(--pollen);stroke-width:1.2}
+.ih-mk .t{font-family:var(--body);font-size:8.4px;fill:var(--ink)}
+.ih-mk .t.b{font-weight:650}.ih-mk .t.m{fill:var(--muted)}.ih-mk .t.hlt{fill:var(--pollen)}
+:root[data-theme="light"] .ih-mk .t.hlt{fill:var(--pollen-ink)}
+.ih-mk .ih-ring{fill:var(--pollen-soft);stroke:var(--pollen);stroke-width:1.2}
+.ih-mk .ih-pulse{fill:none;stroke:var(--pollen);stroke-width:1.4;transform-box:fill-box;transform-origin:center;animation:ihPulse 2.4s var(--soft) infinite}
+@keyframes ihPulse{0%{transform:scale(1);opacity:.7}70%,100%{transform:scale(1.55);opacity:0}}
+.ih-warn{margin:0;padding:10px 14px;border-radius:14px;background:var(--pollen-soft);color:var(--ink);font-size:.88rem;border:1px solid color-mix(in srgb,var(--pollen) 40%,transparent)}
+.ih-priv{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:color-mix(in srgb,var(--moss) 7%,transparent);border:1px solid color-mix(in srgb,var(--moss) 22%,var(--line))}
+.ih-priv svg{width:22px;height:22px;flex:none;color:var(--moss);margin-top:1px}
+.ih-priv p{margin:0;display:flex;flex-direction:column;gap:3px}
+.ih-priv b{font-weight:600;font-size:.93rem;line-height:1.3}
+.ih-priv span{font-size:.8rem;line-height:1.35;color:var(--muted)}
+.insthint .foot{flex-direction:column;margin-top:auto;padding-top:4px}
+.ih-a{animation:ihIn .55s var(--snap) both}
+.ih-a:nth-child(2){animation-delay:.08s}.ih-a:nth-child(3){animation-delay:.16s}.ih-a:nth-child(4){animation-delay:.24s}.ih-a:nth-child(5){animation-delay:.32s}.ih-a:nth-child(6){animation-delay:.4s}
+@keyframes ihIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (max-width:380px){.ih-step{grid-template-columns:24px minmax(0,1fr) 100px;gap:10px}.ih-mk{width:100px}.insthint h1{font-size:1.9rem}}
+@media (prefers-reduced-motion:reduce){.ih-a,.ih-mk .ih-pulse{animation:none!important}.ih-mk .ih-pulse{opacity:0}}
 </style>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <filter id="mglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -1893,6 +1942,7 @@ function paintAvatar(){let a=$("#avatarBtn");const h=$("#v-heute");if(!a){const 
 /* hell / dunkel */
 const getTheme=()=>document.documentElement.dataset.theme==="light"?"light":"dark";
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("lab.theme",t)}catch(e){}
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.content=t==="light"?"#F2F2EE":"#0F1312");
   document.querySelectorAll("#themeBtn").forEach(b=>{b.setAttribute("aria-checked",t==="dark");b.querySelector(".knob").innerHTML=icon(t==="dark"?"moon":"sun")})}
 function themeSwitch(){const b=document.createElement("button");b.id="themeBtn";b.className="themesw";b.setAttribute("role","switch");b.setAttribute("aria-label","Dunkles Design");
   const t=getTheme();b.setAttribute("aria-checked",t==="dark");
@@ -2560,13 +2610,56 @@ function applyStartView(){if(routeFromHash())return;if(!store.get("lab.profile",
 let installEvt=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e});
 function isInstalled(){try{return navigator.standalone===true||matchMedia("(display-mode: standalone)").matches}catch(e){return false}}
 function installHint(force){if(!window.__standalone||isInstalled())return false;if(!force&&store.get("lab.installSkip",false))return false;
-  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);const o=document.createElement("div");o.className="onb insthint";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");o.setAttribute("aria-label","Als App installieren");
-  o.innerHTML=`<div class="inner"><span class="eyebrow">Willkommen</span><h1>Hol dir Nachtgarten als App</h1><p class="muted">So startet sie im Vollbild vom Homebildschirm und funktioniert auch offline. Richte sie am besten erst danach ein: Was du hier im Browser einträgst, sieht die installierte App nicht.</p>
-   ${ios?`<ol class="steps2"><li>Unten in Safari auf <strong>Teilen</strong> tippen (Quadrat mit Pfeil nach oben).</li><li><strong>„Zum Home-Bildschirm“</strong> wählen und <strong>Hinzufügen</strong>.</li><li>Die App über das neue Icon öffnen.</li></ol><p class="note">Wichtig: in Safari öffnen, nicht in einer anderen App.</p>`
-     :`<ol class="steps2"><li>${installEvt?"Unten auf <strong>Installieren</strong> tippen.":"Im Browser-Menü (⋮) <strong>„App installieren“</strong> oder „Zum Startbildschirm hinzufügen“ wählen."}</li><li>Die App über das neue Icon öffnen.</li></ol>`}
-   <div class="foot" style="flex-direction:column">${!ios&&installEvt?`<button class="btn" id="instGo">Installieren</button>`:""}<button class="btn ghost" id="instLater">Erst mal im Browser ausprobieren</button></div></div>`;
-  document.body.appendChild(o);const close=()=>{o.remove();if(!store.get("lab.profile",null)&&!document.querySelector(".onb"))onboarding()};
-  $("#instLater").onclick=()=>{store.set("lab.installSkip",true);close()};const g=$("#instGo");if(g)g.onclick=async()=>{try{installEvt.prompt();await installEvt.userChoice}catch(e){}close()};return true}
+  const ua=navigator.userAgent,ipad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),ios=/iPhone|iPod/.test(ua)||ipad;
+  const notSafari=ios&&/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|Instagram|FBAN|FBAV|Line\//.test(ua);
+  const o=document.createElement("div");o.className="onb insthint";o.setAttribute("role","dialog");o.setAttribute("aria-modal","true");o.setAttribute("aria-label","Nachtgarten als App installieren");
+  /* kleine Nachbauten der Bedienelemente; .hl = hier tippen */
+  const ring=(x,y,r)=>`<circle class="ih-ring" cx="${x}" cy="${y}" r="${r}"/><circle class="ih-pulse" cx="${x}" cy="${y}" r="${r}"/>`;
+  const appIco=(x,y,sz)=>`<clipPath id="ihc${x}_${sz}"><rect x="${x}" y="${y}" width="${sz}" height="${sz}" rx="${sz*.23}"/></clipPath><image href="icons/apple-touch-icon.png" x="${x}" y="${y}" width="${sz}" height="${sz}" clip-path="url(#ihc${x}_${sz})"/>`;
+  const MK={
+    iosShare:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/><rect class="pill" x="12" y="10" width="108" height="20" rx="10"/><text class="t" x="66" y="23.5" text-anchor="middle">nachtgarten</text>
+      <path class="ln" d="M18 52 l-5 -5 5 -5 M38 42 l5 5 -5 5 M80 41 v14 h8 M80 41 h10 a2 2 0 0 1 2 2 v12 M104 43 h10 v12 h-10z M107 40 h10 v12"/>
+      ${ring(60,48,13)}<path class="hl" d="M55 47 v8 a1.5 1.5 0 0 0 1.5 1.5 h7 a1.5 1.5 0 0 0 1.5 -1.5 v-8 M60 50 V38.5 M56.5 42 L60 38.5 L63.5 42"/>`,
+    iosSheet:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/><rect class="pill" x="9" y="8" width="114" height="17" rx="6"/><rect class="ln2" x="17" y="14.5" width="44" height="4" rx="2"/>
+      <rect class="hlrow" x="9" y="30" width="114" height="19" rx="6"/><text class="t b" x="15" y="42.6" style="font-size:7.6px">Zum Home-Bildschirm</text>
+      <rect class="hl" x="107.5" y="34.5" width="10" height="10" rx="2.4"/><path class="hl" d="M112.5 37 v5 M110 39.5 h5"/>
+      <rect class="pill" x="9" y="54" width="114" height="15" rx="6"/><rect class="ln2" x="17" y="59.5" width="34" height="4" rx="2"/>`,
+    iosAdd:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/><text class="t m" x="11" y="18">Abbrechen</text>
+      <rect class="hlrow" x="68" y="6.5" width="57" height="17" rx="8.5"/><text class="t b hlt" x="96.5" y="18.2" text-anchor="middle" style="font-size:7.8px">Hinzufügen</text>
+      ${appIco(12,32,32)}<rect class="pill" x="52" y="36" width="68" height="16" rx="5"/><text class="t" x="58" y="47.5">Nachtgarten</text><rect class="ln2" x="52" y="58" width="44" height="4" rx="2"/>`,
+    andMenu:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/><rect class="pill" x="10" y="10" width="92" height="20" rx="10"/><text class="t" x="20" y="23.5">nachtgarten</text>
+      ${ring(116,20,11)}<circle class="hlf" cx="116" cy="14.5" r="1.9"/><circle class="hlf" cx="116" cy="20" r="1.9"/><circle class="hlf" cx="116" cy="25.5" r="1.9"/>
+      <rect class="ln2" x="10" y="42" width="112" height="5" rx="2.5"/><rect class="ln2" x="10" y="54" width="80" height="5" rx="2.5"/><rect class="ln2" x="10" y="66" width="96" height="3" rx="1.5"/>`,
+    andInstall:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/><rect class="pill" x="34" y="7" width="91" height="62" rx="8"/>
+      <rect class="ln2" x="42" y="14" width="50" height="4" rx="2"/><rect class="hlrow" x="37" y="27" width="85" height="20" rx="6"/>
+      <rect class="hl" x="43" y="31.5" width="8" height="12" rx="2"/><path class="hl" d="M47 34 v5 M45 37.5 l2 2 2 -2"/><text class="t b" x="55" y="40.6">App installieren</text>
+      <rect class="ln2" x="42" y="55" width="62" height="4" rx="2"/>`,
+    andOk:`<rect class="fr" x="1" y="1" width="130" height="74" rx="14"/>${appIco(12,12,26)}<text class="t b" x="46" y="23">Nachtgarten</text><text class="t m" x="46" y="34">installieren?</text>
+      <text class="t m" x="20" y="62">Abbrechen</text><rect class="hlrow" x="70" y="49" width="52" height="19" rx="9.5"/><text class="t b hlt" x="96" y="61.8" text-anchor="middle">Installieren</text>`};
+  const mk=(k,label)=>`<svg class="ih-mk" viewBox="0 0 132 76" role="img" aria-label="${label}">${MK[k]}</svg>`;
+  const step=(n,txt,sub,k,label)=>`<li class="ih-step"><span class="ih-n" aria-hidden="true">${n}</span><div class="ih-tx"><b>${txt}</b>${sub?`<span>${sub}</span>`:""}</div>${mk(k,label)}</li>`;
+  const shield=`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 L19 6 V11.5 C19 16 16 19.3 12 21 C8 19.3 5 16 5 11.5 V6 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 12 l2.2 2.2 L15.2 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  function paint(){const prompt=!ios&&!!installEvt;
+    const steps=ios?[step(1,ipad?"Oben auf <em>Teilen</em> tippen":"Unten auf <em>Teilen</em> tippen",ipad?"":"Das Quadrat mit dem Pfeil",'iosShare',"Safari-Leiste, Teilen-Symbol hervorgehoben"),
+        step(2,"<em>Zum Home-Bildschirm</em> wählen","Evtl. etwas nach unten wischen",'iosSheet',"Teilen-Menü, Zeile Zum Home-Bildschirm hervorgehoben"),
+        step(3,"Oben rechts <em>Hinzufügen</em>","Und schon wohne ich bei dir.",'iosAdd',"Dialog mit Knopf Hinzufügen")]
+      :prompt?[step(1,"Auf <em>Installieren</em> tippen","Unten, ein Tipp genügt",'andOk',"Installieren-Dialog")]
+      :[step(1,"Oben rechts auf <em>⋮</em> tippen","Das Browser-Menü",'andMenu',"Browser-Leiste, Menü-Symbol hervorgehoben"),
+        step(2,"<em>App installieren</em> wählen","Oder „Zum Startbildschirm hinzufügen“",'andInstall',"Menü, Eintrag App installieren hervorgehoben"),
+        step(3,"Mit <em>Installieren</em> bestätigen","Und schon wohne ich bei dir.",'andOk',"Installieren-Dialog")];
+    o.innerHTML=`<div class="inner">
+     <div class="obbud ih-a">${buddySVG("happy",2)}<div class="bbl"><span class="bwho">Keimi</span><span class="btxt">Hi, ich bin Keimi! Nimm mich mit auf deinen Homebildschirm.</span></div></div>
+     <div class="ih-a ih-head"><span class="eyebrow">Willkommen im Nachtgarten</span><h1>Hol dir die App</h1>
+      <p class="muted">Startet im Vollbild, läuft auch offline${prompt?" und ist mit einem Tipp installiert.":" und ist in drei Schritten eingerichtet."}</p></div>
+     ${notSafari?`<p class="ih-warn ih-a">Am besten in <b>Safari</b> öffnen – dort klappt „Zum Home-Bildschirm“ am zuverlässigsten.</p>`:""}
+     <ol class="ih-steps ih-a">${steps.join("")}</ol>
+     <div class="ih-priv ih-a">${shield}<p><b>Keine Anmeldung. Alles bleibt nur auf deinem Handy.</b><span>Kein Konto, kein Server. Tipp: erst in der App einrichten – Browser und App speichern getrennt.</span></p></div>
+     <div class="foot ih-a">${prompt?`<button class="btn" id="instGo">Nachtgarten installieren</button>`:""}<button class="btn ghost" id="instLater">Erst mal im Browser ausprobieren</button></div></div>`;
+    o.querySelector("#instLater").onclick=()=>{store.set("lab.installSkip",true);close()};
+    const g=o.querySelector("#instGo");if(g)g.onclick=async()=>{try{installEvt.prompt();const r=await installEvt.userChoice;installEvt=null;if(r&&r.outcome==="accepted"){close();return}}catch(e){}paint()}}
+  const onPrompt=()=>{if(o.isConnected&&!ios)paint()},onDone=()=>close();
+  const close=()=>{removeEventListener("beforeinstallprompt",onPrompt);removeEventListener("appinstalled",onDone);if(!o.isConnected)return;o.remove();if(!store.get("lab.profile",null)&&!document.querySelector(".onb"))onboarding()};
+  paint();document.body.appendChild(o);setTimeout(()=>addEventListener("beforeinstallprompt",onPrompt),0);addEventListener("appinstalled",onDone);return true}
 
 /* nav */
 let curTab="heute";
