@@ -1,9 +1,20 @@
+"""Klassische Version (v1) bauen: v1/app.html -> klassisch/ (index.html, manifest.webmanifest, sw.js).
+
+  python3 build.py
+
+Die klassische Version liegt unter /nachtgarten/klassisch/ (eigener Service Worker mit Scope klassisch/,
+Cache-Präfix "ngk-", damit nichts mit der neuen App ("ng2-app-") oder der Beta ("ng2-beta-") kollidiert).
+Sie nutzt dieselben Daten wie früher (localStorage "lab.*"), die neue App liest diese beim ersten Start nur.
+Schriften, Icons, Startbilder und Übungsdaten liegen in klassisch/fonts, klassisch/icons, klassisch/demos.
+"""
 import re,shutil,os,hashlib,json
-src=open("src/app.html").read()
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+OUT="klassisch"
+src=open("v1/app.html").read()
 # Version der deutschen Übungsanleitungen (demos/i18n) für ?v= im Nachladen; demos/ wird nie gelöscht
 _h=hashlib.sha1()
-for _f in sorted(os.listdir("demos/i18n")) if os.path.isdir("demos/i18n") else []:
-  _h.update(open(os.path.join("demos/i18n",_f),"rb").read())
+for _f in sorted(os.listdir(OUT+"/demos/i18n")) if os.path.isdir(OUT+"/demos/i18n") else []:
+  _h.update(open(os.path.join(OUT,"demos/i18n",_f),"rb").read())
 src=src.replace("__EXI18N_V__",_h.hexdigest()[:10])
 # remove Google Fonts links
 src=re.sub(r'<link[^>]+fonts\.googleapis\.com[^>]*>\s*','',src)
@@ -20,15 +31,15 @@ SPL={(1320,2868):(440,956,3),(1206,2622):(402,874,3),(1290,2796):(430,932,3),(11
 splash=""
 for (pw,ph),(w,h,d) in SPL.items():
   fn=f"icons/splash/splash-{pw}x{ph}.png"
-  if os.path.exists(fn):splash+=f'<link rel="apple-touch-startup-image" href="{fn}" media="(device-width: {w}px) and (device-height: {h}px) and (-webkit-device-pixel-ratio: {d}) and (orientation: portrait)">\n'
-head=f'''<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Nachtgarten</title>
+  if os.path.exists(os.path.join(OUT,fn)):splash+=f'<link rel="apple-touch-startup-image" href="{fn}" media="(device-width: {w}px) and (device-height: {h}px) and (-webkit-device-pixel-ratio: {d}) and (orientation: portrait)">\n'
+head=f'''<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Nachtgarten Klassisch</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0F1312">
 <script>try{{if(localStorage.getItem("lab.theme")==="light")document.querySelector('meta[name="theme-color"]').content="#F2F2EE"}}catch(e){{}}</script>
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Nachtgarten">
+<meta name="apple-mobile-web-app-title" content="NG Klassisch">
 <meta name="description" content="Dein persönlicher Begleiter: Training, Umlenken statt Scrollen, Schwangerschaft & Rückbildung.">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -44,20 +55,19 @@ tail='''
 src=re.sub(r"<title>.*?</title>","",src,count=1)
 out=head+src+tail
 pass
-open("index.html","w").write(out)
-man={"name":"Nachtgarten","short_name":"Nachtgarten","description":"Dein persönlicher Begleiter für Training, Fokus und Alltag. Ohne Konto, alles bleibt auf deinem Gerät.","id":"./","lang":"de","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","categories":["health","fitness","lifestyle"],"background_color":"#0F1312","theme_color":"#0F1312",
+open(OUT+"/index.html","w").write(out)
+man={"name":"Nachtgarten Klassisch","short_name":"NG Klassisch","description":"Die klassische Version von Nachtgarten. Dein persönlicher Begleiter für Training, Fokus und Alltag. Ohne Konto, alles bleibt auf deinem Gerät.","id":"./","lang":"de","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","categories":["health","fitness","lifestyle"],"background_color":"#0F1312","theme_color":"#0F1312",
  "shortcuts":[{"name":"Training starten","short_name":"Training","url":"./#live","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]},{"name":"Umlenken","url":"./#umlenken"},{"name":"10 Minuten ohne Geräte","short_name":"10 Min.","url":"./#kurz"}],
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
-json.dump(man,open("manifest.webmanifest","w"),ensure_ascii=False,indent=1)
+json.dump(man,open(OUT+"/manifest.webmanifest","w"),ensure_ascii=False,indent=1)
 ver=hashlib.sha1(out.encode()).hexdigest()[:10]
-sw=f'''const V="ng-{ver}";const SHELL=["./","index.html","manifest.webmanifest","fonts/bricolage.woff","fonts/onest.woff","fonts/jetbrains.woff","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
+sw=f'''const V="ngk-{ver}";const SHELL=["./","index.html","manifest.webmanifest","fonts/bricolage.woff","fonts/onest.woff","fonts/jetbrains.woff","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
 self.addEventListener("install",e=>{{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))}});
-self.addEventListener("activate",e=>{{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("ng-")&&k!==V&&k!=="ng-demos").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))}});
-self.addEventListener("fetch",e=>{{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin||u.pathname.includes("/beta/"))return;
- if(u.pathname.includes("/demos/")){{e.respondWith(caches.open("ng-demos").then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(n=>{{if(n.ok)c.put(e.request,n.clone());return n}}))));return}}
- if(e.request.mode==="navigate"){{e.respondWith(fetch(e.request).then(n=>{{caches.open(V).then(c=>c.put("index.html",n.clone()));return n}}).catch(()=>caches.match("index.html")));return}}
- e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))}});
+self.addEventListener("activate",e=>{{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith("ngk-")&&k!==V&&k!=="ngk-demos").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))}});
+self.addEventListener("fetch",e=>{{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin||!u.pathname.startsWith(new URL(self.registration.scope).pathname))return;
+ if(u.pathname.includes("/demos/")){{e.respondWith(caches.open("ngk-demos").then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(n=>{{if(n.ok)c.put(e.request,n.clone());return n}}))));return}}
+ if(e.request.mode==="navigate"){{e.respondWith(fetch(e.request).then(n=>{{caches.open(V).then(c=>c.put("index.html",n.clone()));return n}}).catch(()=>caches.open(V).then(c=>c.match("index.html"))));return}}
+ e.respondWith(caches.open(V).then(c=>c.match(e.request)).then(r=>r||fetch(e.request)))}});
 '''
-open("sw.js","w").write(sw)
-open(".nojekyll","w").write("")
+open(OUT+"/sw.js","w").write(sw)
 print("built",len(out)//1024,"KB, version",ver)

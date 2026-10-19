@@ -2565,7 +2565,7 @@ const _privacyTileB=privacyTile;privacyTile=function(){_privacyTileB();const t=$
   const wipe=$("#wipeAll");wipe?wipe.before(r):t.appendChild(r);$("#bkSave").onclick=exportBackup;$("#bkLoad").onclick=importBackup};
 
 /* ---------- Schnellstart: Direktsprünge, Startansicht, Sport-starten-Knopf ---------- */
-const ROUTES={heute:()=>show("heute"),training:()=>show("training"),live:()=>{show("training");setTimeout(()=>startLive(),250)},mama:()=>show("mama"),umlenken:()=>show("gate"),feed:()=>show("feed"),kurz:()=>startPlayer("b1"),ruecken:()=>startPlayer("b2")};
+const ROUTES={heute:()=>show("heute"),training:()=>show("training"),live:()=>{show("training");setTimeout(()=>startLive(),250)},mama:()=>show("mama"),umlenken:()=>show("gate"),feed:()=>show("feed"),kurz:()=>startPlayer("b1"),ruecken:()=>startPlayer("b2"),ideen:()=>show("ideen")};
 function routeFromHash(){const h=(location.hash||"").replace(/^#/,"").toLowerCase();if(h&&ROUTES[h]&&store.get("lab.profile",null)){ROUTES[h]();try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}return true}return false}
 window.addEventListener("hashchange",routeFromHash);
 const STARTS=[["heute","Heute"],["training","Training"],["live","Direkt ins Live-Training"]];
