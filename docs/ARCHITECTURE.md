@@ -134,6 +134,34 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
   „Nachtgarten Beta“, eigener Service Worker mit eigenem Cache-Präfix). v2 speichert unter `ng2.*` und
   liest `lab.*` nur, deshalb können v1 und Beta denselben Ursprung teilen.
 
+## Entscheidungen (Stufe 3: Begleiter, Training, Fokus)
+
+- **Begleiter**: Pixel-Tiere aus `ui/companion/` (Elefant „Elli“ vorn, Igel, Fuchs, Otter, Faultier, Eule,
+  Keimling). `ui/companion.js` zeichnet Standbilder (`companionFigure`) und bewegte Sprites (`companionSprite`,
+  Schleife endet, wenn das Element aus dem Dokument fällt). Neue Profile starten mit Elli, alte behalten ihre Art.
+- **Schlicht** (`settings.plain`, ohne Wert gilt `!buddy.on` aus v1): blendet Figur, Sätze und Garten überall aus.
+  Abfrage nur über `isPlain(ctx)` (features/companion/companion-state.js). Im Onboarding als Karte „Ohne Begleiter“.
+- **CSP**: Stile aus dem Code (Sprite-Farben, Garten, Animationen) kommen als adoptierte Stylesheets
+  (`ui/adopt-css.js`), nie als `<style>`-Element.
+- **Garten** (`domain/garden.js`): Stufe aus Trainingstagen im Monat (0, 2, 5, 9, 14). Kachel `garden` im Modul
+  Training, Vorbeiflug höchstens einmal je App-Start. Kacheln lassen sich im Profil ausblenden (`settings.hiddenTiles`).
+- **Übungen** (`features/training/exercises.js`): kuratiert (`data/library.js`), offene Datenbank
+  (`data/exercise-db.js`, per `import()` nachgeladen), eigene/übernommene aus dem Speicher, `g_`-Plan-Übungen
+  (`data/plan-exercise-map.js`). Deutsche Namen und Anleitungen aus `data/i18n/` (Übersetzungs-Strang).
+  Suche, Kategorien und Sortierung rein in `domain/library.js`.
+- **Live-Training** (`features/training/live.js`, Logik in `domain/live-session.js`): ein Bildschirm ohne Scrollen
+  (geprüft bei 390 × 844 und 375 × 667), feste Aktionsleiste. Pause zeitstempelbasiert in `live.rest`
+  (überlebt Neuladen). Abschluss schreibt Eintrag, `lastCard` und +15 Min. Zeitkonto.
+- **Planfinder** (`domain/plan-wizard.js`): vier Antworten → `recommendPlans`; Schwerpunkt aus dem Profilziel.
+  `adoptTemplate` legt Einheiten und Wochenplan an, eigene Pläne und Aktivitäten bleiben.
+- **Teilen** (`features/training/share-sheet.js`): `suggestCards` als Wisch-Leiste; Siegel aus dem Sprite
+  (`ui/share/seal.js`). Teilen, Bild in die Zwischenablage und Download über `core/platform.js`
+  (`shareImage`, `copyImage`, `saveFile`) – in der nativen App dort austauschbar.
+- **Wirklich jetzt?** (`domain/gate.js`, `features/focus/umlenken.js`): `#umlenken?von=instagram` aus einer
+  Kurzbefehle-Automation. Entscheidungen in `ng2.gate` (60 Tage), „Trotzdem öffnen“ bucht 5 Min. ab und setzt
+  eine Schonfrist (`graceUntil`), in der direkt weitergeleitet wird. Andere Apps öffnet `openExternal`
+  (core/platform.js). Das Modul behält die Id `handy` (gespeicherte Einstellungen, v1-Übernahme).
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.

@@ -75,7 +75,29 @@ Die Erfahrung kommt aus dem Profil oder dem Trainingsverlauf und wird nicht noch
 
 ## 4. Offene Punkte
 
-- **Allgemeine Übungen:** Übungen mit `g_`-Id (z. B. Bulgarische Split Squats, Schrägbankdrücken mit Kurzhanteln, Dead Bug, Y-T-W) haben Muster und Muskeln, aber noch keine kuratierte Bibliotheks-Id. Beim Übernehmen müssen sie in die Bibliothek aufgenommen oder auf eine DB-Übung abgebildet werden.
+- **Allgemeine Übungen (erledigt, Stufe 3):** Die `g_`-Übungen sind in `src/data/plan-exercise-map.js` der Bibliothek zugeordnet. Exakte Entsprechungen ersetzen beim Übernehmen eines Plans die Id (Verlauf und Bestleistungen laufen dann bei der Bibliotheks-Übung weiter). Bei nur verwandten Übungen bleibt die `g_`-Id, damit sich Verläufe nicht vermischen; die Bibliothek führt sie mit Name, Muskeln und Bewegungsmuster aus dem Plan und eigenen Hinweisen.
+
+  | g_-Übung | Ziel | Art |
+  |---|---|---|
+  | g_inclinedb Schrägbankdrücken KH | db279 Incline Dumbbell Press | exakt |
+  | g_inclinepush Liegestütze erhöht | db282 Incline Push-Up | exakt |
+  | g_dbfly Kurzhantel-Fliegende | db186 Dumbbell Flyes | exakt |
+  | g_bandpull Band-Reverse-Fly | db29 Band Pull Apart | exakt |
+  | g_lyinglat Seitheben in Seitlage | db361 Lying One-Arm Lateral Raise | exakt |
+  | g_inclinecurl Schrägbank-Curls | db276 Incline Dumbbell Curl | exakt |
+  | g_deadbug Dead Bug | db154 Dead Bug | exakt |
+  | g_sideplank Seitstütz | db520 Side Bridge | exakt |
+  | g_bandpulldown Latzug mit Band | latpull | verwandt |
+  | g_proneytw Y-T-W in Bauchlage | db362 Lying Rear Delt Raise | verwandt |
+  | g_bandpushdown Trizepsdrücken mit Band | pushdown | verwandt |
+  | g_bulgarian Bulgarische Split Squats | db573 Split Squat with Dumbbells | verwandt |
+  | g_boxsquat Kniebeuge auf Stuhl/Box | db79 Bodyweight Squat | verwandt |
+  | g_dbrdl Rumänisches Kreuzheben KH | db615 Stiff-Legged Dumbbell Deadlift | verwandt |
+  | g_goodmorning Hüftbeuge Körpergewicht | db250 Good Morning | verwandt |
+  | g_sliderhamcurl Beinbeuger mit Gleittüchern | db24 Ball Leg Curl | verwandt |
+  | g_bridgemarch Beckenheben mit Marschieren | bridge | verwandt |
+  | g_birddog, g_catcow, g_thoracic, g_hipflexor, g_childpose | – | eigene Übung |
+
 - **Minuten:** Die Minuten sind Schätzungen. Gerechnet wird mit 3 s pro Wiederholung, der Pause, 1 Minute Umbau pro Übung und 5 Minuten Aufwärmen. Die echte Dauer kann ±10 Minuten abweichen.
 
 ## 5. Quellen
