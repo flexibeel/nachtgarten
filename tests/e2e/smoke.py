@@ -100,6 +100,8 @@ def onboarding_pregnancy(page, scheme):
     shot(page, f"{scheme}_onboarding_companion")
     page.click(NEXT)
     page.wait_for_selector(".onboarding", state="detached")
+    page.wait_for_timeout(500)
+    check(page.locator(".toast:has-text('Willkommen')").count() == 0, "Willkommen-Hinweis erscheint noch")
     store = page.evaluate("JSON.parse(localStorage.getItem('ng2.settings'))")
     check(store["enabledModules"] == ["train", "mama", "habits", "handy"], f"Module falsch gespeichert: {store['enabledModules']}")
     mama = page.evaluate("JSON.parse(localStorage.getItem('ng2.mama'))")
@@ -116,7 +118,7 @@ def check_heute(page, scheme):
     check(page.locator("[data-tile]").count() >= 5, "zu wenige Kacheln")
     check("nur auf diesem Gerät" in page.inner_text(".heute-settings"), "Datenschutz-Satz fehlt")
     tabs = page.locator(".tab .tab-label").all_inner_texts()
-    check(tabs == ["Heute", "Training", "Mama", "Fokus"], f"Tabs falsch: {tabs}")
+    check(tabs == ["Heute", "Training", "Fokus", "Mama", "Profil"], f"Tabs falsch: {tabs}")
     shot(page, f"{scheme}_heute")
     shot(page, f"{scheme}_heute_full", full=True)
     no_horizontal_scroll(page, "Heute")
@@ -228,7 +230,8 @@ def check_default_path(browser, base, scheme):
     tiles = page.eval_on_selector_all("[data-tile]", "els => els.map(e => e.dataset.tile)")
     check(tiles == ["garden", "sport", "week", "one-thing", "habit", "dump"], f"Standard-Kacheln falsch: {tiles}")
     check(page.get_attribute(".sport-start", "href") == "#live", "Sport starten führt nicht ins Training")
-    check(page.locator(".tab").count() == 2, "Standard sollte Heute + Training zeigen")
+    tabs = page.locator(".tab .tab-label").all_inner_texts()
+    check(tabs == ["Heute", "Training", "Profil"], f"Standard sollte Heute, Training, Profil zeigen: {tabs}")
     check(page.is_visible(".garden-strip .ng-garden"), "Garten fehlt auf Heute")
     check(page.locator(".garden-strip .ng-sprite:visible").count() == 0, "Begleiter sitzt doppelt im Garten")
     shot(page, f"{scheme}_heute_garden")
@@ -312,7 +315,8 @@ def check_live(browser, base, scheme):
     shot(page, f"{scheme}_live_rest_375")
     fits_screen(page, "Pause 375")
     page.click(".rest-skip")
-    page.wait_for_selector(".live-sets")
+    page.wait_for_selector(".live-figure:not([hidden]) .live-anim .nga-wrap")
+    check(page.locator(".live-dot.is-done").count() == 1, "Satz-Punkt nicht gefüllt")
     page.click(".stepper-button[aria-label*='Wiederholungen erhöhen']")
     page.click(".live-rir-chip >> nth=2")
     page.click(".live-done")
@@ -468,6 +472,174 @@ def check_wizard(browser, base, scheme):
     context.close()
 
 
+SIZES = [{"width": 390, "height": 844}, {"width": 375, "height": 667}]
+HISTORY = {"bench": [{"date": "2026-10-12", "weight": 57.5, "reps": 10, "rir": 2, "session": 1},
+                     {"date": "2026-10-15", "weight": 60, "reps": 8, "rir": 2, "session": 2},
+                     {"date": "2026-10-15", "weight": 60, "reps": 8, "rir": 2, "session": 2},
+                     {"date": "2026-10-15", "weight": 60, "reps": 8, "rir": 1, "session": 2}]}
+
+
+def shot3(page, name, clip=None):
+    if SHOTS:
+        page.wait_for_timeout(450)
+        page.screenshot(path=str(pathlib.Path(SHOTS) / f"s3_{name}.png"), clip=clip)
+
+
+def overlaps(a, b):
+    return not (a["x"] + a["width"] <= b["x"] or b["x"] + b["width"] <= a["x"] or a["y"] + a["height"] <= b["y"] or b["y"] + b["height"] <= a["y"])
+
+
+def toast_clear(page, where):
+    """Der sichtbare Hinweis liegt über keinem Bedienelement."""
+    page.wait_for_selector(".toast.is-visible")
+    page.wait_for_timeout(300)
+    toast = page.locator(".toast.is-visible").bounding_box()
+    for sel in [".stepper", ".live-rir-chip", ".live-bar", ".rest-actions .button", ".live-name", ".live-suggest-chip", ".tabbar", ".gate-choice"]:
+        for i in range(page.locator(sel).count()):
+            box = page.locator(sel).nth(i).bounding_box()
+            if box and page.locator(sel).nth(i).is_visible():
+                check(not overlaps(toast, box), f"{where}: Hinweis liegt über {sel}")
+
+
+def fresh(browser, base, scheme, size, modules=None, plain=False, reduced=False):
+    context = browser.new_context(viewport=size, device_scale_factor=2, color_scheme=scheme, locale="de-DE",
+                                  service_workers="block", reduced_motion="reduce" if reduced else "no-preference")
+    page = context.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
+    page.on("console", lambda m: errors.append(f"console: {m.text}") if m.type == "error" else None)
+    page.goto(base)
+    page.wait_for_selector(".onboarding")
+    while page.locator(".onboarding").count():
+        page.click(NEXT)
+        page.wait_for_timeout(60)
+    page.evaluate("""([plans, history, modules, plain]) => {
+        localStorage.setItem('ng2.plans', JSON.stringify(plans));
+        localStorage.setItem('ng2.history', JSON.stringify(history));
+        const s = JSON.parse(localStorage.getItem('ng2.settings'));
+        if (modules) s.enabledModules = modules;
+        s.plain = plain;
+        localStorage.setItem('ng2.settings', JSON.stringify(s));
+    }""", [PLAN, HISTORY, modules, plain])
+    page.reload()
+    page.wait_for_selector(".heute-greeting")
+    return context, page, errors
+
+
+def check_polish(browser, base, scheme):
+    """Feinschliff Stufe 3: Live-Bühne, Startgewichte, Hinweise, Tabs, Gate, Übergänge – je Größe."""
+    for size in SIZES:
+        tag = f"{scheme}_{size['width']}"
+        context, page, errors = fresh(browser, base, scheme, size, modules=["train", "habits", "handy", "mama"])
+        # Tab-Leiste: fünf gleich breite Tabs, einer aktiv, Pille hinter dem Symbol
+        page.goto(base + "#heute")
+        page.wait_for_selector(".heute-greeting")
+        tabs = page.locator(".tab .tab-label").all_inner_texts()
+        check(tabs == ["Heute", "Training", "Fokus", "Mama", "Profil"], f"Tabs falsch: {tabs}")
+        widths = {round(page.locator(".tab").nth(i).bounding_box()["width"]) for i in range(len(tabs))}
+        check(max(widths) - min(widths) <= 1, f"Tabs ungleich breit: {widths}")
+        check(page.locator(".tab[aria-current=page]").count() == 1, "kein aktiver Tab")
+        pill = page.evaluate("getComputedStyle(document.querySelector('.tab[aria-current=page] .tab-icon'), '::before').opacity")
+        check(pill == "1", "aktive Pille fehlt")
+        bar_bg = page.evaluate("getComputedStyle(document.querySelector('.tabbar')).backgroundColor")
+        check("rgba" not in bar_bg or bar_bg.endswith(", 1)"), f"Tab-Leiste durchscheinend: {bar_bg}")
+        shot3(page, f"{tag}_heute")
+        bar = page.locator(".tabbar").bounding_box()
+        shot3(page, f"{tag}_tabbar", clip={"x": 0, "y": bar["y"] - 8, "width": size["width"], "height": bar["height"] + 8})
+        page.click(".tab:has-text('Profil')")
+        page.wait_for_selector(".profile-page .profile-bond-value")
+        check("Stufe" in page.inner_text(".profile-bond-value"), "Stufe der Verbindung fehlt im Profil")
+        shot3(page, f"{tag}_profil")
+        page.click(".tab:has-text('Heute')")
+        page.wait_for_selector(".heute-greeting")
+        check(page.locator(".companion-who").inner_text() == "Elli", f"Beschriftung nicht nur der Name: {page.locator('.companion-who').inner_text()}")
+        if scheme == "dark":
+            bg = page.evaluate("getComputedStyle(document.body).backgroundColor")
+            check(bg == "rgb(42, 38, 38)", f"Dunkel nicht warmes Grau: {bg}")
+
+        # Gate: Begleiter oben, Möglichkeiten unten, Fußzeile ganz sichtbar
+        page.goto(base + "#umlenken?von=probe")
+        page.wait_for_selector(".gate-choice")
+        hero = page.locator(".gate-hero .companion").bounding_box()
+        choices = page.locator(".gate-choices").bounding_box()
+        foot = page.locator(".gate-close").bounding_box()
+        check(hero["y"] + hero["height"] / 2 < size["height"] * 0.45, f"{tag}: Begleiter nicht im oberen Bereich")
+        check(choices["y"] > size["height"] * 0.4, f"{tag}: Möglichkeiten nicht unten")
+        check(foot["y"] + foot["height"] <= size["height"], f"{tag}: Fußzeile abgeschnitten")
+        check(page.evaluate("document.querySelector('.gate').scrollHeight <= document.querySelector('.gate').clientHeight"), f"{tag}: Gate scrollt")
+        shot3(page, f"{tag}_gate")
+        page.click(".gate-choice.is-quiet")
+        toast_clear(page, f"{tag} Gate")
+        page.goto(base + "#training")
+        page.wait_for_timeout(250)
+        check(page.locator(".toast.is-visible").count() == 0, "Hinweis wandert mit auf den nächsten Bildschirm")
+
+        # Live: Animation, Letztes Mal + Vorschlag, Punkte, Startgewichte
+        page.goto(base + "#training")
+        page.wait_for_selector(".plan-row")
+        page.evaluate("""() => { window.__nav = []; new MutationObserver(() => { const v = document.documentElement.dataset.nav; if (v) window.__nav.push(v); })
+            .observe(document.documentElement, { attributes: true, attributeFilter: ['data-nav'] }); }""")
+        page.click(".plan-row")
+        page.wait_for_selector(".live-anim .nga-wrap canvas")
+        check(page.locator(".live-recap-text").inner_text().startswith("Letztes Mal: 3 × 8 · 60 kg"), f"Letztes Mal falsch: {page.locator('.live-recap-text').inner_text()}")
+        check(page.locator(".live-suggest-chip").count() == 1, "Vorschlag fehlt")
+        check(page.locator(".live-dot").count() == 2, "Satz-Punkte fehlen")
+        check(page.locator(".live-coach").inner_text().strip() != "", "Zeile unter der Animation fehlt")
+        anim = page.locator(".live-anim .nga-wrap").bounding_box()
+        check(anim["width"] >= 120, f"{tag}: Animation zu klein ({anim['width']})")
+        check(abs((anim["x"] + anim["width"] / 2) - size["width"] / 2) < 2, f"{tag}: Animation nicht mittig")
+        fits_screen(page, f"Live {tag}")
+        shot3(page, f"{tag}_live")
+        page.click(".live-suggest-chip")
+        check(page.locator(".stepper-number").first.inner_text() in ("62,5", "60"), "Vorschlag nicht übernommen")
+        page.click(".live-done")
+        page.wait_for_selector(".rest .rest-time")
+        check(page.locator(".rest-saved .rest-undo").is_visible(), "Rückgängig in der Pause fehlt")
+        check(page.locator(".toast.is-visible").count() == 0, "Hinweis liegt über der Pause")
+        fits_screen(page, f"Pause {tag}")
+        shot3(page, f"{tag}_live_rest")
+        page.click(".rest-undo")
+        page.wait_for_selector(".live-figure:not([hidden])")
+        check(len(page.evaluate("JSON.parse(localStorage.getItem('ng2.live')).sets")) == 0, "Rückgängig in der Pause wirkt nicht")
+        # Kabelzug startet mit 15 kg, Kurzhanteln mit 8 kg
+        page.click(".live-switch")
+        page.click(".switch-row-item >> nth=1")
+        page.wait_for_selector(".live-name:has-text('Latzug')")
+        check(page.locator(".stepper-number").first.inner_text() == "15", f"Kabelzug startet nicht mit 15 kg: {page.locator('.stepper-number').first.inner_text()}")
+        page.click(".live-switch")
+        page.click(".switch-row-item >> nth=2")
+        page.wait_for_selector(".live-name:has-text('Schrägbank')")
+        check(page.locator(".stepper-number").first.inner_text() == "8", "Kurzhanteln starten nicht mit 8 kg")
+        # Zurück: pop, vorher push
+        page.go_back()
+        page.wait_for_selector(".plan-row")
+        page.wait_for_timeout(400)
+        nav = page.evaluate("window.__nav")
+        check(nav[:1] == ["push"] and "pop" in nav, f"Übergänge falsch: {nav}")
+        check(page.evaluate("document.documentElement.dataset.nav") is None, "data-nav bleibt hängen")
+        check(not errors, "\n".join(errors))
+        context.close()
+
+    # Körpergewicht und Schlicht: Feld zeigt „Körpergewicht“, Animation bleibt, keine Begleiter-Sätze
+    context, page, errors = fresh(browser, base, scheme, SIZES[1], plain=True, reduced=True)
+    page.evaluate("""() => localStorage.setItem('ng2.plans', JSON.stringify([{id: 'kg', name: 'Zuhause', items: [{exercise: 'pushup', sets: 3, reps: '8–12'}]}]))""")
+    page.goto(base + "#live?plan=kg")
+    page.wait_for_selector(".live-body-text")
+    check(page.inner_text(".live-body-text") == "Körpergewicht", "Körpergewicht nicht angezeigt")
+    check(page.locator(".live-anim .nga-wrap").count() == 1, "Animation fehlt in Schlicht")
+    check(page.locator(".live-coach.is-companion").count() == 0, "Begleiter spricht trotz Schlicht")
+    fits_screen(page, f"Live Schlicht {scheme}")
+    shot3(page, f"{scheme}_375_live_plain_bodyweight")
+    page.click(".live-body-add")
+    page.wait_for_selector(".live-field .stepper")
+    check("Zusatzgewicht" in page.inner_text(".live-inputs"), "Zusatzgewicht lässt sich nicht öffnen")
+    page.goto(base + "#training")
+    page.wait_for_selector(".page-title")
+    check(page.evaluate("document.documentElement.dataset.nav") is None, "Übergang trotz reduzierter Bewegung")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -488,6 +660,7 @@ def run():
                 check_live(browser, base, scheme)
                 check_gate(browser, base, scheme)
                 check_wizard(browser, base, scheme)
+                check_polish(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

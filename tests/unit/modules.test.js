@@ -1,7 +1,7 @@
 import './helpers/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_MODULES, anyEnabled, moveTile, normalizeModules, orderTiles, sportTarget, toggleModule } from '../../src/domain/modules.js';
+import { DEFAULT_MODULES, MAX_TABS, anyEnabled, arrangeTabs, moveTile, normalizeModules, orderTiles, sportTarget, toggleModule } from '../../src/domain/modules.js';
 import { createStore, memoryAdapter } from '../../src/core/store.js';
 
 const KNOWN = ['train', 'mama', 'habits', 'handy', 'ideen'];
@@ -55,4 +55,27 @@ test('Einstellungen: Module und Kachel-Reihenfolge liegen in ng2.settings', () =
   const old = createStore(memoryAdapter({ 'ng2.settings': JSON.stringify({ theme: 'dark' }) }));
   assert.deepEqual(old.settings.get().tileOrder, []);
   assert.equal(old.settings.get().theme, 'dark');
+});
+
+test('Tab-Leiste: feste Reihenfolge, Profil wenn Platz, höchstens fünf', () => {
+  const tab = (route) => ({ route });
+  const routes = (list) => list.map((x) => x.route);
+  const profil = tab('profil');
+  assert.deepEqual(routes(arrangeTabs([tab('heute'), tab('training')], profil)), ['heute', 'training', 'profil'], 'Standard: drei Tabs');
+  assert.deepEqual(
+    routes(arrangeTabs([tab('heute'), tab('training'), tab('mama'), tab('fokus')], profil)),
+    ['heute', 'training', 'fokus', 'mama', 'profil'],
+  );
+  assert.deepEqual(
+    routes(arrangeTabs([tab('heute'), tab('training'), tab('mama'), tab('fokus'), tab('ideen')], profil)),
+    ['heute', 'training', 'fokus', 'mama', 'ideen'],
+    'voll: Profil über den Avatar',
+  );
+  assert.deepEqual(
+    routes(arrangeTabs([tab('heute'), tab('neu'), tab('training'), tab('mama'), tab('fokus'), tab('ideen')], profil)),
+    ['heute', 'training', 'fokus', 'mama', 'ideen'],
+    'unbekannte Tabs hinten, Grenze greift',
+  );
+  assert.deepEqual(routes(arrangeTabs([tab('heute'), tab('heute')])), ['heute'], 'doppelt zählt einmal');
+  assert.equal(MAX_TABS, 5);
 });

@@ -162,6 +162,17 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
   eine Schonfrist (`graceUntil`), in der direkt weitergeleitet wird. Andere Apps öffnet `openExternal`
   (core/platform.js). Das Modul behält die Id `handy` (gespeicherte Einstellungen, v1-Übernahme).
 
+## Entscheidungen (Feinschliff nach Stufe 3)
+
+- **Startgewicht** (`domain/live-session.js`, `defaultWeight`): nach Geräteart (Langhantel 20, SZ 10, Kurzhantel 8,
+  Kabel/Maschine 15, Kettlebell 12, Körpergewicht/Band 0), sonst das zuletzt benutzte Gewicht (`lastUsedWeight`).
+- **Live-Bühne**: Übungsanimation (ui/anim, `animConfig` aus library-sheet.js) skaliert per Container-Einheiten mit der
+  freien Höhe; darunter eine Zeile (Technik-Hinweis, an wenigen Stellen der Begleiter – nie in Schlicht), dann
+  „Letztes Mal“ (`lastSessionSummary`) mit Vorschlag-Chip; Satz-Punkte (`setDots`) im Kopf.
+- **Tabs** (`arrangeTabs` in domain/modules.js): Heute, Training, Fokus, Mama, Ideen, dazu „Profil“ (eigene Seite,
+  Shell-Ansicht wie Heute), solange höchstens fünf Tabs.
+- **Router** merkt sich die Position im Verlauf (`ngIndex`), daraus Vor/Zurück für die Übergänge (`historyStep`).
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.

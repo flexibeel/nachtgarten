@@ -1,7 +1,7 @@
 import './helpers/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveHash } from '../../src/core/router.js';
+import { historyStep, resolveHash } from '../../src/core/router.js';
 import { oppositeTheme, resolveTheme } from '../../src/ui/theme.js';
 import { applyKey } from '../../src/ui/numpad.js';
 import { stepValue } from '../../src/ui/stepper.js';
@@ -79,4 +79,11 @@ test('Schwangerschaft & Rückbildung: Eingabe prüfen', () => {
   assert.deepEqual(validateMamaInput({ mode: 'post', date: '2026-09-01' }, today), { ok: true });
   assert.equal(createMamaState({ mode: 'preg', date: '2027-02-10', cesarean: true }).cesarean, false, 'Kaiserschnitt nur nach der Geburt');
   assert.equal(createMamaState({ mode: 'post', date: '2026-09-01', cesarean: true, safetyOk: true }).cesarean, true);
+});
+
+test('Verlauf: neuer Eintrag = vor, kleinere Position = zurück, gleiche = ersetzt', () => {
+  assert.deepEqual(historyStep(null, 3), { direction: 'forward', index: 4 });
+  assert.deepEqual(historyStep(2, 3), { direction: 'back', index: 2 });
+  assert.deepEqual(historyStep(4, 3), { direction: 'forward', index: 4 });
+  assert.deepEqual(historyStep(3, 3), { direction: 'none', index: 3 });
 });

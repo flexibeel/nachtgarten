@@ -1,7 +1,7 @@
 import './helpers/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { initialUi, liveReducer, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setsDone, MAX_REST } from '../../src/domain/live-session.js';
+import { defaultWeight, initialUi, isBodyweightGear, lastSessionSummary, lastUsedWeight, liveReducer, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setDots, setsDone, MAX_REST } from '../../src/domain/live-session.js';
 import { startLive } from '../../src/domain/training.js';
 import { categoryOf, filterExercises, matches, toggleFavorite } from '../../src/domain/library.js';
 
@@ -40,9 +40,71 @@ test('Vorbelegung: Verlauf, Gerät, Plan-Soll, Tagesform', () => {
   const history = [{ date: '2026-10-12', weight: 40, reps: 10, rir: 2 }];
   assert.deepEqual(prefill({ history, gear: 'Langhantel' }), { weight: 40, reps: 10 });
   assert.deepEqual(prefill({ history: [], gear: 'Langhantel', goal: 'Kraft' }), { weight: 20, reps: 3 });
-  assert.deepEqual(prefill({ history: [], gear: 'Kurzhanteln', target: '8–12' }), { weight: 5, reps: 8 });
+  assert.deepEqual(prefill({ history: [], gear: 'Kurzhanteln', target: '8–12' }), { weight: 8, reps: 8 });
   assert.deepEqual(prefill({ history: [], gear: 'Körpergewicht' }), { weight: 0, reps: 8 });
   assert.equal(prefill({ history, gear: 'Langhantel', form: 'low' }).weight, 35);
+  assert.equal(prefill({ history, gear: 'Kabelzug', lastUsed: 70 }).weight, 40, 'eigener Verlauf geht vor');
+  assert.equal(prefill({ history: [], gear: 'Sonstiges', lastUsed: 12.5 }).weight, 12.5);
+});
+
+test('Startgewicht je Gerät: nie pauschal 20 kg', () => {
+  assert.equal(defaultWeight('Langhantel'), 20);
+  assert.equal(defaultWeight('Multipresse'), 20);
+  assert.equal(defaultWeight('Kurzhanteln'), 8);
+  assert.equal(defaultWeight('Kurzhantel'), 8);
+  assert.equal(defaultWeight('Kabelzug'), 15);
+  assert.equal(defaultWeight('Maschinen'), 15);
+  assert.equal(defaultWeight('Kettlebell'), 12);
+  assert.equal(defaultWeight('Körpergewicht'), 0);
+  assert.equal(defaultWeight('Klimmzugstange'), 0);
+  assert.equal(defaultWeight('Bänder'), 0);
+  assert.equal(defaultWeight('SZ-Stange'), 10, 'leere SZ-Stange');
+  // Ohne Vorgabe: zuletzt benutztes Gewicht, sonst 0
+  assert.equal(defaultWeight('Sonstiges', 32.5), 32.5);
+  assert.equal(defaultWeight('Eigenes', null), 0);
+  assert.equal(defaultWeight(undefined, 10), 10);
+  assert.equal(defaultWeight('Kurzhanteln', 60), 8, 'Gerät geht vor dem letzten Gewicht');
+  assert.equal(defaultWeight('Sonstiges', Number.NaN), 0);
+  // Körpergewicht erkennt die Oberfläche (Feld zeigt „Körpergewicht“)
+  assert.equal(isBodyweightGear('Körpergewicht'), true);
+  assert.equal(isBodyweightGear('Klimmzugstange'), true);
+  assert.equal(isBodyweightGear('Bänder'), false);
+  assert.equal(isBodyweightGear('Langhantel'), false);
+});
+
+test('Zuletzt benutztes Gewicht: laufendes Training vor Verlauf, jüngster Eintrag gewinnt', () => {
+  const history = {
+    bench: [{ date: '2026-10-10', weight: 50, reps: 8, rir: null }, { date: '2026-10-14', weight: 55, reps: 8, rir: null, session: 1 }],
+    curl: [{ date: '2026-10-14', weight: 12, reps: 10, rir: null, session: 2 }],
+    row: [{ date: '2026-10-01', weight: 70, reps: 8, rir: null }],
+  };
+  assert.equal(lastUsedWeight({ history }), 12);
+  assert.equal(lastUsedWeight({ liveSets: [{ weight: 30 }, { weight: 42.5 }], history }), 42.5);
+  assert.equal(lastUsedWeight({}), null);
+  assert.equal(lastUsedWeight({ history: { a: [] } }), null);
+});
+
+test('Letztes Mal: Anzahl × Wdh. · schwerstes Gewicht, heute zählt nicht', () => {
+  const history = [
+    { date: '2026-10-12', weight: 55, reps: 10, rir: null },
+    { date: '2026-10-15', weight: 60, reps: 8, rir: null },
+    { date: '2026-10-15', weight: 60, reps: 7, rir: null },
+    { date: '2026-10-15', weight: 57.5, reps: 9, rir: null },
+    { date: '2026-10-19', weight: 62.5, reps: 6, rir: null },
+  ];
+  assert.deepEqual(lastSessionSummary(history, '2026-10-19'), { sets: 3, reps: 8, weight: 60 });
+  assert.equal(lastSessionSummary(history.slice(4), '2026-10-19'), null);
+  assert.equal(lastSessionSummary([], '2026-10-19'), null);
+});
+
+test('Satz-Punkte: Soll aus dem Plan, Zusatzsätze, freies Training', () => {
+  assert.deepEqual(setDots(0, 3), ['current', 'open', 'open']);
+  assert.deepEqual(setDots(2, 3), ['done', 'done', 'current']);
+  assert.deepEqual(setDots(3, 3), ['done', 'done', 'done']);
+  assert.deepEqual(setDots(4, 3), ['done', 'done', 'done', 'done']);
+  assert.deepEqual(setDots(0, null), ['current']);
+  assert.deepEqual(setDots(2, null), ['done', 'done', 'current']);
+  assert.equal(setDots(40, null).length, 12, 'begrenzt');
 });
 
 test('Plan-Warteschlange: nächste offene Übung, Fortschritt', () => {

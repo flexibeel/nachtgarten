@@ -33,8 +33,8 @@ const TIME = {
     hill1: '#CBCFBE', hill2: '#B0BAA2', grass: '#97A488', blade: '#7F8F71', soil: '#BBA391', soil2: '#A68D7B', trunk: '#8C7563', glow: '#F2D9A8', lamp: '#F0D3BE', shade: '#7F8F71',
   },
   nacht: {
-    sky1: '#1E1B1B', sky2: '#242020', sky3: '#2C2625', sun: '#2C2625', halo: '#2C2625', moon: '#E6DDD3', star: '#CFC6BF',
-    hill1: '#2C302A', hill2: '#353C31', grass: '#45503E', blade: '#56634D', soil: '#3A302C', soil2: '#312825', trunk: '#5A4A3F', glow: '#E6C58F', lamp: '#433631', shade: '#2E3829',
+    sky1: '#2A2626', sky2: '#2F2A2A', sky3: '#363030', sun: '#363030', halo: '#363030', moon: '#E6DDD3', star: '#CFC6BF',
+    hill1: '#343930', hill2: '#3D4538', grass: '#4C5844', blade: '#5D6B53', soil: '#423730', soil2: '#392E2A', trunk: '#615045', glow: '#E6C58F', lamp: '#4B3D37', shade: '#353F30',
   },
 };
 /** Jahreszeiten: nur Laub und Blüten (Mitteltöne, die hell wie dunkel tragen). */
@@ -48,7 +48,7 @@ const SEASON = {
 const decl = (obj, suffix = '') => Object.entries(obj).map(([k, v]) => `--ng-gd-${k}${suffix}:${v};`).join('');
 const SEASON_KEYS = ['bloom', 'bloom2', 'leaf', 'leaf2'];
 /* Laub und Blüten: abends direkt, nachts mit dem Himmel verschattet */
-const seasonUse = (night) => SEASON_KEYS.map((k) => `--ng-gd-${k}:${night ? `color-mix(in srgb, var(--ng-gd-${k}-base) 74%, #1E1B1B)` : `var(--ng-gd-${k}-base)`};`).join('');
+const seasonUse = (night) => SEASON_KEYS.map((k) => `--ng-gd-${k}:${night ? `color-mix(in srgb, var(--ng-gd-${k}-base) 76%, #2A2626)` : `var(--ng-gd-${k}-base)`};`).join('');
 
 /** CSS der Szene (Farben + sanftes Funkeln, das bei reduzierter Bewegung ruht). */
 export function gardenCss() {

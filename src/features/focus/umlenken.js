@@ -132,10 +132,13 @@ function mountGate(ctx, view, { demo }) {
         });
     replace(
       root,
-      h('div', { class: 'gate-inner' },
-        h('h1', { class: 'gate-title', id: 'gate-title', text: t('gate.title') }),
-        speech?.el ?? h('p', { class: 'gate-calm', text: t('gate.calmLine') }),
-        h('div', { class: 'gate-choices' },
+      h('div', { class: 'gate-inner gate-ask' },
+        // Oben (oberes Drittel): Frage und Begleiter; unten im Daumenbereich: die Möglichkeiten.
+        h('div', { class: 'gate-hero' },
+          h('h1', { class: 'gate-title', id: 'gate-title', text: t('gate.title') }),
+          speech?.el ?? h('p', { class: 'gate-calm', text: t('gate.calmLine') }),
+        ),
+        h('div', { class: 'gate-choices', 'data-toast-avoid': '' },
           first,
           big('', 'wind', t('gate.breathe'), t('gate.breatheSub'), () => {
             choose('breath');
@@ -151,8 +154,10 @@ function mountGate(ctx, view, { demo }) {
             openExternal(APP_URL, WEB_URL);
           }),
         ),
-        h('p', { class: 'gate-stat', text: w.redirected ? t('gate.weekStat', { count: w.redirected }) : t('gate.weekStatNone') }),
-        h('button', { type: 'button', class: 'link-button gate-close', text: t('gate.close'), on: { click: close } }),
+        h('footer', { class: 'gate-foot' },
+          h('p', { class: 'gate-stat', text: w.redirected ? t('gate.weekStat', { count: w.redirected }) : t('gate.weekStatNone') }),
+          h('button', { type: 'button', class: 'link-button gate-close', text: t('gate.close'), on: { click: close } }),
+        ),
       ),
     );
   };

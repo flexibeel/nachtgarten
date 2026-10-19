@@ -16,7 +16,6 @@ import { textField } from '../../ui/fields.js';
 import { icon } from '../../ui/icons.js';
 import { companionSpeech } from '../../ui/companion.js';
 import { openSheet } from '../../ui/sheet.js';
-import { toast } from '../../ui/toast.js';
 import { mamaForm } from '../mama/mama-setup.js';
 import { languageControl } from '../settings/controls.js';
 import { neighbourStep, onboardingSteps } from './steps.js';
@@ -298,8 +297,8 @@ export function openOnboarding(ctx, { onDone } = {}) {
     store.buddy.update((b) => ({ ...b, tone: draft.tone, on: !draft.plain }));
     if (draft.mama && modules.includes('mama')) store.mama.set(draft.mama);
     haptic('success');
-    const name = draft.name.trim();
-    sheet.close('done').then(() => toast(name ? t('onboarding.welcomeName', { name }) : t('onboarding.welcome')));
+    // Kein „Willkommen“-Hinweis: Er lag oft noch über dem nächsten Bildschirm. Begrüßt wird auf „Heute“.
+    sheet.close('done');
     onDone?.();
   };
 

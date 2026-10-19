@@ -10,37 +10,76 @@
   z-index: var(--z-tabbar);
   display: grid;
   grid-template-columns: repeat(var(--tabs, 3), minmax(0, 1fr));
+  justify-items: stretch;
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--space-1) var(--space-2) calc(var(--space-1) + var(--safe-bottom));
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  padding: var(--space-1) max(var(--space-2), env(safe-area-inset-left, 0px)) calc(var(--space-1) + var(--safe-bottom))
+    max(var(--space-2), env(safe-area-inset-right, 0px));
+  /* deckend: nichts aus dem Inhalt scheint als Fleck durch */
+  background: var(--bar);
   border-top: var(--border) solid var(--line);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 .tab {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
+  min-width: 0;
   min-height: var(--tabbar-height);
-  border-radius: var(--radius-button);
   color: var(--muted);
   font-size: var(--fs-xs);
   font-weight: var(--fw-medium);
   text-decoration: none;
   transition: color var(--dur-1) var(--ease-out);
 }
-.tab .icon {
-  transition: transform var(--dur-2) var(--ease-spring);
+.tab:focus {
+  outline: none;
+}
+.tab:focus-visible .tab-icon {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* Aktiv: weiche Pille hinter dem Symbol (wächst beim Wechsel aus der Mitte) */
+.tab-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 30px;
+  border-radius: var(--radius-pill);
+}
+.tab-icon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--tab-indicator);
+  opacity: 0;
+  transform: scaleX(0.45);
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.tab-icon .icon {
+  position: relative;
+}
+.tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .tab[aria-current='page'] {
   color: var(--accent-ink);
   font-weight: var(--fw-bold);
 }
-.tab[aria-current='page'] .icon {
-  transform: translateY(-1px);
+.tab[aria-current='page'] .tab-icon::before {
+  opacity: 1;
+  transform: none;
+}
+.tab:active .tab-icon::before {
+  opacity: 0.6;
+  transform: scaleX(0.9);
 }
 
 .view:focus {
@@ -485,6 +524,14 @@
   color: var(--muted);
   font-size: var(--fs-sm);
 }
+.profile-bond-value {
+  font-weight: var(--fw-bold);
+}
+.profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
 .profile-section {
   display: flex;
   flex-direction: column;
@@ -820,65 +867,173 @@
   flex: none;
   color: var(--muted);
 }
+.live-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 20px;
+}
 .live-meta {
   color: var(--muted);
   font-size: var(--fs-sm);
+}
+/* Satz-Punkte dieser Übung: erledigt gefüllt, aktuell als Ring, offen gedämpft */
+.live-dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.live-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--soft);
+  transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.live-dot.is-done {
+  background: var(--accent);
+}
+.live-dot.is-current {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 .live-stage {
   display: flex;
   flex: 1;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   min-height: 0;
 }
-.live-suggest {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-1) var(--space-2);
-  align-items: start;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-card);
-  background: var(--sage-soft);
-  color: var(--text);
+/* Bühne: nimmt die freie Höhe; Animation und Ring skalieren über Container-Einheiten mit. */
+.live-show {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  container-type: size;
 }
-.live-suggest .icon {
-  margin-top: 2px;
-  color: var(--sage-ink);
-}
-.live-suggest-text {
-  font-size: var(--fs-sm);
-  line-height: var(--lh-snug);
-}
-.live-suggest-take {
-  grid-column: 2;
-  min-height: 32px;
-  font-size: var(--fs-sm);
-}
-.live-sets {
+.live-figure,
+.live-alt {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 100%;
 }
-.live-set {
-  padding: 6px 12px;
-  border-radius: var(--radius-pill);
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  font-variant-numeric: tabular-nums;
+.live-figure[hidden],
+.live-alt[hidden],
+.live-recap[hidden] {
+  display: none;
 }
-.live-hint {
+.live-anim {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  container-type: size;
+}
+.live-anim .nga-wrap {
+  width: min(100cqw, 100cqh, 236px) !important;
+}
+.live-anim .nga-wrap.nga-pair {
+  width: min(100cqw, 200cqh, 360px) !important;
+}
+.live-coach {
+  display: -webkit-box;
+  max-width: 34ch;
+  overflow: hidden;
   color: var(--muted);
   font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
   text-align: center;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.live-coach.is-companion {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+}
+.live-coach-who {
+  margin-right: 0.4em;
+  color: var(--sage-ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+/* „Letztes Mal“ + Vorschlag: eine ruhige Zeile */
+.live-recap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: 2px 2px 2px var(--space-3);
+  border-radius: var(--radius-button);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.live-recap-text {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.live-suggest-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: calc(var(--radius-button) - 2px);
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+  transition: background-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.live-suggest-chip:active {
+  transform: scale(0.97);
+}
+.live-suggest-chip.is-taken {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--muted);
 }
 .live-pick {
   align-self: center;
+}
+/* Körpergewicht: Feld zeigt den Text statt „0 kg“, Plus öffnet das Zusatzgewicht */
+.live-body {
+  display: grid;
+  grid-template-columns: 1fr var(--target);
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px var(--space-3);
+  border-radius: var(--radius-button);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.live-body-text {
+  overflow: hidden;
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.live-body-add {
+  width: var(--target);
+  height: var(--target);
+  border: 0;
+  background: var(--soft);
 }
 .live-inputs {
   display: grid;
@@ -953,9 +1108,34 @@
   align-items: center;
   gap: var(--space-3);
 }
+.rest-saved {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  min-height: 32px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.rest-saved-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.rest-undo {
+  flex: none;
+  min-height: 32px;
+  font-size: var(--fs-sm);
+}
+.rest.has-saved .rest-ring {
+  width: min(184px, 100cqw, calc(100cqh - var(--target) - 32px - 2 * var(--space-3)));
+}
 .rest-ring {
   position: relative;
-  width: min(176px, 26dvh);
+  /* passt in die Bühne: Höhe abzüglich der Knöpfe darunter */
+  width: min(184px, 100cqw, calc(100cqh - var(--target) - var(--space-3)));
   aspect-ratio: 1;
 }
 .rest-svg {
@@ -984,7 +1164,7 @@
 }
 .rest-time {
   font-family: var(--font-display);
-  font-size: clamp(2rem, 7dvh, 3rem);
+  font-size: clamp(1.75rem, 18cqh, 3rem);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -1374,6 +1554,34 @@
   max-width: var(--content-max);
   min-height: 100%;
   padding: calc(var(--safe-top) + var(--space-8)) var(--gutter) calc(var(--safe-bottom) + var(--space-5));
+}
+/* Frage: oberes Drittel, Möglichkeiten unten im Daumenbereich, Fußzeile nie abgeschnitten */
+.gate-ask {
+  gap: var(--space-4);
+}
+.gate-hero {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-5);
+  min-height: 0;
+  /* etwas über der Mitte des freien Raums */
+  padding-bottom: clamp(0px, 6dvh, 64px);
+}
+.gate-ask .gate-choices {
+  margin-top: 0;
+}
+.gate-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-top: var(--space-1);
+}
+.gate .gate-ask .companion-small .companion-button {
+  width: 80px;
+  height: 80px;
 }
 .gate-title {
   font-family: var(--font-display);

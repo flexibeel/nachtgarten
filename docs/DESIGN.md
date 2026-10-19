@@ -7,18 +7,18 @@ Alle Werte stehen in `src/styles/tokens.css` – nirgends sonst werden Farben, G
 
 | Rolle | Token | Hell | Dunkel |
 |---|---|---|---|
-| Hintergrund | `--bg` | #F5F1EE | #232020 |
-| Karte | `--card` | #FFFCFA | #2C2828 |
-| Kartenrand | `--line` | #EDE5E0 | #3A3433 |
+| Hintergrund | `--bg` | #F5F1EE | #2A2626 |
+| Karte | `--card` | #FFFCFA | #343030 |
+| Kartenrand | `--line` | #EDE5E0 | #3F3A39 |
 | Text | `--text` | #2E2A28 | #EEE7E3 |
-| Text gedämpft | `--muted` | #6F6661 | #ABA19C |
+| Text gedämpft | `--muted` | #6F6661 | #B3A9A4 |
 | Altrosa – Fortschritt, erledigt | `--accent` | #B58C83 | #D3A99F |
 | Altrosa kräftig – Hauptknopf | `--accent-strong` | #93695F (weiße Schrift) | #D3A99F (dunkle Schrift) |
 | Altrosa als Textfarbe | `--accent-ink` | #885E55 | #DEB5AB |
 | Salbei – geplant, Ruhe | `--sage` | #9DAA8F | #AFBCA2 |
-| Fläche weich | `--soft` | #EAE2DC | #3A3433 |
+| Fläche weich | `--soft` | #EAE2DC | #3F3A39 |
 
-- **Dunkel ist ein weiches, warmes Grau**, kein Fast-Schwarz (Hintergrund #232020, Karte #2C2828).
+- **Dunkel ist ein weiches, warmes Grau**, kein Fast-Schwarz (Hintergrund #2A2626, Karte #343030, Rand #3F3A39); Text überall ≥ 4,5:1.
 - Gedämpfter Text hell auf #6F6661 abgedunkelt, damit er auch auf dem Hintergrund 4,5:1 erreicht.
 - Altrosa #B58C83 ist zu hell für Schrift; Knöpfe nutzen `--accent-strong`, Text `--accent-ink`.
 - Design-Wahl: System (Standard), Hell, Dunkel – im Profil, auf „Heute“ unter Einstellungen und als
@@ -36,7 +36,11 @@ Alle Werte stehen in `src/styles/tokens.css` – nirgends sonst werden Farben, G
 - Radien: Karte 18 px, Knopf 14 px, Sheet 26 px, „Sport starten“ 24 px. Schatten minimal.
 - Ziele mindestens 44 px, wichtige Knöpfe 56 px. Einhändig: Hauptaktionen unten oder groß oben.
 - Bewegung kurz (140–380 ms), nur als Antwort auf eine Aktion; `prefers-reduced-motion` schaltet sie ab.
-- Seitenwechsel: dezentes Einblenden über View Transitions (wo vorhanden).
+- Seitenwechsel (View Transitions, wo vorhanden): tiefer = Seite schiebt sich von rechts herein, zurück = hinaus
+  (220 ms, ease-out), zwischen Tabs sanftes Überblenden. Sheets gleiten mit Abdunklung von unten herein.
+- Tab-Leiste und Aktionsleiste sind deckend (`--bar`); aktiver Tab mit weicher Pille hinter dem Symbol.
+- Hinweise (Toasts) liegen nie über Bedienelementen: über der Leiste oder oben auf einer ruhigen Fläche
+  (`data-toast-anchor`), und sie verschwinden beim Bildschirmwechsel.
 
 ## Seitenaufbau „Heute“
 

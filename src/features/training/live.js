@@ -1,26 +1,29 @@
 /**
- * Live-Training: ein Bildschirm ohne Scrollen. Oben die Übung, in der Mitte Vorschlag oder
- * Pausen-Ring, darunter Gewicht, Wiederholungen und Reserve, unten fest „Satz fertig“.
- * Während eines Satzes keine Animationen und keine Sätze des Begleiters – nur bei einer
- * neuen Bestleistung ein kurzer Zuruf (außer im Modus „Schlicht“).
+ * Live-Training: ein Bildschirm ohne Scrollen. Oben die Übung mit Ziel und Satz-Punkten,
+ * in der Mitte die ruhige Übungsanimation (wächst mit der freien Höhe) mit einer Zeile
+ * darunter, in der Pause der Ring; darunter kompakt „Letztes Mal“ mit Vorschlag, dann
+ * Gewicht, Wiederholungen und Reserve, unten fest „Satz fertig“.
+ * Der Begleiter spricht nur an wenigen Stellen (Start, dritter Satz, lange dabei, Bestleistung);
+ * im Modus „Schlicht“ nie – die Animation bleibt, sie ist Anleitung.
  */
 
 import { clock, formatNumber } from '../../core/format.js';
 import { haptic, keepAwake } from '../../core/platform.js';
 import { dateKey } from '../../core/dates.js';
-import { liveReducer, initialUi, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setsDone } from '../../domain/live-session.js';
+import { liveReducer, initialUi, isBodyweightGear, lastSessionSummary, lastUsedWeight, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setDots, setsDone } from '../../domain/live-session.js';
 import { logSet, rebuildExercise, shouldAutoFinish, startLive, validateSet } from '../../domain/training.js';
 import { repRangeOrDefault, stepOrDefault, suggest } from '../../domain/progression.js';
 import { todayPlan } from '../../domain/week.js';
-import { t } from '../../data/texts/i18n.js';
+import { getLang, t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
 import { stepper } from '../../ui/stepper.js';
 import { openSheet, confirmSheet } from '../../ui/sheet.js';
-import { toast } from '../../ui/toast.js';
+import { dismissToast, toast } from '../../ui/toast.js';
 import { companionSprite } from '../../ui/companion.js';
+import { createExerciseAnim } from '../../ui/anim/player.js';
 import { exerciseLookup, loadDb } from './exercises.js';
-import { openExerciseDetail, openLibrary } from './library-sheet.js';
+import { animConfig, openExerciseDetail, openLibrary } from './library-sheet.js';
 import { finishTraining } from './finish.js';
 import { isPlain, lineFor } from '../companion/companion-state.js';
 
@@ -30,6 +33,8 @@ import { isPlain, lineFor } from '../companion/companion-state.js';
 const RIR_OPTIONS = [0, 1, 2, 3];
 const RING_R = 54;
 const RING_C = 2 * Math.PI * RING_R;
+/** Ab dieser Dauer darf der Begleiter an eine Pause erinnern. */
+const LONG_SESSION_MS = 75 * 60 * 1000;
 
 /**
  * Vergessenes Training (3 h ohne Satz) still abschließen.
@@ -161,15 +166,24 @@ function liveScreen(ctx, root) {
       repRange: prefs.repRange,
       goal: store.profile.get()?.goal,
       step: prefs.step,
+      // Gerät ohne feste Vorgabe (Sonstiges, eigene Übung): zuletzt benutztes Gewicht
+      lastUsed: lastUsedWeight({ liveSets: live().sets, history: store.history.get() }),
     });
     // Innerhalb des Trainings: Werte des letzten Satzes dieser Übung übernehmen.
     const last = sameToday[sameToday.length - 1];
+    if (id !== ui.exercise) extraLoad = false;
     dispatch({ type: 'select', exercise: id, weight: last ? last.weight : base.weight, reps: last ? last.reps : base.reps });
     if (live().queue) {
       const index = live().queue.items.findIndex((it) => it.exercise === id);
       if (index >= 0) store.live.update((l) => ({ ...l, queue: { ...l.queue, index } }));
     }
   };
+
+  /** Körpergewicht-Übung: Zusatzgewicht erst auf Wunsch zeigen. */
+  let extraLoad = false;
+  /** Zuletzt gespeicherter Satz (Zeile über dem Pausen-Ring, mit „Rückgängig“). */
+  /** @type {{exercise: string, text: string}|null} */
+  let saved = null;
 
   // Erste Übung: aktuelle des Plans oder letzte benutzte.
   const first = live().queue ? nextQueueExercise(live(), live().queue.items[live().queue.index]?.exercise ?? null) ?? live().queue.items[0]?.exercise : live().sets[live().sets.length - 1]?.exercise;
@@ -183,7 +197,15 @@ function liveScreen(ctx, root) {
   const top = h('header', { class: 'live-top' }, backLink(), h('div', { class: 'live-top-mid' }, title, elapsed), timeButton, finishButton);
 
   const head = h('section', { class: 'live-ex' });
-  const stage = h('section', { class: 'live-stage' });
+  // Bühne: Animation der Übung (ruhig, wächst mit der freien Höhe) mit einer Zeile darunter,
+  // in der Pause stattdessen der Ring. Darunter kompakt „Letztes Mal“ und der Vorschlag.
+  const animSlot = h('div', { class: 'live-anim' });
+  const coach = h('p', { class: 'live-coach', 'aria-live': 'polite' });
+  const figure = h('div', { class: 'live-figure' }, animSlot, coach);
+  const alt = h('div', { class: 'live-alt', hidden: true });
+  const show = h('div', { class: 'live-show', 'data-toast-anchor': '' }, figure, alt);
+  const recap = h('div', { class: 'live-recap', hidden: true });
+  const stage = h('section', { class: 'live-stage' }, show, recap);
   const inputs = h('section', { class: 'live-inputs' });
   const rir = h('section', { class: 'live-rir' });
   const cheer = h('div', { class: 'live-cheer', 'aria-live': 'polite' });
@@ -193,6 +215,51 @@ function liveScreen(ctx, root) {
   const bar = h('div', { class: 'action-bar live-bar', 'data-toast-avoid': '' }, h('div', { class: 'action-bar-inner' }, switchButton, doneButton));
 
   replace(root, top, h('div', { class: 'live-main' }, head, stage, inputs, rir), cheer, bar);
+
+  /* ------------------------------------------------------------ Animation */
+  /** @type {{destroy: () => void}|null} */
+  let anim = null;
+  let animKey = '';
+  /** @param {import('./exercises.js').LibExercise} ex */
+  const ensureAnim = (ex) => {
+    const prefs = store.exercises.get().prefs[ex.id] ?? {};
+    const key = [ex.id, prefs.attachment ?? '', prefs.height ?? ''].join('|');
+    if (key === animKey) return;
+    anim?.destroy();
+    anim = null;
+    animKey = key;
+    animSlot.replaceChildren();
+    try {
+      // Ruhig: ohne Spur, ohne Geister-Pose, ohne Beschriftung – nur die Bewegung.
+      anim = createExerciseAnim(animSlot, { ...animConfig(ex, prefs), size: 'large', arrow: false, ghost: false, phases: false, label: t('live.animLabel', { name: ex.name }), muscles: ex.muscles });
+    } catch {
+      animSlot.replaceChildren();
+    }
+  };
+
+  /** Zeile unter der Animation: Satz des Begleiters an besonderen Stellen, sonst ein Technik-Hinweis. */
+  const coachMemo = { key: '', who: '', text: '' };
+  /** @param {import('./exercises.js').LibExercise} ex */
+  const paintCoach = (ex) => {
+    const l = live();
+    const done = setsDone(l, ex.id);
+    let context = '';
+    // Schlicht: keine Sätze des Begleiters – die Technik-Zeile bleibt (sie ist Anleitung).
+    if (!isPlain(ctx)) {
+      if (!l.sets.length) context = 'liveStart';
+      else if (done === 2) context = 'liveSet3';
+      else if (ctx.now() - l.start > LONG_SESSION_MS) context = 'liveLong';
+    }
+    const key = [ex.id, done, context, getLang()].join('|');
+    if (key !== coachMemo.key) {
+      const cues = ex.cues?.length ? ex.cues : [t('library.defaultCue')];
+      coachMemo.key = key;
+      coachMemo.who = context ? ctx.companion().name : '';
+      coachMemo.text = context ? lineFor(ctx, context) : cues[done % cues.length];
+    }
+    coach.classList.toggle('is-companion', !!coachMemo.who);
+    replace(coach, coachMemo.who ? h('span', { class: 'live-coach-who', text: coachMemo.who }) : null, h('span', { text: coachMemo.text }));
+  };
 
   /* ------------------------------------------------------------ Malen */
   const paintTop = () => {
@@ -220,12 +287,7 @@ function liveScreen(ctx, root) {
     const eyebrow = item
       ? [t('live.exerciseOf', { i: index + 1, n: l.queue.items.length }), done >= item.sets ? t('live.allSets') : t('live.setOf', { k: done + 1, s: item.sets })]
       : [t('live.setN', { k: done + 1 })];
-    const hist = (store.history.get()[ui.exercise] ?? []).filter((x) => x.session !== l.start);
-    const last = hist[hist.length - 1];
-    const meta = [
-      item?.reps ? t('live.target', { reps: item.reps }) : null,
-      last ? t('live.last', { weight: formatNumber(last.weight, 2), reps: last.reps }) : null,
-    ].filter(Boolean);
+    const dots = setDots(done, item?.sets ?? null);
     replace(
       head,
       h('p', { class: 'live-eyebrow', text: eyebrow.join(' · ') }),
@@ -233,61 +295,98 @@ function liveScreen(ctx, root) {
         h('button', { type: 'button', class: 'live-name', on: { click: openSwitcher } }, h('span', { text: ex.name }), icon('chevronDown', { size: 20 })),
         h('button', { type: 'button', class: 'icon-button live-info', 'aria-label': t('live.howTo', { name: ex.name }), on: { click: () => openExerciseDetail(ctx, ui.exercise) } }, icon('info', { size: 22 })),
       ),
-      meta.length ? h('p', { class: 'live-meta', text: meta.join(' · ') }) : null,
+      h('div', { class: 'live-meta-row' },
+        item?.reps ? h('p', { class: 'live-meta', text: t('live.target', { reps: item.reps }) }) : h('span'),
+        h('span', { class: 'live-dots', role: 'img', 'aria-label': t('live.setDots', { done }) },
+          dots.map((state) => h('i', { class: ['live-dot', `is-${state}`] }))),
+      ),
     );
+  };
+
+  /** „Letztes Mal: 3 × 8 · 60 kg“ und der Vorschlag als Chip (antippen übernimmt). */
+  const paintRecap = () => {
+    if (!ui.exercise) {
+      recap.hidden = true;
+      return;
+    }
+    const ex = lookup(ui.exercise);
+    const prefs = store.exercises.get().prefs[ui.exercise] ?? {};
+    const body = isBodyweightGear(ex.gear);
+    const today = dateKey(ctx.now());
+    const hist = (store.history.get()[ui.exercise] ?? []).filter((x) => x.session !== live().start);
+    const sum = lastSessionSummary(hist, today);
+    if (!sum) {
+      recap.hidden = true;
+      return;
+    }
+    const s = suggest({
+      history: hist,
+      today,
+      bodyweight: body,
+      repRange: repRangeOrDefault(prefs.repRange, store.profile.get()?.goal),
+      step: stepOrDefault(prefs.step),
+    });
+    const lastText = sum.weight > 0
+      ? t('live.lastTime', { sets: sum.sets, reps: sum.reps, weight: formatNumber(sum.weight, 2) })
+      : t('live.lastTimeBody', { sets: sum.sets, reps: sum.reps });
+    let chip = null;
+    if (s) {
+      const full = t(s.key, s.params);
+      const weight = s.weight ?? ui.weight;
+      const reps = s.reps ?? ui.reps;
+      const label = s.weight == null && s.reps == null
+        ? t('live.suggestMore')
+        : weight > 0
+          ? t('live.suggestChip', { weight: formatNumber(weight, 2), reps })
+          : t('live.suggestChipReps', { reps });
+      const taken = (s.weight == null || s.weight === ui.weight) && (s.reps == null || s.reps === ui.reps);
+      chip = h('button', {
+        type: 'button',
+        class: ['live-suggest-chip', taken && 'is-taken'],
+        'aria-label': t('live.suggestTake', { text: full }),
+        'aria-pressed': String(taken),
+        on: {
+          click: () => {
+            if (s.weight != null) dispatch({ type: 'weight', value: s.weight });
+            if (s.reps != null) dispatch({ type: 'reps', value: s.reps });
+            haptic('select');
+            paintInputs();
+            paintRecap();
+            toast(full);
+          },
+        },
+      }, icon('sparkle', { size: 16 }), h('span', { text: label }));
+    }
+    replace(recap, h('p', { class: 'live-recap-text', text: lastText }), chip);
+    recap.hidden = false;
   };
 
   const paintStage = () => {
     clearInterval(restTimer);
     const now = ctx.now();
     if (ui.rest && (restLeft(ui.rest, now) > 0 || now - restDoneAt < 1400)) {
+      figure.hidden = true;
+      alt.hidden = false;
       paintRest();
+      paintRecap();
       restTimer = window.setInterval(tickRest, 250);
       return;
     }
     if (ui.rest) dispatch({ type: 'restSkip' });
     if (!ui.exercise) {
-      replace(stage, h('button', { type: 'button', class: 'button button-primary live-pick', on: { click: openSwitcher } }, icon('plus'), h('span', { text: t('live.pick') })));
+      figure.hidden = true;
+      alt.hidden = false;
+      replace(alt, h('button', { type: 'button', class: 'button button-primary live-pick', on: { click: openSwitcher } }, icon('plus'), h('span', { text: t('live.pick') })));
+      paintRecap();
       return;
     }
     const ex = lookup(ui.exercise);
-    const prefs = store.exercises.get().prefs[ui.exercise] ?? {};
-    const s = suggest({
-      history: (store.history.get()[ui.exercise] ?? []).filter((x) => x.session !== live().start),
-      today: dateKey(ctx.now()),
-      bodyweight: ex.gear === 'Körpergewicht',
-      repRange: repRangeOrDefault(prefs.repRange, store.profile.get()?.goal),
-      step: stepOrDefault(prefs.step),
-    });
-    const todaySets = live().sets.filter((x) => x.exercise === ui.exercise);
-    replace(
-      stage,
-      s
-        ? h('div', { class: 'live-suggest' },
-            icon('sparkle', { size: 18 }),
-            h('p', { class: 'live-suggest-text', text: t(s.key, s.params) }),
-            s.weight != null || s.reps != null
-              ? h('button', {
-                  type: 'button',
-                  class: 'link-button live-suggest-take',
-                  text: t('live.take'),
-                  on: {
-                    click: () => {
-                      if (s.weight != null) dispatch({ type: 'weight', value: s.weight });
-                      if (s.reps != null) dispatch({ type: 'reps', value: s.reps });
-                      haptic('select');
-                      paintInputs();
-                    },
-                  },
-                })
-              : null,
-          )
-        : null,
-      todaySets.length
-        ? h('ol', { class: 'live-sets', 'aria-label': t('live.setsToday') },
-            todaySets.map((x, i) => h('li', { class: 'live-set', text: t('live.setChip', { n: i + 1, weight: formatNumber(x.weight, 2), reps: x.reps }) })))
-        : h('p', { class: 'live-hint', text: t('live.firstSet') }),
-    );
+    alt.hidden = true;
+    replace(alt);
+    figure.hidden = false;
+    ensureAnim(ex);
+    paintCoach(ex);
+    paintRecap();
   };
 
   /** Pausen-Ring. */
@@ -310,9 +409,16 @@ function liveScreen(ctx, root) {
     ringValue.setAttribute('class', 'rest-value');
     ringValue.setAttribute('transform', 'rotate(-90 60 60)');
     ring.append(track, ringValue);
+    const savedLine = saved
+      ? h('p', { class: 'rest-saved', role: 'status' },
+          h('span', { class: 'rest-saved-text', text: saved.text }),
+          h('button', { type: 'button', class: 'link-button rest-undo', text: t('common.undo'), on: { click: () => { const ex = saved?.exercise; saved = null; if (ex) undoLast(ex); } } }),
+        )
+      : null;
     replace(
-      stage,
-      h('div', { class: 'rest', role: 'timer', 'aria-label': t('live.rest') },
+      alt,
+      h('div', { class: ['rest', savedLine && 'has-saved'], role: 'timer', 'aria-label': t('live.rest') },
+        savedLine,
         h('div', { class: 'rest-ring' }, ring, h('div', { class: 'rest-center' }, restNumber, restLabel)),
         h('div', { class: 'rest-actions' },
           h('button', { type: 'button', class: 'button button-quiet rest-add', text: t('live.restAdd'), on: { click: () => { dispatch({ type: 'restAdd' }); haptic('tap'); tickRest(); } } }),
@@ -336,7 +442,7 @@ function liveScreen(ctx, root) {
       restDoneAt = now;
       restNumber.textContent = t('live.restDone');
       restLabel.textContent = '';
-      stage.querySelector('.rest')?.classList.add('is-done');
+      alt.querySelector('.rest')?.classList.add('is-done');
       haptic([30, 60, 30]);
     }
     if (now - restDoneAt > 1400) {
@@ -348,16 +454,31 @@ function liveScreen(ctx, root) {
   const paintInputs = () => {
     const ex = ui.exercise ? lookup(ui.exercise) : null;
     const prefs = ui.exercise ? store.exercises.get().prefs[ui.exercise] ?? {} : {};
-    const body = ex?.gear === 'Körpergewicht';
+    const body = isBodyweightGear(ex?.gear);
+    // Körpergewicht ohne Zusatzlast: statt „0 kg“ einfach „Körpergewicht“, Zusatz auf Wunsch.
+    const weightField = body && ui.weight === 0 && !extraLoad
+      ? h('div', { class: 'live-field' },
+          h('p', { class: 'live-field-label', text: t('live.weight') }),
+          h('div', { class: 'live-body' },
+            h('span', { class: 'live-body-text', text: t('live.bodyweight') }),
+            h('button', {
+              type: 'button',
+              class: 'stepper-button live-body-add',
+              'aria-label': t('live.addLoad'),
+              on: { click: () => { extraLoad = true; haptic('tap'); paintInputs(); } },
+            }, icon('plus')),
+          ),
+        )
+      : h('div', { class: 'live-field' },
+          h('p', { class: 'live-field-label', text: t(body ? 'live.extraWeight' : 'live.weight') }),
+          stepper({ label: t(body ? 'live.extraWeight' : 'live.weight'), value: ui.weight, min: 0, max: 500, step: stepOrDefault(prefs.step), decimals: 2, unit: 'kg', onChange: (v) => { dispatch({ type: 'weight', value: v }); paintRecap(); } }),
+        );
     replace(
       inputs,
-      h('div', { class: 'live-field' },
-        h('p', { class: 'live-field-label', text: t(body ? 'live.extraWeight' : 'live.weight') }),
-        stepper({ label: t('live.weight'), value: ui.weight, min: 0, max: 500, step: stepOrDefault(prefs.step), decimals: 2, unit: 'kg', onChange: (v) => dispatch({ type: 'weight', value: v }) }),
-      ),
+      weightField,
       h('div', { class: 'live-field' },
         h('p', { class: 'live-field-label', text: t('live.reps') }),
-        stepper({ label: t('live.reps'), value: ui.reps, min: 1, max: 100, onChange: (v) => dispatch({ type: 'reps', value: v }) }),
+        stepper({ label: t('live.reps'), value: ui.reps, min: 1, max: 100, onChange: (v) => { dispatch({ type: 'reps', value: v }); paintRecap(); } }),
       ),
     );
     inputs.classList.toggle('is-off', !ui.exercise);
@@ -425,6 +546,7 @@ function liveScreen(ctx, root) {
     store.prs.set(result.prs);
     if (ui.rir != null) store.exercises.update((e) => ({ ...e, lastRir: ui.rir }));
     haptic(result.pr ? [20, 60, 20, 60, 60] : 'success');
+    dismissToast();
     restDoneAt = 0;
     dispatch({ type: 'logged', at: now, restSeconds: store.settings.get().restSeconds || 90 });
     const k = setsDone(result.live, exercise);
@@ -434,15 +556,16 @@ function liveScreen(ctx, root) {
       const next = nextQueueExercise(result.live, exercise);
       if (next && next !== exercise) select(next);
     }
+    // Rückmeldung steht ruhig in der Pause über dem Ring (kein Hinweis über dem Timer).
+    saved = { exercise, text: t(result.pr ? 'live.savedPr' : 'live.saved', { n: k, weight: formatNumber(result.live.sets.at(-1).weight, 2), reps: result.live.sets.at(-1).reps }) };
     paint();
-    toast(t(result.pr ? 'live.savedPr' : 'live.saved', { n: k, weight: formatNumber(result.live.sets.at(-1).weight, 2), reps: result.live.sets.at(-1).reps }), {
-      action: { label: t('common.undo'), onClick: () => undoLast(exercise) },
-    });
+    if (!ui.rest) toast(saved.text, { action: { label: t('common.undo'), onClick: () => undoLast(exercise) } });
     if (result.pr) showCheer();
   };
 
   /** Letzten Satz zurücknehmen. @param {string} exercise */
   const undoLast = (exercise) => {
+    saved = null;
     const l = live();
     const idx = l.sets.map((s) => s.exercise).lastIndexOf(exercise);
     if (idx < 0) return;
@@ -538,6 +661,7 @@ function liveScreen(ctx, root) {
   return () => {
     clearInterval(restTimer);
     clearInterval(clockTimer);
+    anim?.destroy();
     document.removeEventListener('visibilitychange', onVisible);
   };
 }
