@@ -290,3 +290,34 @@ export async function copyImage(blob) {
     return false;
   }
 }
+
+/* ------------------------------------------------------- Dauerhaft speichern */
+
+/**
+ * Browser bitten, die Daten nicht automatisch aufzuräumen (navigator.storage.persist).
+ * @returns {Promise<'granted'|'denied'|'unsupported'>}
+ */
+export async function requestPersistence() {
+  const storage = nav()?.storage;
+  if (!storage?.persist) return 'unsupported';
+  try {
+    if (await storage.persisted?.()) return 'granted';
+    return (await storage.persist()) ? 'granted' : 'denied';
+  } catch {
+    return 'denied';
+  }
+}
+
+/**
+ * Aktueller Stand ohne zu fragen.
+ * @returns {Promise<'granted'|'denied'|'unsupported'>}
+ */
+export async function persistenceStatus() {
+  const storage = nav()?.storage;
+  if (!storage?.persisted) return 'unsupported';
+  try {
+    return (await storage.persisted()) ? 'granted' : 'denied';
+  } catch {
+    return 'denied';
+  }
+}

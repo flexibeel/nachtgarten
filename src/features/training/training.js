@@ -12,6 +12,7 @@ import { openSummary } from './finish.js';
 import { loadDb } from './exercises.js';
 import { openAllPlans, openWizard } from './plans-ui.js';
 import { planById } from '../../data/plans.js';
+import { sharePlanLink } from './plan-link.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -61,11 +62,12 @@ export function mountTraining(ctx, view) {
         list.length
           ? h('ul', { class: 'plan-list' },
               list.map((p) =>
-                h('li', {},
+                h('li', { class: 'plan-item' },
                   h('a', { class: 'plan-row', href: `#live?plan=${encodeURIComponent(p.id)}` },
                     h('span', { class: 'plan-row-texts' }, h('span', { class: 'plan-row-name', text: p.name }), h('span', { class: 'plan-row-sub', text: t('live.planSub', { count: p.items.length }) })),
                     icon('play', { size: 20 }),
                   ),
+                  h('button', { type: 'button', class: 'icon-button plan-share', 'aria-label': t('planLink.shareLabel', { name: p.name }), on: { click: () => sharePlanLink(ctx, p) } }, icon('share', { size: 20 })),
                 )),
             )
           : h('p', { class: 'card-hint', text: t('training.noPlans') }),

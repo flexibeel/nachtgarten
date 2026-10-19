@@ -173,6 +173,21 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
   Shell-Ansicht wie Heute), solange höchstens fünf Tabs.
 - **Router** merkt sich die Position im Verlauf (`ngIndex`), daraus Vor/Zurück für die Übergänge (`historyStep`).
 
+## Entscheidungen (Daten dauerhaft sichern)
+
+- **Zweite Kopie** (`core/durable.js`): `localStorage` bleibt der synchrone Speicher; `mirroredAdapter` schreibt
+  jede Änderung an `ng2.*` gebündelt nach IndexedDB (`nachtgarten` → `kv`) und zählt `ng2._rev` hoch. Beim Start
+  (vor dem Kontext) entscheidet `planRestore` rein: nur eine Seite hat Daten → von dort ergänzen, sonst gewinnt die
+  höhere Revision. Beim Verlassen (`pagehide`, versteckt) wird sofort geschrieben. Ohne IndexedDB läuft alles wie vorher.
+- **Tagesstände**: einmal am Tag ein Stand in IndexedDB (`snapshots`), die letzten fünf bleiben; „Stand vom …
+  wiederherstellen“ in Profil → Deine Daten. „Alles löschen“ löscht auch die Stände.
+- **Dauerhaft speichern**: `navigator.storage.persist()` nach Onboarding, erstem Plan und erstem Training
+  (`core/platform.js`), Status in Profil → Deine Daten, dazu der ehrliche Hinweis zu iPhone/Safari/Privat-Tabs.
+- **Plan als Link** (`domain/plan-code.js`, `features/training/plan-link.js`): `#plan=` + „z“ + base64url(deflate-raw)
+  der Kurzform `[1, Name, [[Id, Sätze, Soll, Name?]]]` (Rückfall „j“ ohne Kompression). Beim Lesen begrenzt und geprüft.
+- **Erinnerung** „Sicherung machen?“ auf Heute (`backupDue`): mit Daten, nicht in der ersten Woche, höchstens
+  monatlich (`settings.backupAt`, `settings.backupNudgeAt`), auch in Schlicht.
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.

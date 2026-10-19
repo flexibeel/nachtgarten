@@ -89,6 +89,8 @@ export const SCHEMA_VERSION = 1;
  * @property {string[]} hiddenTiles          ausgeblendete Kacheln auf „Heute“
  * @property {boolean|null} plain            „Schlicht“: Begleiter, Garten und Sätze ausblenden (null = aus buddy.on ableiten)
  * @property {{template: string, days: number}|null} activePlan   gewählte Plan-Vorlage (data/plans.js)
+ * @property {string|null} backupAt          Tag der letzten gespeicherten Sicherung (YYYY-MM-DD)
+ * @property {string|null} backupNudgeAt     Tag, an dem „Sicherung machen?“ zuletzt weggetippt wurde
  */
 
 /**
@@ -345,6 +347,8 @@ const defaultSettings = () => ({
   hiddenTiles: [],
   plain: null,
   activePlan: null,
+  backupAt: null,
+  backupNudgeAt: null,
 });
 
 /**

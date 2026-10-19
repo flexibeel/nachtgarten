@@ -246,7 +246,7 @@ function buildProfile(ctx, sheet, cleanups) {
     section(t('profile.order'), order.el, h('p', { class: 'field-hint', text: t('profile.orderHint') })),
     companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }),
     section(t('profile.view'), lang.el, theme.el, start.el),
-    section(t('data.title'), privacyPanel(ctx)),
+    section(t('data.title'), privacyPanel(ctx, { details: true })),
     h('button', {
       type: 'button',
       class: 'link-button profile-restart',

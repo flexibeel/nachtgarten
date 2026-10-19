@@ -640,6 +640,51 @@ def check_polish(browser, base, scheme):
     context.close()
 
 
+def check_persistence(browser, base, scheme):
+    """Daten verschwinden nicht: Plan per Link übernehmen, localStorage leeren, neu laden → Plan aus IndexedDB."""
+    context, page, errors = fresh(browser, base, scheme, SIZES[0])
+    page.evaluate("localStorage.removeItem('ng2.plans'); localStorage.removeItem('ng2.history')")
+    code = page.evaluate("""async () => {
+        const m = await import('./src/domain/plan-code.js');
+        return m.encodePlan({ name: 'Mein Link-Plan', items: [{ exercise: 'bench', sets: 3, reps: '8–10' }, { exercise: 'latpull', sets: 3, reps: '10–12' }] });
+    }""")
+    check(code.startswith("z") and len(code) < 200, f"Plan-Link unerwartet: {code}")
+    page.goto(base + "#plan=" + code)
+    page.reload()
+    page.wait_for_selector(".plan-link .plan-link-item")
+    check(page.locator(".plan-link-item").count() == 2, "Plan-Link zeigt nicht beide Übungen")
+    shot3(page, f"{scheme}_plan_link")
+    page.click(".plan-link .sheet-footer .button-primary")
+    page.wait_for_selector(".plan-row:has-text('Mein Link-Plan')")
+    page.wait_for_timeout(600)  # Kopie in IndexedDB schreiben lassen
+    page.evaluate("localStorage.clear()")
+    page.reload()
+    page.wait_for_selector(".plan-row:has-text('Mein Link-Plan')")
+    check(page.locator(".onboarding").count() == 0, "Profil nach dem Leeren nicht wiederhergestellt")
+    # umgekehrt: IndexedDB weg, localStorage bleibt → Kopie wird neu angelegt
+    page.evaluate("new Promise(r => { const q = indexedDB.deleteDatabase('nachtgarten'); q.onsuccess = q.onerror = q.onblocked = () => r(); })")
+    page.reload()
+    page.wait_for_selector(".plan-row:has-text('Mein Link-Plan')")
+    # Profil → Deine Daten: Status, Tagesstand, iPhone-Hinweis
+    page.goto(base + "#profil")
+    page.wait_for_selector(".profile-page .persist :is(.persist-ok, .field-hint)")
+    page.wait_for_selector(".snapshot-restore", timeout=8000)
+    check("iPhone" in page.inner_text(".privacy-device"), "iPhone-Hinweis fehlt")
+    page.locator(".snapshot-restore").first.scroll_into_view_if_needed()
+    shot3(page, f"{scheme}_daten")
+    # Erinnerung „Sicherung machen?“: fällig nach einer Woche mit Daten, „Später“ blendet aus
+    page.evaluate("""() => { const m = JSON.parse(localStorage.getItem('ng2.meta')); m.createdAt = '2026-01-01T10:00:00.000Z'; localStorage.setItem('ng2.meta', JSON.stringify(m)); }""")
+    page.goto(base + "#heute")
+    page.reload()
+    page.wait_for_selector(".backup-nudge")
+    page.locator(".backup-nudge").scroll_into_view_if_needed()
+    shot3(page, f"{scheme}_backup_nudge")
+    page.click(".backup-nudge-later")
+    page.wait_for_selector(".backup-nudge", state="detached")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -661,6 +706,7 @@ def run():
                 check_gate(browser, base, scheme)
                 check_wizard(browser, base, scheme)
                 check_polish(browser, base, scheme)
+                check_persistence(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

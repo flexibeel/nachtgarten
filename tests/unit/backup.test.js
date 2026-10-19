@@ -78,3 +78,15 @@ test('unbekannte Bereiche werden ignoriert, null ist erlaubt wo vorgesehen, Datu
   assert.deepEqual(parsed.data, { live: null, motto: null, gear: [] });
   assert.equal(parsed.created, null);
 });
+
+test('Erinnerung „Sicherung machen?“: mit Daten, nicht in der ersten Woche, höchstens monatlich', async () => {
+  const { backupDue } = await import('../../src/domain/backup.js');
+  const base = { backupAt: null, nudgeAt: null, createdAt: '2026-09-01T10:00:00.000Z', today: '2026-10-19', hasData: true };
+  assert.equal(backupDue(base), true);
+  assert.equal(backupDue({ ...base, hasData: false }), false, 'ohne Pläne/Trainings nicht');
+  assert.equal(backupDue({ ...base, createdAt: '2026-10-15T08:00:00.000Z' }), false, 'erste Woche nicht');
+  assert.equal(backupDue({ ...base, backupAt: '2026-10-01' }), false, 'Sicherung vor 18 Tagen');
+  assert.equal(backupDue({ ...base, backupAt: '2026-09-19' }), true, 'Sicherung vor 30 Tagen');
+  assert.equal(backupDue({ ...base, nudgeAt: '2026-10-10' }), false, 'gerade weggetippt');
+  assert.equal(backupDue({ ...base, createdAt: null }), true);
+});

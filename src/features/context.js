@@ -28,6 +28,7 @@ import { setLang } from '../data/texts/i18n.js';
  * @property {(setting: 'system'|'light'|'dark') => void} setTheme
  * @property {(lang: 'de'|'en') => void} setLanguage   Sprache speichern, anwenden, alles neu zeichnen
  * @property {() => void} reload    alles neu aufbauen (nach Wiederherstellen/Löschen)
+ * @property {import('../core/durable.js').Durable} [durable]   Kopie in IndexedDB und Tagesstände (im Browser)
  */
 
 /**
