@@ -4,7 +4,7 @@
  * Rein, ohne DOM.
  */
 
-import { recommendPlans } from './plan-select.js';
+import { recommendPlans, toAppPlans } from './plan-select.js';
 
 /** @typedef {import('./plan-select.js').PlanQuery} PlanQuery */
 
@@ -70,3 +70,31 @@ export function wizardQuery(answers, profile = {}) {
  * @param {Parameters<typeof wizardQuery>[1]} [profile]
  */
 export const wizardResults = (answers, profile) => recommendPlans(wizardQuery(answers, profile)).results;
+
+/**
+ * Vorlage übernehmen: Einheiten als App-Pläne (g_-Übungen mit exakter Entsprechung bekommen
+ * die Bibliotheks-Id), Wochenplan belegen. Eigene Pläne und Aktivitäten im Wochenplan bleiben,
+ * Einheiten einer früher gewählten Vorlage werden ersetzt.
+ * @param {import('../data/plans.js').PlanTemplate} template
+ * @param {{week: (string|null)[], plans: import('../core/store.js').Plan[], schedule: import('../core/store.js').Schedule, previous?: string|null}} input
+ * @param {(id: string) => string} mapId   z. B. libraryIdFor
+ */
+export function adoptTemplate(template, { week, plans, schedule, previous = null }, mapId) {
+  const prefix = (id) => `${id}-`;
+  const apps = toAppPlans(template).map((p) => ({ ...p, template: template.id, items: p.items.map((it) => ({ ...it, exercise: mapId(it.exercise) })) }));
+  const drop = (p) => p.id.startsWith(prefix(template.id)) || (previous && p.id.startsWith(prefix(previous)));
+  const nextPlans = [...plans.filter((p) => !drop(p)), ...apps];
+  /** @type {import('../core/store.js').Schedule} */
+  const nextSchedule = {};
+  for (const [day, slot] of Object.entries(schedule)) if (slot?.kind === 'activity') nextSchedule[day] = slot;
+  week.forEach((sessionId, day) => {
+    if (sessionId) nextSchedule[String(day)] = { kind: 'plan', id: `${template.id}-${sessionId}`.toLowerCase() };
+  });
+  return { plans: nextPlans, schedule: nextSchedule, days: week.filter(Boolean).length };
+}
+
+/**
+ * Kurzes Etikett einer Einheit für die Tages-Chips („A“, „O1“, „Push“).
+ * @param {{id: string, name: string}} session
+ */
+export const sessionChip = (session) => (session.id.length <= 3 ? session.id : session.name.split(/[\s(]/)[0]);

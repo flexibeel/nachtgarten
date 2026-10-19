@@ -1651,3 +1651,198 @@
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------- Pläne & Planfinder */
+
+.plan-finder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.plan-finder-actions .button {
+  flex: 1 1 auto;
+}
+.plan-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+}
+.plan-card-name {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--fs-title);
+  line-height: var(--lh-tight);
+}
+.plan-card-short {
+  color: var(--muted);
+  line-height: var(--lh-snug);
+}
+.plan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-fact {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.plan-reason {
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+.plan-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  border-radius: var(--radius-small);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+}
+.plan-day.is-on {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+}
+.plan-day-name {
+  font-weight: var(--fw-bold);
+}
+.plan-day-label {
+  min-height: 1.2em;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plan-note {
+  display: flex;
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}
+.plan-note .icon {
+  flex: none;
+  margin-top: 2px;
+}
+.plan-why-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--target);
+  color: var(--accent-ink);
+  font-weight: var(--fw-medium);
+  list-style: none;
+  cursor: pointer;
+}
+.plan-why-summary::-webkit-details-marker {
+  display: none;
+}
+.plan-why[open] .plan-why-summary .icon {
+  transform: rotate(180deg);
+}
+.plan-why-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  line-height: var(--lh-snug);
+}
+.plan-small {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.plan-sources {
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: var(--fs-xs);
+}
+.plan-sources a {
+  color: var(--accent-ink);
+}
+.plans-sheet .sheet-body,
+.wizard .sheet-body {
+  gap: var(--space-4);
+}
+.wizard-dots {
+  display: flex;
+  gap: 6px;
+}
+.wizard-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--soft);
+}
+.wizard-dot.is-done,
+.wizard-dot.is-current {
+  background: var(--accent);
+}
+.wizard-question {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: var(--lh-tight);
+}
+.wizard-options {
+  display: grid;
+  gap: var(--space-2);
+}
+.wizard-days,
+.wizard-minutes {
+  grid-template-columns: 1fr 1fr;
+}
+.wizard-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--text);
+  text-align: left;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.wizard-option:active {
+  transform: scale(0.98);
+}
+.wizard-option.is-suggested {
+  border-color: var(--accent);
+}
+.wizard-option-label {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+}
+.wizard-option-hint {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.wizard .sheet-footer[hidden],
+.wizard .sheet-footer .button[hidden] {
+  display: none;
+}
