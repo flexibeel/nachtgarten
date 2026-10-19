@@ -9,6 +9,28 @@
  "orientation": "portrait",
  "background_color": "#0F1312",
  "theme_color": "#0F1312",
+ "shortcuts": [
+  {
+   "name": "Training starten",
+   "short_name": "Training",
+   "url": "./#live",
+   "icons": [
+    {
+     "src": "icons/icon-192.png",
+     "sizes": "192x192"
+    }
+   ]
+  },
+  {
+   "name": "Umlenken",
+   "url": "./#umlenken"
+  },
+  {
+   "name": "10 Minuten ohne Geräte",
+   "short_name": "10 Min.",
+   "url": "./#kurz"
+  }
+ ],
  "icons": [
   {
    "src": "icons/icon-192.png",
