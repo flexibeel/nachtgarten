@@ -7,6 +7,7 @@ import { haptic } from '../../core/platform.js';
 import { CATEGORIES, filterExercises, toggleFavorite } from '../../domain/library.js';
 import { GEAR } from '../../data/gear.js';
 import { mapExercise } from '../../data/exercise-map.js';
+import { variantOf } from '../../domain/variants.js';
 import { t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
@@ -84,8 +85,54 @@ export function allExercises(ctx) {
   return out;
 }
 
+/** Pixel-Symbol je Kategorie: eine typische Übung als Standbild. */
+const CATEGORY_ICON = Object.freeze({ push: 'pushup', pull: 'pullup', legs: 'squat', glutes: 'bridge', core: 'plank', arms: 'curl', full: 'lunge' });
+
 /**
- * Zeile mit Stern.
+ * Kleine Animation als Vorschau: steht still (erstes Bild), bewegt sich, solange man drückt.
+ * Wird erst gebaut, wenn sie ins Bild kommt.
+ * @param {AppContext} ctx
+ * @param {string} id
+ * @param {{size?: number}} [options]
+ */
+function thumb(ctx, id, { size = 48 } = {}) {
+  const slot = h('span', { class: 'lib-thumb', 'aria-hidden': 'true' });
+  /** @type {any} */
+  let anim = null;
+  const build = () => {
+    const ex = findExercise(ctx, id);
+    if (!ex || anim) return;
+    try {
+      anim = createExerciseAnim(slot, { ...animConfig(ex, ctx.store.exercises.get().prefs[id] ?? {}), size, autoplay: false, muscles: ex.muscles });
+    } catch {
+      anim = null;
+    }
+  };
+  if (typeof IntersectionObserver === 'function') {
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) {
+        io.disconnect();
+        build();
+      }
+    }, { rootMargin: '120px' });
+    io.observe(slot);
+  } else build();
+  return {
+    el: slot,
+    play: () => anim?.play?.(),
+    pause: () => anim?.pause?.(),
+  };
+}
+
+/** Bewegt die Vorschau, solange der Finger drauf ist. @param {HTMLElement} target @param {ReturnType<typeof thumb>} th */
+function pressToPlay(target, th) {
+  const stop = () => th.pause();
+  target.addEventListener('pointerdown', () => th.play());
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) target.addEventListener(ev, stop);
+}
+
+/**
+ * Zeile mit Vorschau und Stern.
  * @param {AppContext} ctx
  * @param {LibExercise} ex
  * @param {(id: string) => void} onOpen
@@ -105,65 +152,37 @@ function row(ctx, ex, onOpen) {
     replace(star, icon(on ? 'starFilled' : 'star', { size: 20 }));
     haptic('select');
   });
-  const sub = [gearLabel(ex.gear), ex.attachment, muscleLabel(ex.muscles)].filter(Boolean).join(' · ');
-  return h(
-    'li',
-    { class: 'lib-row' },
-    h('button', { type: 'button', class: 'lib-open', dataset: { id: ex.id }, on: { click: () => onOpen(ex.id) } },
-      h('span', { class: 'lib-name', text: ex.name }),
-      h('span', { class: 'lib-sub', text: sub }),
-    ),
-    star,
+  const sub = [gearLabel(ex.gear), muscleLabel(ex.muscles)].filter(Boolean).join(' · ');
+  const th = thumb(ctx, ex.id);
+  const open = h('button', { type: 'button', class: 'lib-open', dataset: { id: ex.id }, on: { click: () => onOpen(ex.id) } },
+    th.el,
+    h('span', { class: 'lib-texts' }, h('span', { class: 'lib-name', text: ex.name }), h('span', { class: 'lib-sub', text: sub })),
   );
+  pressToPlay(open, th);
+  return h('li', { class: 'lib-row' }, open, star);
 }
 
 /**
+ * Bibliothek: erst Kategorien als Kacheln (mit Pixel-Symbol), dann eine ruhige Liste mit Vorschau.
+ * Suche springt direkt in die Liste über alle Übungen.
  * @param {AppContext} ctx
  * @param {{mode?: 'pick'|'view', onPick?: (id: string) => void, title?: string}} [options]
  */
 export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
-  const state = { query: '', category: /** @type {any} */ (null), gear: /** @type {string|null} */ (null), onlyFav: false, limit: PAGE };
+  const state = { query: '', category: /** @type {any} */ (null), gear: /** @type {string|null} */ (null), onlyFav: false, all: false, limit: PAGE };
+  const body = h('div', { class: 'lib-body' });
   const list = h('ul', { class: 'lib-list' });
   const count = h('p', { class: 'lib-count', 'aria-live': 'polite' });
   const more = h('button', { type: 'button', class: 'button button-quiet lib-more' });
   const search = h('input', { class: 'input lib-search', type: 'search', placeholder: t('library.search'), 'aria-label': t('library.search'), enterkeyhint: 'search' });
-
-  const chipRow = (label, options, get, set) => {
-    const el = h('div', { class: 'lib-chips', role: 'group', 'aria-label': label });
-    const paint = () =>
-      replace(
-        el,
-        options.map((o) =>
-          h('button', {
-            type: 'button',
-            class: 'chip chip-small',
-            'aria-pressed': String(get() === o.value),
-            text: o.label,
-            on: {
-              click: () => {
-                set(get() === o.value ? null : o.value);
-                haptic('select');
-                paint();
-                state.limit = PAGE;
-                paintList();
-              },
-            },
-          }),
-        ),
-      );
-    paint();
-    return el;
-  };
-
   const own = ctx.store.gear.get();
   const gearOptions = [...own, ...GEAR_FILTERS.filter((g) => !own.includes(g))].map((g) => ({ value: g, label: gearLabel(g) }));
-  const favChip = h('button', { type: 'button', class: 'chip chip-small lib-fav', 'aria-pressed': 'false' }, icon('star', { size: 16 }), h('span', { text: t('library.favorites') }));
-  favChip.addEventListener('click', () => {
-    state.onlyFav = !state.onlyFav;
-    favChip.setAttribute('aria-pressed', String(state.onlyFav));
-    haptic('select');
-    paintList();
-  });
+
+  const inList = () => !!(state.category || state.query.trim() || state.onlyFav || state.all);
+  const resetList = () => {
+    state.limit = PAGE;
+    paint();
+  };
 
   const open = (id) => {
     if (mode === 'pick') {
@@ -172,8 +191,8 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
     } else openExerciseDetail(ctx, id);
   };
 
-  const paintList = () => {
-    const results = filterExercises(allExercises(ctx), {
+  const results = () =>
+    filterExercises(allExercises(ctx), {
       query: state.query,
       category: state.category,
       gear: state.gear,
@@ -181,12 +200,66 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
       onlyFavorites: state.onlyFav,
       ownGear: own,
     });
-    count.textContent = t(results.length === 1 ? 'library.countOne' : 'library.count', { count: results.length });
-    replace(list, results.slice(0, state.limit).map((ex) => row(ctx, ex, open)));
-    if (!results.length) list.append(h('li', { class: 'lib-empty', text: t(state.onlyFav ? 'library.noFavorites' : 'library.nothing') }));
-    more.hidden = results.length <= state.limit;
-    more.textContent = t('library.more', { count: results.length - state.limit });
+
+  /** Startseite: Kacheln. */
+  const paintHome = () => {
+    const every = allExercises(ctx);
+    const counts = Object.fromEntries(CATEGORIES.map((c) => [c, filterExercises(every, { category: c, ownGear: own }).length]));
+    const tile = (label, sub, iconEl, onClick, cls) =>
+      h('button', { type: 'button', class: ['lib-cat', cls], on: { click: () => { haptic('select'); onClick(); } } },
+        iconEl,
+        h('span', { class: 'lib-cat-texts' }, h('span', { class: 'lib-cat-name', text: label }), sub ? h('span', { class: 'lib-cat-sub', text: sub }) : null),
+      );
+    replace(
+      body,
+      h('div', { class: 'lib-cats', role: 'list', 'aria-label': t('library.categories') },
+        tile(t('library.favorites'), null, h('span', { class: 'lib-cat-icon is-star', 'aria-hidden': 'true' }, icon('starFilled', { size: 22 })), () => { state.onlyFav = true; resetList(); }, 'is-fav'),
+        CATEGORIES.map((c) => {
+          const th = thumb(ctx, CATEGORY_ICON[c], { size: 44 });
+          const el = tile(t(`category.${c}`), t('library.categoryCount', { count: counts[c] }), th.el, () => { state.category = c; resetList(); });
+          el.dataset.category = c;
+          pressToPlay(el, th);
+          return el;
+        }),
+        tile(t('library.allExercises'), t('library.categoryCount', { count: every.length }), h('span', { class: 'lib-cat-icon', 'aria-hidden': 'true' }, icon('list', { size: 22 })), () => { state.all = true; resetList(); }, 'is-all'),
+      ),
+    );
   };
+
+  /** Liste einer Kategorie / der Suche. */
+  const paintList = () => {
+    const found = results();
+    const heading = state.onlyFav ? t('library.favorites') : state.category ? t(`category.${state.category}`) : state.query.trim() ? null : t('library.allExercises');
+    const back = h('button', {
+      type: 'button',
+      class: 'chip chip-small lib-back',
+      on: { click: () => { haptic('tap'); Object.assign(state, { category: null, onlyFav: false, all: false, gear: null, query: '' }); search.value = ''; paint(); } },
+    }, icon('arrowLeft', { size: 16 }), h('span', { text: t('library.categories') }));
+    const gearRow = h('div', { class: 'lib-chips', role: 'group', 'aria-label': t('library.gear') },
+      gearOptions.map((o) => h('button', {
+        type: 'button',
+        class: 'chip chip-small',
+        'aria-pressed': String(state.gear === o.value),
+        text: o.label,
+        on: { click: () => { state.gear = state.gear === o.value ? null : o.value; haptic('select'); resetList(); } },
+      })));
+    count.textContent = t(found.length === 1 ? 'library.countOne' : 'library.count', { count: found.length });
+    replace(list, found.slice(0, state.limit).map((ex) => row(ctx, ex, open)));
+    if (!found.length) list.append(h('li', { class: 'lib-empty', text: t(state.onlyFav ? 'library.noFavorites' : 'library.nothing') }));
+    more.hidden = found.length <= state.limit;
+    more.textContent = t('library.more', { count: found.length - state.limit });
+    replace(
+      body,
+      h('div', { class: 'lib-list-head' }, back, heading ? h('h3', { class: 'lib-heading', text: heading }) : null),
+      gearRow,
+      count,
+      list,
+      more,
+    );
+  };
+
+  const paint = () => (inList() ? paintList() : paintHome());
+
   more.addEventListener('click', () => {
     state.limit += PAGE;
     paintList();
@@ -197,7 +270,7 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
     timer = window.setTimeout(() => {
       state.query = search.value;
       state.limit = PAGE;
-      paintList();
+      paint();
     }, 90);
   });
   search.addEventListener('keydown', (e) => {
@@ -208,17 +281,10 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
     title: title ?? t('library.title'),
     size: 'tall',
     className: 'library',
-    content: [
-      search,
-      chipRow(t('library.category'), CATEGORIES.map((c) => ({ value: c, label: t(`category.${c}`) })), () => state.category, (v) => (state.category = v)),
-      h('div', { class: 'lib-chips' }, favChip, chipRow(t('library.gear'), gearOptions, () => state.gear, (v) => (state.gear = v))),
-      count,
-      list,
-      more,
-    ],
+    content: [search, body],
   });
-  paintList();
-  if (!dbReady()) loadDb().then(() => sheet.el.isConnected && paintList());
+  paint();
+  if (!dbReady()) loadDb().then(() => sheet.el.isConnected && paint());
   return sheet;
 }
 
@@ -228,6 +294,8 @@ export function openLibrary(ctx, { mode = 'view', onPick, title } = {}) {
  * @param {{attachment?: string, height?: string}} [prefs]
  */
 export function animConfig(ex, prefs = {}) {
+  const own = variantOf(ex.id)?.variant.anim;
+  if (own) return { pattern: own.pattern, equipment: own.equipment, options: { ...(own.options ?? {}) } };
   const cable = ex.gear === 'Kabelzug';
   const attachment = prefs.attachment ?? ex.attachment;
   const height = cable ? prefs.height ?? 'mittel' : null;

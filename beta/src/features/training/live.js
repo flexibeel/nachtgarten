@@ -10,10 +10,14 @@
 import { clock, formatNumber } from '../../core/format.js';
 import { haptic, keepAwake } from '../../core/platform.js';
 import { dateKey } from '../../core/dates.js';
-import { liveReducer, initialUi, isBodyweightGear, lastSessionSummary, lastUsedWeight, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setDots, setsDone } from '../../domain/live-session.js';
+import { liveReducer, initialUi, isBodyweightGear, showIntro, HOW_TO_OPTIONS, lastSessionSummary, lastUsedWeight, nextQueueExercise, prefill, queueFromPlan, queueProgress, restLeft, restProgress, setDots, setsDone } from '../../domain/live-session.js';
 import { logSet, rebuildExercise, shouldAutoFinish, startLive, validateSet } from '../../domain/training.js';
 import { repRangeOrDefault, stepOrDefault, suggest } from '../../domain/progression.js';
 import { todayPlan } from '../../domain/week.js';
+import { applyVariants, rememberVariant, siblingsOf, swapInQueue, variantOf } from '../../domain/variants.js';
+import { ATTACHMENTS } from '../../data/library.js';
+import { segmented } from '../../ui/chips.js';
+import { switchRow } from '../../ui/fields.js';
 import { getLang, t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
@@ -83,7 +87,8 @@ export function mountLive(ctx, view, route) {
  */
 function start(ctx, plan) {
   const live = startLive(ctx.now());
-  if (plan?.items.length) live.queue = queueFromPlan(plan);
+  // Plan sagt „Beinpresse“: gleich an der zuletzt gewählten Maschine starten.
+  if (plan?.items.length) live.queue = applyVariants(queueFromPlan(plan), ctx.store.exercises.get().variants ?? {});
   ctx.store.live.set(live);
 }
 
@@ -153,8 +158,12 @@ function liveScreen(ctx, root) {
   };
   ui.rest = live().rest ?? null;
 
-  /** Übung wählen und vorbelegen. @param {string} id */
-  const select = (id) => {
+  /**
+   * Übung wählen und vorbelegen; entscheidet, ob zuerst „So geht’s“ kommt.
+   * @param {string} id
+   * @param {{keepMode?: boolean}} [options]
+   */
+  const select = (id, { keepMode = false } = {}) => {
     const ex = lookup(id);
     const prefs = store.exercises.get().prefs[id] ?? {};
     const item = live().queue?.items.find((it) => it.exercise === id);
@@ -172,6 +181,14 @@ function liveScreen(ctx, root) {
     // Innerhalb des Trainings: Werte des letzten Satzes dieser Übung übernehmen.
     const last = sameToday[sameToday.length - 1];
     if (id !== ui.exercise) extraLoad = false;
+    if (!keepMode) {
+      mode = showIntro({
+        setting: store.settings.get().howTo,
+        setsToday: sameToday.length,
+        hasHistory: (store.history.get()[id] ?? []).length > 0,
+        seen: !!store.exercises.get().seen?.[id],
+      }) ? 'intro' : 'log';
+    }
     dispatch({ type: 'select', exercise: id, weight: last ? last.weight : base.weight, reps: last ? last.reps : base.reps });
     if (live().queue) {
       const index = live().queue.items.findIndex((it) => it.exercise === id);
@@ -181,6 +198,8 @@ function liveScreen(ctx, root) {
 
   /** Körpergewicht-Übung: Zusatzgewicht erst auf Wunsch zeigen. */
   let extraLoad = false;
+  /** „So geht’s“ (große Animation, Hinweise, Gerät) oder Eintragen. @type {'intro'|'log'} */
+  let mode = 'log';
   /** Zuletzt gespeicherter Satz (Zeile über dem Pausen-Ring, mit „Rückgängig“). */
   /** @type {{exercise: string, text: string}|null} */
   let saved = null;
@@ -192,16 +211,18 @@ function liveScreen(ctx, root) {
   /* ------------------------------------------------------------ Gerüst */
   const title = h('p', { class: 'live-title' });
   const elapsed = h('span', { class: 'live-elapsed' });
-  const timeButton = h('button', { type: 'button', class: 'icon-button live-time' }, icon('clock', { size: 22 }));
+  // Weniger Wichtiges (Zeit, Anleitung-Einstellung, ausführliche Anleitung) liegt unter „Mehr“.
+  const moreButton = h('button', { type: 'button', class: 'icon-button live-more', 'aria-label': t('live.more') }, icon('more', { size: 22 }));
   const finishButton = h('button', { type: 'button', class: 'button button-quiet live-finish', text: t('live.finish') });
-  const top = h('header', { class: 'live-top' }, backLink(), h('div', { class: 'live-top-mid' }, title, elapsed), timeButton, finishButton);
+  const top = h('header', { class: 'live-top' }, backLink(), h('div', { class: 'live-top-mid' }, title, elapsed), moreButton, finishButton);
 
   const head = h('section', { class: 'live-ex' });
   // Bühne: Animation der Übung (ruhig, wächst mit der freien Höhe) mit einer Zeile darunter,
   // in der Pause stattdessen der Ring. Darunter kompakt „Letztes Mal“ und der Vorschlag.
-  const animSlot = h('div', { class: 'live-anim' });
+  const animSlot = h('button', { type: 'button', class: 'live-anim' });
+  const cues = h('ol', { class: 'live-cues' });
   const coach = h('p', { class: 'live-coach', 'aria-live': 'polite' });
-  const figure = h('div', { class: 'live-figure' }, animSlot, coach);
+  const figure = h('div', { class: 'live-figure' }, animSlot, coach, cues);
   const alt = h('div', { class: 'live-alt', hidden: true });
   const show = h('div', { class: 'live-show', 'data-toast-anchor': '' }, figure, alt);
   const recap = h('div', { class: 'live-recap', hidden: true });
@@ -210,11 +231,17 @@ function liveScreen(ctx, root) {
   const rir = h('section', { class: 'live-rir' });
   const cheer = h('div', { class: 'live-cheer', 'aria-live': 'polite' });
 
-  const switchButton = h('button', { type: 'button', class: 'icon-button icon-button-filled live-switch', 'aria-label': t('live.switch') }, icon('list'));
+  const switchButton = h('button', { type: 'button', class: 'icon-button live-switch', 'aria-label': t('live.switch') }, icon('list'));
   const doneButton = h('button', { type: 'button', class: 'button button-primary live-done', text: t('live.setDone') });
   const bar = h('div', { class: 'action-bar live-bar', 'data-toast-avoid': '' }, h('div', { class: 'action-bar-inner' }, switchButton, doneButton));
 
   replace(root, top, h('div', { class: 'live-main' }, head, stage, inputs, rir), cheer, bar);
+  animSlot.addEventListener('click', () => {
+    if (mode === 'intro' || !ui.exercise) return;
+    haptic('tap');
+    mode = 'intro';
+    paint();
+  });
 
   /* ------------------------------------------------------------ Animation */
   /** @type {{destroy: () => void}|null} */
@@ -237,14 +264,25 @@ function liveScreen(ctx, root) {
     }
   };
 
-  /** Zeile unter der Animation: Satz des Begleiters an besonderen Stellen, sonst ein Technik-Hinweis. */
+  /**
+   * Unter der Animation: in „So geht’s“ zwei, drei kurze Hinweise; beim Eintragen nur an
+   * wenigen Stellen ein Satz des Begleiters (Start, dritter Satz, lange dabei) – sonst Ruhe.
+   */
   const coachMemo = { key: '', who: '', text: '' };
   /** @param {import('./exercises.js').LibExercise} ex */
   const paintCoach = (ex) => {
+    if (mode === 'intro') {
+      coach.hidden = true;
+      const list = (ex.cues?.length ? ex.cues : [t('library.defaultCue')]).slice(0, 3);
+      replace(cues, list.map((c) => h('li', { text: c })));
+      cues.hidden = false;
+      return;
+    }
+    cues.hidden = true;
     const l = live();
     const done = setsDone(l, ex.id);
     let context = '';
-    // Schlicht: keine Sätze des Begleiters – die Technik-Zeile bleibt (sie ist Anleitung).
+    // Schlicht: keine Sätze des Begleiters.
     if (!isPlain(ctx)) {
       if (!l.sets.length) context = 'liveStart';
       else if (done === 2) context = 'liveSet3';
@@ -252,13 +290,58 @@ function liveScreen(ctx, root) {
     }
     const key = [ex.id, done, context, getLang()].join('|');
     if (key !== coachMemo.key) {
-      const cues = ex.cues?.length ? ex.cues : [t('library.defaultCue')];
       coachMemo.key = key;
       coachMemo.who = context ? ctx.companion().name : '';
-      coachMemo.text = context ? lineFor(ctx, context) : cues[done % cues.length];
+      coachMemo.text = context ? lineFor(ctx, context) : '';
     }
+    coach.hidden = !coachMemo.text;
     coach.classList.toggle('is-companion', !!coachMemo.who);
     replace(coach, coachMemo.who ? h('span', { class: 'live-coach-who', text: coachMemo.who }) : null, h('span', { text: coachMemo.text }));
+  };
+
+  /** Variante (Gerät) wechseln: eigener Verlauf, eigene Gewichte; die Wahl wird gemerkt. @param {string} to */
+  const switchVariant = (to) => {
+    const from = ui.exercise;
+    if (!from || from === to) return;
+    haptic('select');
+    store.exercises.update((e) => ({ ...e, variants: rememberVariant(e.variants ?? {}, to) }));
+    if (live().queue?.items.some((it) => it.exercise === from)) store.live.update((l) => ({ ...l, queue: swapInQueue(l.queue, from, to) }));
+    select(to, { keepMode: true });
+    paint();
+  };
+
+  /** Chips „Gerät: 45° · horizontal · Hack“ (nur bei Übungen mit Varianten). */
+  const variantChips = () => {
+    const sibs = siblingsOf(/** @type {string} */ (ui.exercise));
+    if (sibs.length < 2) return null;
+    return h('div', { class: 'live-variants', role: 'group', 'aria-label': t('variant.label') },
+      h('span', { class: 'live-chips-label', text: t('variant.label') }),
+      sibs.map((v) => h('button', {
+        type: 'button',
+        class: 'chip chip-small live-variant',
+        'aria-pressed': String(v.id === ui.exercise),
+        text: t(v.label),
+        on: { click: () => switchVariant(v.id) },
+      })));
+  };
+
+  /** Kabel: Aufsatz und Rollenhöhe (nur in „So geht’s“). @param {import('./exercises.js').LibExercise} ex */
+  const cableChips = (ex) => {
+    if (ex.gear !== 'Kabelzug') return null;
+    const prefs = store.exercises.get().prefs[ex.id] ?? {};
+    const setPref = (patch) => {
+      haptic('select');
+      store.exercises.update((e) => ({ ...e, prefs: { ...e.prefs, [ex.id]: { ...(e.prefs[ex.id] ?? {}), ...patch } } }));
+      paint();
+    };
+    const row = (label, options, current, key) =>
+      h('div', { class: 'live-variants', role: 'group', 'aria-label': label },
+        h('span', { class: 'live-chips-label', text: label }),
+        options.map((o) => h('button', { type: 'button', class: 'chip chip-small', 'aria-pressed': String(o.value === current), text: o.label, on: { click: () => setPref({ [key]: o.value }) } })));
+    return [
+      row(t('live.attachment'), ATTACHMENTS.filter((a) => a !== 'Fußschlaufe').map((a) => ({ value: a, label: a })), prefs.attachment ?? ex.attachment ?? 'Stange', 'attachment'),
+      row(t('live.height'), ['hoch', 'mittel', 'tief'].map((v) => ({ value: v, label: t(`height.${v}`) })), prefs.height ?? 'mittel', 'height'),
+    ];
   };
 
   /* ------------------------------------------------------------ Malen */
@@ -267,8 +350,6 @@ function liveScreen(ctx, root) {
     const p = queueProgress(l);
     title.textContent = l.queue ? `${l.queue.name}` : t('live.freeTitle');
     const timing = store.settings.get().timeTracking;
-    timeButton.setAttribute('aria-pressed', String(timing));
-    timeButton.setAttribute('aria-label', t(timing ? 'live.timeOff' : 'live.timeOn'));
     const parts = [l.queue ? t('live.progress', { done: p.done, total: p.total }) : t(l.sets.length === 1 ? 'live.setsOne' : 'live.sets', { count: l.sets.length })];
     if (timing) parts.push(clock((ctx.now() - l.start) / 1000));
     elapsed.textContent = parts.join(' · ');
@@ -284,22 +365,25 @@ function liveScreen(ctx, root) {
     const item = l.queue?.items.find((it) => it.exercise === ui.exercise);
     const done = setsDone(l, ui.exercise);
     const index = l.queue ? l.queue.items.findIndex((it) => it.exercise === ui.exercise) : -1;
-    const eyebrow = item
-      ? [t('live.exerciseOf', { i: index + 1, n: l.queue.items.length }), done >= item.sets ? t('live.allSets') : t('live.setOf', { k: done + 1, s: item.sets })]
-      : [t('live.setN', { k: done + 1 })];
+    // Eine Zeile Kontext (gedämpft), darunter groß der Name.
+    // Der Satz steht in den Punkten rechts; hier nur Übung im Plan und Ziel.
+    const eyebrow = item ? [t('live.exerciseOf', { i: index + 1, n: l.queue.items.length })] : [t('live.setN', { k: done + 1 })];
+    if (item && done >= item.sets) eyebrow.push(t('live.allSets'));
+    else if (item?.reps) eyebrow.push(t('live.target', { reps: item.reps }));
     const dots = setDots(done, item?.sets ?? null);
     replace(
       head,
-      h('p', { class: 'live-eyebrow', text: eyebrow.join(' · ') }),
+      h('div', { class: 'live-eyebrow-row' },
+        h('p', { class: 'live-eyebrow', text: eyebrow.join(' · ') }),
+        mode === 'log'
+          ? h('span', { class: 'live-dots', role: 'img', 'aria-label': t('live.setDots', { done }) }, dots.map((state) => h('i', { class: ['live-dot', `is-${state}`] })))
+          : null,
+      ),
       h('div', { class: 'live-name-row' },
         h('button', { type: 'button', class: 'live-name', on: { click: openSwitcher } }, h('span', { text: ex.name }), icon('chevronDown', { size: 20 })),
-        h('button', { type: 'button', class: 'icon-button live-info', 'aria-label': t('live.howTo', { name: ex.name }), on: { click: () => openExerciseDetail(ctx, ui.exercise) } }, icon('info', { size: 22 })),
       ),
-      h('div', { class: 'live-meta-row' },
-        item?.reps ? h('p', { class: 'live-meta', text: t('live.target', { reps: item.reps }) }) : h('span'),
-        h('span', { class: 'live-dots', role: 'img', 'aria-label': t('live.setDots', { done }) },
-          dots.map((state) => h('i', { class: ['live-dot', `is-${state}`] }))),
-      ),
+      variantChips(),
+      mode === 'intro' ? cableChips(ex) : null,
     );
   };
 
@@ -314,7 +398,8 @@ function liveScreen(ctx, root) {
     const body = isBodyweightGear(ex.gear);
     const today = dateKey(ctx.now());
     const hist = (store.history.get()[ui.exercise] ?? []).filter((x) => x.session !== live().start);
-    const sum = lastSessionSummary(hist, today);
+    // Das laufende Training ist schon herausgefiltert; ein früheres von heute zählt als „letztes Mal“.
+    const sum = lastSessionSummary(hist, '');
     if (!sum) {
       recap.hidden = true;
       return;
@@ -386,7 +471,10 @@ function liveScreen(ctx, root) {
     figure.hidden = false;
     ensureAnim(ex);
     paintCoach(ex);
-    paintRecap();
+    animSlot.disabled = mode === 'intro';
+    animSlot.setAttribute('aria-label', t('live.animTap', { name: ex.name }));
+    if (mode === 'intro') recap.hidden = true;
+    else paintRecap();
   };
 
   /** Pausen-Ring. */
@@ -422,7 +510,7 @@ function liveScreen(ctx, root) {
         h('div', { class: 'rest-ring' }, ring, h('div', { class: 'rest-center' }, restNumber, restLabel)),
         h('div', { class: 'rest-actions' },
           h('button', { type: 'button', class: 'button button-quiet rest-add', text: t('live.restAdd'), on: { click: () => { dispatch({ type: 'restAdd' }); haptic('tap'); tickRest(); } } }),
-          h('button', { type: 'button', class: 'button button-quiet rest-skip', text: t('live.restSkip'), on: { click: () => { dispatch({ type: 'restSkip' }); haptic('tap'); paintStage(); } } }),
+          h('button', { type: 'button', class: 'button button-quiet rest-skip', text: t('live.restSkip'), on: { click: () => { dispatch({ type: 'restSkip' }); haptic('tap'); paint(); } } }),
         ),
       ),
     );
@@ -447,7 +535,7 @@ function liveScreen(ctx, root) {
     }
     if (now - restDoneAt > 1400) {
       dispatch({ type: 'restSkip' });
-      paintStage();
+      paint();
     }
   };
 
@@ -502,13 +590,38 @@ function liveScreen(ctx, root) {
     );
   };
 
+  /** Ruht gerade eine Pause? Dann zuerst der Ring, „So geht’s“ danach. */
+  const resting = () => !!ui.rest && (restLeft(ui.rest, ctx.now()) > 0 || ctx.now() - restDoneAt < 1400);
+
   const paint = () => {
+    // „So geht’s“ wartet, solange die Pause läuft; gemalt wird dann wie beim Eintragen.
+    const pending = mode;
+    const intro = pending === 'intro' && !!ui.exercise && !resting();
+    if (!intro) mode = 'log';
+    root.classList.toggle('is-intro', intro);
+    root.classList.toggle('is-log', !intro);
     paintTop();
     paintHead();
     paintStage();
-    paintInputs();
-    paintRir();
+    inputs.hidden = intro;
+    rir.hidden = intro;
+    if (!intro) {
+      paintInputs();
+      paintRir();
+    }
+    doneButton.textContent = t(intro ? 'live.go' : 'live.setDone');
     doneButton.disabled = !ui.exercise;
+    if (pending === 'intro' && ui.exercise) mode = 'intro';
+  };
+
+  /** „Los geht’s“: Anleitung gesehen, ab jetzt eintragen. */
+  const startLogging = () => {
+    if (!ui.exercise) return;
+    const id = ui.exercise;
+    haptic('select');
+    store.exercises.update((e) => ({ ...e, seen: { ...(e.seen ?? {}), [id]: true } }));
+    mode = 'log';
+    paint();
   };
 
   /* ------------------------------------------------------------ Aktionen */
@@ -626,6 +739,38 @@ function liveScreen(ctx, root) {
     });
   }
 
+  /** „Mehr“: Zeit mitlaufen, Anleitung-Einstellung, ausführliche Anleitung, Übung hinzufügen. */
+  function openMore() {
+    const settings = store.settings.get();
+    const content = [
+      switchRow({
+        label: t('live.timeOn'),
+        checked: settings.timeTracking,
+        onChange: (on) => {
+          store.settings.update((s) => ({ ...s, timeTracking: on }));
+          haptic('select');
+          paintTop();
+        },
+      }),
+      h('div', { class: 'setting' },
+        h('p', { class: 'setting-label', text: t('live.howToSetting') }),
+        segmented({
+          label: t('live.howToSetting'),
+          options: HOW_TO_OPTIONS.map((v) => ({ value: v, label: t(`howTo.${v}`) })),
+          value: settings.howTo ?? 'first',
+          onChange: (howTo) => store.settings.update((s) => ({ ...s, howTo })),
+        }),
+      ),
+      h('div', { class: 'list-buttons' },
+        ui.exercise
+          ? h('button', { type: 'button', class: 'list-button', on: { click: () => sheet.close('details').then(() => openExerciseDetail(ctx, /** @type {string} */ (ui.exercise))) } }, icon('info', { size: 20 }), h('span', { text: t('live.details') }))
+          : null,
+        h('button', { type: 'button', class: 'list-button', on: { click: () => sheet.close('switch').then(openSwitcher) } }, icon('list', { size: 20 }), h('span', { text: t('live.switch') })),
+      ),
+    ];
+    const sheet = openSheet({ title: t('live.moreTitle'), className: 'live-more-sheet', content });
+  }
+
   const finish = async () => {
     const l = live();
     if (!l.sets.length) {
@@ -638,16 +783,10 @@ function liveScreen(ctx, root) {
     finishTraining(ctx, {});
   };
 
-  doneButton.addEventListener('click', saveSet);
+  doneButton.addEventListener('click', () => (mode === 'intro' && !resting() ? startLogging() : saveSet()));
   switchButton.addEventListener('click', openSwitcher);
   finishButton.addEventListener('click', finish);
-  timeButton.addEventListener('click', () => {
-    const on = !store.settings.get().timeTracking;
-    store.settings.update((s) => ({ ...s, timeTracking: on }));
-    haptic('select');
-    toast(t(on ? 'live.timeOnToast' : 'live.timeOffToast'));
-    paintTop();
-  });
+  moreButton.addEventListener('click', openMore);
   clockTimer = window.setInterval(() => {
     if (store.settings.get().timeTracking) paintTop();
   }, 1000);

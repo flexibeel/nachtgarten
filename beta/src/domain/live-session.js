@@ -233,3 +233,17 @@ export function setDots(done, target) {
 export function queueFromPlan(plan) {
   return { planId: plan.id, name: plan.name, items: plan.items.map((it) => ({ exercise: it.exercise, sets: it.sets, reps: it.reps })), index: 0 };
 }
+
+/** Einstellung „Anleitung vor jeder Übung zeigen“. */
+export const HOW_TO_OPTIONS = Object.freeze(/** @type {const} */ (['first', 'always', 'never']));
+
+/**
+ * Zeigt das Live-Training zuerst „So geht’s“ (große Animation, Hinweise, Gerät)?
+ * Nie mitten in einer Übung (schon Sätze heute); „first“ = nur beim allerersten Mal.
+ * @param {{setting?: string, setsToday: number, hasHistory: boolean, seen: boolean}} input
+ */
+export function showIntro({ setting = 'first', setsToday, hasHistory, seen }) {
+  if (setsToday > 0 || setting === 'never') return false;
+  if (setting === 'always') return true;
+  return !hasHistory && !seen;
+}

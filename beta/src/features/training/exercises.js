@@ -11,7 +11,8 @@
 import { CURATED } from '../../data/library.js';
 import { PLAN_EXERCISES } from '../../data/plans.js';
 import { G_MAP } from '../../data/plan-exercise-map.js';
-import { getLang } from '../../data/texts/i18n.js';
+import { getLang, t } from '../../data/texts/i18n.js';
+import { baseOf, isDerived, variantOf } from '../../domain/variants.js';
 import { createExerciseI18n } from '../../data/i18n/exercises.js';
 
 const texts = createExerciseI18n({
@@ -89,6 +90,13 @@ function dbExercise(index) {
  * @returns {LibExercise|undefined}
  */
 export function findExercise(ctx, id) {
+  // Abgeleitete Variante („press~horizontal“): Basis-Übung mit eigenem Namen und eigener Id.
+  if (isDerived(id)) {
+    const base = findExercise(ctx, baseOf(id));
+    const hit = variantOf(id);
+    if (!base || !hit) return undefined;
+    return { ...base, id, name: t('variant.named', { name: base.name, variant: t(hit.variant.label) }), gear: hit.variant.gear ?? base.gear, source: base.source };
+  }
   const cur = byId.get(id);
   if (cur) {
     const fromDb = cur.db != null && DB ? DB.EXDB[cur.db] : null;

@@ -245,14 +245,20 @@ export function suggestCards(session, { max = 4 } = {}) {
   const garden = session.garden && session.garden.count;
   const gardenMilestone = garden && garden % 5 === 0;
 
+  // Reihenfolge: zuerst die erwachsenen, datenstarken Karten; die Briefmarke mit dem Begleiter
+  // bleibt wählbar, steht aber nie vorn.
+  const stamp = () => add('stempel', 'Briefmarke', garden ? `Dein Garten: ${garden} ${garden === 1 ? 'Einheit' : 'Einheiten'} im ${fmtMonth(session.start)}` : 'Ein Gruß aus dem Garten', gardenMilestone ? 60 : 50);
   if (session.type === 'kraft') {
     const s = summarizeStrength(session);
     const n = (session.exercises || []).length;
     if (s.prs.length) add('typo', 'Bestwert', `Neuer Bestwert: ${s.prs[0].name} ${fmtKg(s.prs[0].kg)} kg`, 100, { focus: 'bestwert' });
-    add('kraft', 'Programmheft', 'Alles auf einem Bild – jede Übung, jeder Satz', n >= 4 ? 92 : 62, { detail: 'detailliert' });
-    add('kraft', 'Körperbeet', 'Wo du trainiert hast, blüht es', 80);
-    add('stempel', 'Briefmarke', garden ? `Dein Garten: ${garden} ${garden === 1 ? 'Einheit' : 'Einheiten'} im ${fmtMonth(session.start)}` : 'Ein Gruß aus dem Garten', gardenMilestone ? 88 : 66);
-    if (!s.prs.length) add('typo', 'Plakat', 'Nur die Zahl, groß', 55);
+    add('kraft', 'Programmheft', 'Das ganze Training als Tabelle – für Strava und den Feed', n >= 2 ? 95 : 74, { detail: 'detailliert' });
+    const hero = s.prs.length ? (session.exercises || []).find((e) => e.pr) : (session.exercises || [])[0];
+    if (hero) add('studie', 'Bewegungsstudie', s.prs.length ? `Dein Bestwert in Bildern: ${hero.name}` : `${hero.name} als Serienfotografie`, s.prs.length ? 91 : 88);
+    if (!s.prs.length) add('typo', 'Plakat', 'Nur die Zahlen, groß', 72);
+    if (hero && n >= 3) add('sammel', 'Sammelkarte', `Jede Übung eine Karte – heute ${n}`, 70);
+    add('kraft', 'Muskelkarte', 'Welche Partien heute gearbeitet haben', 64);
+    stamp();
   } else {
     const km = (session.distanceM || 0) / 1000;
     const hasRoute = (session.route || []).length > 8;
@@ -260,8 +266,8 @@ export function suggestCards(session, { max = 4 } = {}) {
     if (hasRoute) add('sticker', 'Fürs Foto', 'Zum Kopieren über dein Foto', 86, { transparent: true, theme: 'dunkel' });
     if (hasRoute) add('sternbild', 'Sternbild', km >= 10 ? 'Eine lange Runde – sie wird zum Sternbild' : 'Deine Runde als Sternbild', km >= 10 ? 95 : 82);
     if (paceProfile(session).length >= 3) add('welle', 'Tempo-Welle', paceVariation(session) > 0.03 ? 'Dein Tempo hatte schöne Wellen' : 'Gleichmäßig wie ein ruhiger See', paceVariation(session) > 0.03 ? 78 : 64);
-    add('stempel', 'Briefmarke', garden ? `Dein Garten: ${garden} ${garden === 1 ? 'Einheit' : 'Einheiten'} im ${fmtMonth(session.start)}` : 'Ein Gruß aus dem Garten', gardenMilestone ? 88 : 66);
-    if (!session.pr) add('typo', 'Plakat', 'Nur die Zahl, groß', 58);
+    if (!session.pr) add('typo', 'Plakat', 'Nur die Zahlen, groß', 70);
+    stamp();
   }
   out.sort((a, b) => b.score - a.score);
   const seen = new Set();

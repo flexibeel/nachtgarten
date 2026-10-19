@@ -63,7 +63,7 @@ export function expandPlan(data) {
   for (const row of data[2].slice(0, MAX_ITEMS)) {
     if (!Array.isArray(row)) return null;
     const [exercise, sets, reps, name] = row;
-    if (typeof exercise !== 'string' || !/^[\w-]{1,48}$/.test(exercise) || exercise.length > MAX_ID) return null;
+    if (typeof exercise !== 'string' || !/^[\w~-]{1,48}$/.test(exercise) || exercise.length > MAX_ID) return null;
     const n = Number(sets);
     if (!Number.isInteger(n) || n < 1 || n > 20) return null;
     /** @type {{exercise: string, sets: number, reps: string, name?: string}} */

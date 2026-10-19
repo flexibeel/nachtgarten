@@ -53,6 +53,18 @@ export const SEG = {
   upper: 13, fore: 12, hand: 2.4,
   shoulderHalf: 8.2, hipHalf: 4.6, // Frontansicht
 };
+/**
+ * Zeichenstile:
+ *  - "precise" (Standard für Anleitungen): erwachsene Proportionen (kleinerer Kopf, sichtbarer
+ *    Hals), schlankere Glieder, dezente Gelenkpunkte – Winkel von Knie, Hüfte, Ellbogen,
+ *    Schulter und Wirbelsäule sind klar ablesbar. Ohne Wangen, Spross nur auf Wunsch.
+ *  - "cute": die ursprüngliche runde Figur mit großem Kopf (z. B. für Teilen-Karten).
+ * Das Skelett (SEG) ist für beide gleich – Posen funktionieren unverändert.
+ */
+export const STYLE = {
+  precise: { headR: 4.7, neckGap: 1.4, wid: { thigh: 6.2, shin: 5.1, foot: 4.0, torso: 11.4, upper: 4.7, fore: 4.0, hand: 4.2, torsoFront: 13 } },
+  cute: { headR: 6.6, neckGap: 0, wid: null },
+};
 /** Strichbreiten der „Pillen“. */
 export const WID = {
   thigh: 7.6, shin: 6.3, foot: 4.2, torso: 13.6, upper: 5.9, fore: 5.1, hand: 5.4,
@@ -147,7 +159,7 @@ export function solveFront(p) {
   const hdA = tr + (p.nk || 0);
   const Hd = add(N, dirUp(hdA), SEG.neck + SEG.headR);
   const sh = add(N, u, -1.6 + (p.sh || 0));
-  const J = { view: "front", H: P, S: N, Hd, tr, hdA, u, right };
+  const J = { view: "front", H: P, S: N, Hd, tr, hdA, u, right, br: p.br || 0, pf: p.pf || 0 };
   for (const s of ["l", "r"]) {
     const m = s === "l" ? -1 : 1; // Spiegelung
     const mir = (v) => (v == null ? v : v * m);
@@ -232,7 +244,8 @@ const HL_FRONT = {
 /**
  * Erstellt die Figur in den gegebenen Ebenen.
  * layers: {farLeg, farArm, torso, head, nearLeg, nearArm}
- * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost}
+ * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost, style, sprout, cheeks}
+ *   style: "precise" (Standard) | "cute";  sprout/cheeks: Keimi-Spross bzw. Wangen an/aus
  *   moving: Set bewegter Segmente ("n.thigh", "f.fore", "l.upper", "torso", …) → Altrosa-Betonung
  *   ghost:  ganze Figur einfarbig als „Geist“ (Endpose)
  * Gibt {update(J)} zurück.
@@ -246,6 +259,10 @@ export function createFigure(layers, opts = {}) {
   const parts = {};
   const hls = []; // {spec, el, side}
   const mv = opts.moving || new Set();
+  const style = STYLE[opts.style] ? opts.style : "precise";
+  const precise = style === "precise";
+  const W = STYLE[style].wid || WID;
+  const headR = STYLE[style].headR;
   const M = (key) => (mv.has(key) ? " nga-move" : "");
 
   for (const s of sides) {
@@ -255,22 +272,28 @@ export function createFigure(layers, opts = {}) {
     // Rückansicht: Arme hinter dem Rumpf (Hände vor dem Körper sind verdeckt)
     const armG = el("g", { class: cls }, view === "side" ? (far ? layers.farArm : layers.nearArm) : opts.back ? layers.farArm : layers.nearArm);
     const P = (parts[s] = {
-      thigh: el("line", { "stroke-width": WID.thigh, class: M(s + ".thigh") }, legG),
-      shin: el("line", { "stroke-width": WID.shin, class: M(s + ".shin") }, legG),
-      foot: el("line", { "stroke-width": WID.foot, class: M(s + ".foot") }, legG),
-      upper: el("line", { "stroke-width": WID.upper, class: M(s + ".upper") }, armG),
-      fore: el("line", { "stroke-width": WID.fore, class: M(s + ".fore") }, armG),
-      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
+      thigh: el("line", { "stroke-width": W.thigh, class: M(s + ".thigh") }, legG),
+      shin: el("line", { "stroke-width": W.shin, class: M(s + ".shin") }, legG),
+      foot: el("line", { "stroke-width": W.foot, class: M(s + ".foot") }, legG),
+      upper: el("line", { "stroke-width": W.upper, class: M(s + ".upper") }, armG),
+      fore: el("line", { "stroke-width": W.fore, class: M(s + ".fore") }, armG),
+      hand: el("circle", { r: W.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
       legG, armG,
     });
+    // dezente Gelenkpunkte (Knie, Ellbogen; nah zusätzlich Hüfte und Schulter)
+    if (precise && detail && !opts.ghost) {
+      P.jK = el("circle", { r: 1.05, class: "nga-joint" }, legG);
+      P.jE = el("circle", { r: 0.95, class: "nga-joint" }, armG);
+      if (!far && view === "side") { P.jH = el("circle", { r: 1.2, class: "nga-joint" }, legG); P.jS = el("circle", { r: 1.1, class: "nga-joint" }, armG); }
+    }
     for (const m of muscles) for (const spec of HL[m]) {
       if (spec.seg === "torso") continue;
       const g = spec.seg === "upper" || spec.seg === "fore" ? armG : legG;
       const ref = P[spec.seg];
       const e = spec.dot
-        ? el("circle", { r: WID.upper * 0.62, class: far ? "nga-work nga-work-far" : "nga-work" })
+        ? el("circle", { r: W.upper * 0.62, class: far ? "nga-work nga-work-far" : "nga-work" })
         : el("line", { class: far ? "nga-work nga-work-far" : "nga-work",
-          "stroke-width": WID[spec.seg] * (spec.w || (spec.side ? 0.5 : 0.56)) });
+          "stroke-width": W[spec.seg] * (spec.w || (spec.side ? 0.5 : 0.56)) });
       g.insertBefore(e, ref.nextSibling);
       hls.push({ spec, el: e, side: s });
     }
@@ -278,10 +301,11 @@ export function createFigure(layers, opts = {}) {
 
   const torsoG = el("g", { class: "nga-limb" }, layers.torso);
   const torso = el(view === "front" ? "line" : "path", { class: M("torso").trim(),
-    "stroke-width": view === "front" ? WID.torsoFront : WID.torso, fill: "none" }, torsoG);
+    "stroke-width": view === "front" ? W.torsoFront : W.torso, fill: "none" }, torsoG);
+  const neck = precise ? el("line", { "stroke-width": 3.1, class: "nga-neck" }, torsoG) : null;
   for (const m of muscles) for (const spec of HL[m]) {
     if (spec.seg !== "torso") continue;
-    const w = spec.across ? 4.6 : WID.torso * (spec.w || 0.48);
+    const w = spec.across ? 4.6 : W.torso * (spec.w || 0.48);
     const e = el(spec.across || view === "front" ? "line" : "path",
       { class: "nga-work", "stroke-width": w, fill: "none" }, torsoG);
     hls.push({ spec, el: e, side: "t" });
@@ -293,28 +317,33 @@ export function createFigure(layers, opts = {}) {
   if (opts.ghost) for (const k in layers) layers[k].classList.add("nga-ghost");
   const headG = el("g", { class: "nga-head" }, layers.head);
   const cheeks = [];
-  el("circle", { r: SEG.headR, cx: 0, cy: 0, class: "nga-skull" }, headG);
+  el("circle", { r: headR, cx: 0, cy: 0, class: "nga-skull" + (precise ? " nga-skull--precise" : "") }, headG);
+  const showCheeks = opts.cheeks ?? !precise; // in der Anleitung ohne Wangen
+  const k = headR / SEG.headR; // Gesicht mitskalieren
   if (detail) {
-    const er = opts.pixel ? 1.1 : 0.72, cr = opts.pixel ? 1.3 : 1.25; // im Pixelraster etwas größer
+    const er = (opts.pixel ? 1.1 : 0.72) * (precise ? 0.85 : 1), cr = opts.pixel ? 1.3 : 1.25;
     if (view === "front" && !opts.back) {
-      el("circle", { cx: -2.3, cy: -0.4, r: er, class: "nga-eye" }, headG);
-      el("circle", { cx: 2.3, cy: -0.4, r: er, class: "nga-eye" }, headG);
-      cheeks.push(el("circle", { cx: -3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG),
+      el("circle", { cx: -2.3 * k, cy: -0.4 * k, r: er, class: "nga-eye" }, headG);
+      el("circle", { cx: 2.3 * k, cy: -0.4 * k, r: er, class: "nga-eye" }, headG);
+      if (showCheeks) cheeks.push(el("circle", { cx: -3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG),
         el("circle", { cx: 3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG));
     } else if (view === "side") {
-      el("circle", { cx: 3.1, cy: -0.9, r: er, class: "nga-eye" }, headG);
-      el("circle", { cx: 3.4, cy: 2.2, r: cr, class: "nga-cheek" }, headG);
+      el("circle", { cx: 3.1 * k, cy: -0.9 * k, r: er, class: "nga-eye" }, headG);
+      // Nase andeuten: zeigt präzise die Blickrichtung
+      if (precise) el("path", { d: `M${f1(headR - 0.4)} ${f1(-0.2)}l1.1 1.1l-1.1 0.5`, class: "nga-nose" }, headG);
+      if (showCheeks) el("circle", { cx: 3.4, cy: 2.2, r: cr, class: "nga-cheek" }, headG);
     }
   }
-  sprout(headG);
+  // Keimi-Spross: in der Anleitung standardmäßig aus (opts.sprout), im Stil „cute“ an
+  if (opts.sprout ?? !precise) { const sg = el("g", precise ? { transform: `translate(0 ${f1(SEG.headR - headR)}) scale(0.8)` } : {}, headG); sprout(sg); }
 
   /* Hilfen für Hinweis-Geometrie */
   const segPts = (J, s, seg) => {
     const L = J[s];
-    if (seg === "thigh") return [L.hip, L.K, WID.thigh];
-    if (seg === "shin") return [L.K, L.A, WID.shin];
-    if (seg === "upper") return [L.root, L.E, WID.upper];
-    return [L.E, L.W, WID.fore];
+    if (seg === "thigh") return [L.hip, L.K, W.thigh];
+    if (seg === "shin") return [L.K, L.A, W.shin];
+    if (seg === "upper") return [L.root, L.E, W.upper];
+    return [L.E, L.W, W.fore];
   };
   const bez = (J, t) => {
     const a = J.H, c = J.C, b = J.S, m = 1 - t;
@@ -337,15 +366,20 @@ export function createFigure(layers, opts = {}) {
       setLine(P.upper, L.root, L.E);
       setLine(P.fore, L.E, L.W);
       setCirc(P.hand, add(L.W, dirDown(L.aH ?? L.aL), SEG.hand * 0.55));
+      if (P.jK) { setCirc(P.jK, L.K); setCirc(P.jE, L.E); }
+      if (P.jH) { setCirc(P.jH, L.hip); setCirc(P.jS, L.root); }
     }
     if (view === "front") {
-      setLine(torso, J.H, add(J.S, J.u, -1));
+      setLine(torso, J.H, add(J.S, J.u, precise ? -2.2 : -1));
     } else {
-      const s = add(J.S, J.u, -0.6);
+      const s = add(J.S, J.u, precise ? -1.6 : -0.6);
       torso.setAttribute("d", `M${f1(J.H[0])} ${f1(J.H[1])}Q${f1(J.C[0])} ${f1(J.C[1])} ${f1(s[0])} ${f1(s[1])}`);
-      if (J.br) torso.setAttribute("stroke-width", f1(WID.torso + J.br * 1.6));
+      if (J.br) torso.setAttribute("stroke-width", f1(W.torso + J.br * 1.6));
     }
-    headG.setAttribute("transform", `translate(${f1(J.Hd[0])} ${f1(J.Hd[1])}) rotate(${f1(J.hdA)})`);
+    // Kopf: im präzisen Stil kleiner und mit sichtbarem Hals
+    const hd = precise ? add(J.S, dirUp(J.hdA), SEG.neck + STYLE.precise.neckGap + headR) : J.Hd;
+    if (neck) setLine(neck, add(J.S, J.u, -1), hd);
+    headG.setAttribute("transform", `translate(${f1(hd[0])} ${f1(hd[1])}) rotate(${f1(J.hdA)})`);
     // Frontansicht liegend: Wangen ausblenden (wirken gedreht im Pixelraster unruhig)
     if (cheeks.length) { const lying = Math.abs(((J.hdA % 360) + 540) % 360 - 180) > 50; for (const c of cheeks) c.style.display = lying ? "none" : ""; }
 
@@ -359,7 +393,7 @@ export function createFigure(layers, opts = {}) {
           } else setLine(h.el, lerpP(J.H, J.S, sp.t[0]), lerpP(J.H, J.S, sp.t[1]));
           continue;
         }
-        const off = sp.side * (WID.torso / 2 - (WID.torso * 0.48) / 2 - 0.2);
+        const off = sp.side * (W.torso / 2 - (W.torso * 0.48) / 2 - 0.2);
         let d = "";
         for (let i = 0; i <= 6; i++) {
           const t = sp.t[0] + ((sp.t[1] - sp.t[0]) * i) / 6;
@@ -380,7 +414,7 @@ export function createFigure(layers, opts = {}) {
     }
 
     if (breathEl) {
-      const c = view === "front" ? lerpP(J.H, J.S, 0.35) : add(bez(J, 0.38), bezN(J, 0.38), WID.torso / 2 - 1.2);
+      const c = view === "front" ? lerpP(J.H, J.S, 0.35) : add(bez(J, 0.38), bezN(J, 0.38), W.torso / 2 - 1.2);
       setCirc(breathEl, c);
       breathEl.setAttribute("rx", f1(2.2 + J.br * 2.4));
       breathEl.setAttribute("ry", f1(1.8 + J.br * 2));

@@ -21,7 +21,7 @@
  * | ng2.history    | history    | alle Sätze je Übung (Gewicht, Wdh., RIR)                        | {}       |
  * | ng2.live       | live       | laufendes Live-Training                                         | null     |
  * | ng2.prs        | prs        | Bestleistungen                                                  | []       |
- * | ng2.exercises  | exercises  | eigene Übungen, Favoriten, Einstellungen je Übung, letzte RIR   | s. u.    |
+ * | ng2.exercises  | exercises  | eigene Übungen, Favoriten, Einstellungen je Übung, letzte RIR, gewählte Varianten, gesehene Anleitungen | s. u. |
  * | ng2.habit      | habit      | Gewohnheit mit Anker-Satz und erledigten Tagen                  | s. u.    |
  * | ng2.focus      | focus      | Tagesfokus (ein Satz, erledigt ja/nein)                         | s. u.    |
  * | ng2.dump       | dump       | „Kurz abladen“-Gedanken                                         | []       |
@@ -91,6 +91,7 @@ export const SCHEMA_VERSION = 1;
  * @property {{template: string, days: number}|null} activePlan   gewählte Plan-Vorlage (data/plans.js)
  * @property {string|null} backupAt          Tag der letzten gespeicherten Sicherung (YYYY-MM-DD)
  * @property {string|null} backupNudgeAt     Tag, an dem „Sicherung machen?“ zuletzt weggetippt wurde
+ * @property {'first'|'always'|'never'} howTo   „So geht’s“ vor einer Übung im Live-Training
  */
 
 /**
@@ -349,6 +350,7 @@ const defaultSettings = () => ({
   activePlan: null,
   backupAt: null,
   backupNudgeAt: null,
+  howTo: 'first',
 });
 
 /**
@@ -367,7 +369,7 @@ const AREAS = /** @type {const} */ ({
   history: () => ({}),
   live: () => null,
   prs: () => [],
-  exercises: () => ({ custom: [], favorites: [], prefs: {}, lastRir: 2 }),
+  exercises: () => ({ custom: [], favorites: [], prefs: {}, lastRir: 2, variants: {}, seen: {} }),
   habit: () => ({ name: '', anchor: null, days: {} }),   // leerer Name → Vorschlag in der Sprache der UI
   focus: () => ({ day: '', text: '', done: false }),
   dump: () => [],
