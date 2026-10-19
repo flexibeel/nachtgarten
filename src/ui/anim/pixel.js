@@ -11,7 +11,7 @@
 
 /** Namen der Farb-Variablen (ohne „--anim-“), die die Palette bilden. */
 export const PALETTE_VARS = ["figure", "figure-far", "head", "face", "work", "sprout", "weight", "weight-back",
-  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace"];
+  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace", "joint"];
 /** Gewichte für die Mehrheitswahl: feine Details setzen sich eher durch. */
 export const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.4, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3, trace: 2.6, ghost: 0.8 };
 

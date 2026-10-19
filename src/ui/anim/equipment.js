@@ -96,7 +96,8 @@ const KINDS = {
   /** Klimmzugstange: {x, y} – Stange von der Seite (Kreis) mit Halterung */
   pullbar(ctx, s) {
     const L = ctx.layer(s, "back");
-    el("path", { d: `M${f1(s.x)} ${f1(s.y)}V2`, class: "nga-frame", "stroke-width": 2.2 }, L);
+    // Klimmzug-Gestell: Stange (von der Seite) am Ausleger, Pfosten bis zum Boden
+    el("path", { d: `M${f1(s.x)} ${f1(s.y)}V${f1(s.y - 5)}H${f1(s.x - 16)}V${GROUND - 0.6}M${f1(s.x - 21)} ${GROUND - 0.6}h10`, class: "nga-frame", "stroke-width": 2.4 }, L);
     el("circle", { cx: s.x, cy: s.y, r: 1.9, class: "nga-bar" }, ctx.layer({}, "front"));
     return { static: true };
   },

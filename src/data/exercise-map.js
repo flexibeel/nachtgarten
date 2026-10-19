@@ -70,7 +70,7 @@ export const OVERRIDES = {
   cablecurl: O("curl", "kabel", { handle: "Stange" }),
   k_crosshigh: O("fly", "kabel", { height: "hoch" }),
   k_crosslow: O("fly", "kabel", { height: "tief" }),
-  k_flyflat: O("fly", "bank"),
+  k_flyflat: O("fly", "kabel", { variant: "bench" }),
   k_cpress: O("pushH", "kabel", { variant: "stand" }),
   k_row: O("pullH", "kabel", { handle: "V-Griff" }),
   k_row1: O("pullH", "kabel", { uni: true, handle: "Einzelgriff" }),
@@ -150,6 +150,7 @@ const RULES = [
   [/marsch|march|gehen\b|walk|spazier/, () => ["march", "koerper"]],
   [/hip thrust|hüftstoß/, (s, eq) => ["hipthrust", eq, { variant: "bench" }]],
   [/glute bridge|beckenheben|brücke|bridge/, (s) => ["hipthrust", "koerper", { variant: "floor", uni: has(s, /einbein|single/) }]],
+  [/wade|calf/, (s, eq) => ["calfRaise", eq === "maschine" || has(s, /maschine|machine|presse|press/) ? "maschine" : eq === "sonstiges" ? "koerper" : eq, { uni: has(s, /einbein|single|one.?leg/), wall: has(s, /wand|wall/) }]],
   [/donkey|eselstritt|kickback.*(vierfü|quadruped)/, () => ["kickback", "koerper"]],
   [/adduktion|adduktor|adduct/, (s, eq) => ["hipAbd", eq === "maschine" ? "maschine" : "kabel", { variant: "add" }]],
   [/abduktion|abduktor|abduct|fire hydrant/, (s, eq) => ["hipAbd", eq === "maschine" ? "maschine" : "kabel"]],
@@ -157,7 +158,6 @@ const RULES = [
   [/beinstrecker|leg extension/, () => ["legExt", "maschine"]],
   [/beinbeuger|leg curl|hamstring curl/, () => ["legCurl", "maschine"]],
   [/beinpresse|leg press/, () => ["legPress", "maschine"]],
-  [/wade|calf/, (s, eq) => ["calfRaise", eq === "maschine" ? "maschine" : eq, { uni: has(s, /einbein|single|one.?leg/), wall: has(s, /wand|wall/) }]],
   [/halbkniestand|hüftbeuger|hip flexor/, () => ["splitsquat", "koerper", { variant: "kneel" }]],
   [/swing/, (s, eq) => ["hinge", eq === "koerper" ? "kettlebell" : eq]],
   [/pull.?through/, () => ["hinge", "kabel"]],
@@ -176,10 +176,12 @@ const RULES = [
   [/hängend.*bein|hanging.*(leg|knee)|beinheben|leg raise|knee raise|knieheben/, (s) => ["legRaise", has(s, /hängend|hanging/) ? "stange" : "koerper"]],
   [/crunch|sit.?up|bauchpresse|bauchmaschine|russian twist/, (s, eq) => ["crunch", eq === "kabel" || eq === "maschine" ? eq : "koerper"]],
   [/reverse fl|reverse butterfly|rear delt|pull.?apart|auseinander|band.?zug/, (s, eq) => ["rearFly", has(s, /band|pull.?apart|auseinander/) ? "band" : eq]],
-  [/butterfly|fliegende|\bfly|flye|crossover|cross.?over/, (s, eq, c) => {
-    if (has(s, /butterfly|maschine|machine|pec deck/) || eq === "maschine") return ["fly", "maschine"];
-    if (eq === "kabel" || has(s, /kabel|cable/)) return ["fly", "kabel", { height: c.height || "hoch" }];
-    return ["fly", eq === "kurzhantel" ? "kurzhantel" : "bank"];
+  [/butterfly|pec.?deck|fliegende|\bfly|\bflys|flye|crossover|cross.?over/, (s, eq, c) => {
+    // Butterfly / Pec Deck ist immer die Sitz-Maschine – nie Fliegende am Boden
+    if (has(s, /butterfly|pec.?deck|maschine|machine/) || eq === "maschine") return ["fly", "maschine"];
+    const onBench = has(s, /bank|bench|liegend|lying|flach|flat|schräg|incline|boden|floor/);
+    if (eq === "kabel" || has(s, /kabel|cable/)) return ["fly", "kabel", onBench ? { variant: "bench" } : { height: c.height || "hoch" }];
+    return ["fly", eq === "kurzhantel" || eq === "koerper" ? "kurzhantel" : eq === "band" ? "band" : "bank"];
   }],
   [/seitheben|lateral raise|side raise|seitlich.*heben/, (s, eq) => ["latRaise", eq]],
   [/armkreis|arm circle|schulterkreis/, () => ["latRaise", "koerper", { variant: "circle" }]],
@@ -257,10 +259,12 @@ export function mapExercise(ex = {}, prefs = {}) {
   if (ov) {
     const options = { ...ov.options };
     if (prefs.handle || ex.att) options.handle = prefs.handle || ex.att;
-    if (prefs.height) options.height = prefs.height;
+    // Eine fest zugeordnete Rollenhöhe („Crossover von oben“) gehört zur Übung und gewinnt.
+    if (prefs.height && !ov.options.height) options.height = prefs.height;
     return { pattern: ov.pattern, equipment: ov.equipment, options, muscles, source: "override" };
   }
-  const ctx = { muscles, handle: handleOf(name, prefs.handle || ex.att), height: prefs.height || heightOf(name) };
+  // Höhe aus dem Namen („von oben“) geht vor die allgemeine Voreinstellung
+  const ctx = { muscles, handle: handleOf(name, prefs.handle || ex.att), height: heightOf(name) || prefs.height };
   for (const [re, fn] of RULES) {
     if (!re.test(name)) continue;
     const [pattern, eqo, opt = {}] = fn(name, eq, ctx);

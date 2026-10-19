@@ -249,10 +249,13 @@ export const PATTERNS = {
 
   /** Dips am Barren */
   dip(o) {
-    const A = { hx: 48.5, hy: 50, tr: 8, nW: [52, 55], fW: [51.5, 55.4], nEb: -1, fEb: -1, nT: 22, nS: -40, fT: 16, fS: -46, nk: 0 };
-    const B = P(A, { hx: 46, hy: 62, tr: 16 });
+    // Barren: Holm auf Hüfthöhe, Füße deutlich frei über dem Boden
+    const A = { hx: 48.5, hy: 45, tr: 8, nW: [52, 49.6], fW: [51.5, 50], nEb: -1, fEb: -1, nT: 24, nS: -72, fT: 18, fS: -78, nk: 0 };
+    const B = P(A, { hx: 46, hy: 57, tr: 18 });
     return { label: "Dips", frame: FR_STAND, frames: [A, B],
-      props: [{ k: "frame", d: "M38 57H66M42 57V94M62 57V94", sw: 2.4 }], muscles: ["triceps", "chest"],
+      props: [{ k: "frame", d: "M39 50.2H71M42 51V94M68 51V94M37 93.4H46M64 93.4H73", sw: 2.4 },
+        { k: "frame", d: "M35 52.2H67", sw: 2.4, cls: "nga-frame nga-far-env", layer: "back" }],
+      muscles: ["triceps", "chest"],
       trace: { at: (J) => J.S, off: -7 } };
   },
 
@@ -330,9 +333,10 @@ export const PATTERNS = {
   pullV(o) {
     const eq = o.equipment || "kabel";
     if (eq === "stange" || eq === "koerper") {
-      const bar = [52, 13];
-      const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 10, nS: -22, fT: 6, fS: -28, nk: -6 };
-      const B = P(A, { hy: 41, nk: -14, nEb: 1, fEb: 1 });
+      const bar = [52, 11];
+      // hängt frei: Knie gebeugt, Füße nach hinten – deutlicher Abstand zum Boden
+      const A = { hx: 51, hy: 58.2, tr: 2, nW: [52, 13.2], fW: [51.6, 13.4], nT: 14, nS: -76, fT: 10, fS: -82, nk: -6 };
+      const B = P(A, { hy: 39, nk: -14, nEb: 1, fEb: 1 });
       return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B], phases: ["hochziehen", "runter"],
         props: [{ k: "pullbar", x: bar[0], y: bar[1] }], muscles: ["back", "biceps"], trace: { at: (J) => J.S, off: -7 } };
     }
@@ -352,10 +356,10 @@ export const PATTERNS = {
   /** Beinheben: hängend (stange) oder liegend */
   legRaise(o) {
     if (o.equipment === "stange" || o.variant === "hang") {
-      const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 4, nS: 2, fT: 2, fS: 0, nk: -6 };
+      const A = { hx: 51, hy: 58.2, tr: 2, nW: [52, 13.2], fW: [51.6, 13.4], nT: 4, nS: 2, fT: 2, fS: 0, nk: -6 };
       const B = P(A, { hx: 49.5, tr: -6, nT: 92, nS: 46, fT: 90, fS: 44 });
       return { label: "Hängendes Beinheben", frame: [0, -2, 100, 100], frames: [A, B],
-        props: [{ k: "pullbar", x: 52, y: 13 }], muscles: ["abs"], trace: { at: (J) => J.n.K, off: -7 } };
+        props: [{ k: "pullbar", x: 52, y: 11 }], muscles: ["abs"], trace: { at: (J) => J.n.K, off: -7 } };
     }
     const A = { hx: 56, hy: 87, tr: -90, nk: 0, nT: 92, nS: 92, fT: 92, fS: 92, nF: 60, fF: 60, nU: -84, nL: -84, fU: -84, fL: -84 };
     const B = P(A, { nT: 178, nS: 150, fT: 178, fS: 150 });
@@ -482,23 +486,27 @@ export const PATTERNS = {
     const props = [];
     let A, B;
     if (eq === "maschine") {
-      const seat = { hx: 50, hy: 66, lT: 10, lTl: 0.3, lS: 4, rT: 10, rTl: 0.3, rS: 4, lA: null };
-      A = P(seat, { lW: [20.5, 42], rW: [79.5, 42], lEb: -1, rEb: -1 });
-      B = P(seat, { lW: [47.4, 37], rW: [52.6, 37], lEb: -1, rEb: -1 });
-      delete A.lA; delete B.lA;
-      props.push({ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "frame", d: "M12 94V22H88V94", sw: 2.2 },
-        { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
-      return { label: "Butterfly", view: "front", frame: FR_STAND, frames: [A, B], props, muscles: ["chest"],
+      // Butterfly / Pec Deck: aufrecht sitzend, Rückenlehne, Armpolster an Hebeln vom Gestell
+      // Oberarm waagerecht auf Schulterhöhe, Unterarm senkrecht am Polster; die Ellbogen schwenken
+      // nach vorn zur Mitte (Oberarm zeigt dann zur Kamera → verkürzt).
+      A = P(FSEAT, { lU: 88, lUl: 1, lL: 178, rU: 88, rUl: 1, rL: 178 });
+      B = P(FSEAT, { lU: 88, lUl: 0.3, lL: 178, rU: 88, rUl: 0.3, rL: 178 });
+      props.push(...frontSeatMachine(), ...pecArms("forearm"));
+      return { label: "Butterfly", view: "front", frame: FR_STAND, frames: [A, B], props, muscles: ["chest"], emph: ["arms"],
         trace: { at: g("r"), off: 6 } };
     }
-    if (eq !== "kabel") { // Kurzhantel-Fliegende auf der Bank, Draufsicht
-      const base = P(FSTAND, { hy: 60, lA: [45.6, 96], rA: [54.4, 96] });
-      A = P(base, { lW: [18, 37], rW: [82, 37], lEb: -1, rEb: -1 });
-      B = P(base, { lW: [47, 35], rW: [53, 35], lEb: -1, rEb: -1 });
-      props.push({ k: "pad", x: 50, y: 42, w: 18, h: 50, r: 4 });
-      if (eq === "kurzhantel") props.push(db("l", 0), db("r", 0));
-      return { label: "Fliegende auf der Bank", view: "front", floor: false, frame: FR_STAND, frames: [A, B], props,
-        muscles: ["chest"], trace: { at: g("r"), off: 6 } };
+    if (eq !== "kabel" || o.variant === "bench") {
+      // Fliegende auf der Flachbank (Seitenansicht): Arme öffnen seitlich bis unter Bankhöhe
+      // (verkürzt, weil sie zur Seite zeigen) und kommen gestreckt über der Brust zusammen.
+      const base = { hx: 58, hy: 67.6, tr: -90, nA: [76, AY], fA: [74.5, AY], nk: 4 };
+      A = P(base, { nW: [32.5, 80.5], nUl: 0.55, nLl: 0.55, nEb: 1, fW: [32, 80], fUl: 0.55, fLl: 0.55, fEb: 1 });
+      B = P(base, { nW: [37.6, 44.4], nUl: 1, nLl: 1, fW: [37.2, 44.8], fUl: 1, fLl: 1 });
+      props.push({ k: "bench", x: 14, y: 74.5, w: 50 });
+      if (eq === "kabel") props.push({ k: "pad", x: 33, y: 92, w: 4.4, h: 4.4, r: 2.2, cls: "nga-pulley" },
+        { k: "cable", from: [33, 91], to: g("n"), handle: "Einzelgriff" });
+      else if (eq === "kurzhantel") props.push(...held("kurzhantel"));
+      return { label: "Fliegende auf der Bank", frame: FR_FLOOR, frames: [A, B], props, phases: ["zusammen", "öffnen"],
+        muscles: ["chest"], emph: ["arms"], trace: { at: g("n"), off: 7 } };
     }
     const h = H(o, "hoch");
     const pl = pulleyPos(10, h, 1), pr = pulleyPos(90, h, -1);
@@ -524,10 +532,15 @@ export const PATTERNS = {
     const eq = o.equipment || "kabel";
     const back = eq !== "band";
     const seated = eq === "maschine";
-    const base = seated ? { hx: 50, hy: 66, lT: 10, lTl: 0.3, lS: 4, rT: 10, rTl: 0.3, rS: 4 } : P(FSTAND);
+    const base = seated ? P(FSEAT) : P(FSTAND);
     const sy = seated ? 45 : 34;
-    const A = P(base, { lW: [47, sy + 1], rW: [53, sy + 1] });
-    const B = P(base, { lW: [17.5, sy], rW: [82.5, sy] });
+    // Arme gestreckt auf Schulterhöhe: vorn zusammen (zur Kamera hin verkürzt) → weit auseinander
+    let A = P(base, { lW: [47, sy + 1], rW: [53, sy + 1] });
+    let B = P(base, { lW: [17.5, sy], rW: [82.5, sy] });
+    if (seated) {
+      A = P(base, { lU: 90, lUl: 0.28, lL: 90, lLl: 0.28, rU: 90, rUl: 0.28, rL: 90, rLl: 0.28 });
+      B = P(base, { lU: 90, lUl: 1, lL: 92, lLl: 1, rU: 90, rUl: 1, rL: 92, rLl: 1 });
+    }
     const props = [];
     if (eq === "kabel") {
       const pl = pulleyPos(10, "mittel", 1), pr = pulleyPos(90, "mittel", -1);
@@ -535,9 +548,9 @@ export const PATTERNS = {
         { k: "cable", from: pr, to: g("l"), handle: "Einzelgriff", layer: "farProp" },
         { k: "cable", from: pl, to: g("r"), handle: "Einzelgriff", layer: "farProp" });
     } else if (eq === "band") props.push({ k: "band", from: g("l"), to: g("r"), sag: 0.5, layer: "front" });
-    else if (eq === "maschine") props.push({ k: "frame", d: "M12 94V24H88V94", sw: 2.2 }, { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
+    else if (eq === "maschine") props.push(...frontSeatMachine(true), ...pecArms("hand"));
     else if (eq === "kurzhantel") props.push(db("l"), db("r"));
-    return { phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
+    return { emph: seated ? ["arms"] : undefined, phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
       muscles: ["shoulders", "back"], trace: { at: g("r"), off: -6 } };
   },
 
@@ -661,34 +674,48 @@ export const PATTERNS = {
   /** Wadenheben (stehend, Maschine, einbeinig mit uni) */
   calfRaise(o) {
     const eq = o.equipment || "koerper";
-    const lift = (F) => { const d = dirDown(F); return [6.4 - d[0] * 6.4, d[1] * 6.4]; };
-    const [dxB, dyB] = lift(50);
-    const A = { hx: 50, hy: HY, tr: 0, nT: 0, nS: 0, fT: 0, fS: 0, nF: 90, fF: 90, nU: 2, nL: 4, fU: -2, fL: 0 };
-    const B = P(A, { hx: 50 + dxB, hy: HY - dyB, nF: 50, fF: 50 });
+    // Auf einer Stufe: Fußballen fest auf der Kante, Fersen sinken unter die Stufe und heben sich hoch.
+    const stepTop = GROUND - 4, toe = [60, stepTop - 2];
+    const ankleFor = (F) => { const d = dirDown(F); return [toe[0] - d[0] * SEG.foot, toe[1] - d[1] * SEG.foot]; };
+    const aA = ankleFor(112), aB = ankleFor(56);
+    const A = { hx: aA[0], hy: aA[1] - 37, tr: 0, nT: 0, nS: 0, fT: 0, fS: 0, nF: 112, fF: 112, nU: 2, nL: 4, fU: -2, fL: 0 };
+    const B = P(A, { hx: aB[0], hy: aB[1] - 37, nF: 56, fF: 56 });
     if (o.uni) { A.fT = B.fT = 6; A.fS = B.fS = -70; A.fF = B.fF = 80; }
-    const props = [];
+    const props = [{ k: "step", x: 53.5, w: 18, h: 4 }];
     if (eq === "maschine") {
       Object.assign(A, { nWr: [4, 4], fWr: [3.6, 4], nEb: -1, fEb: -1 });
       Object.assign(B, { nWr: [4, 4], fWr: [3.6, 4] });
-      props.push({ k: "frame", d: "M30 94V14H50", sw: 2.2 }, { k: "pad", at: (J) => add(J.S, J.u, 1.6), w: 12, h: 3.4 },
-        { k: "step", x: 46, w: 16, h: 2 });
+      props.push({ k: "frame", d: "M34 94V12H52", sw: 2.2 }, { k: "pad", at: (J) => add(J.S, J.u, 1.6), w: 12, h: 3.4 });
     } else if (o.wall) {
-      Object.assign(A, { nW: [70, 44], fW: [69.6, 44.4], nEb: -1, fEb: -1 });
-      Object.assign(B, { nW: [70, 44], fW: [69.6, 44.4] });
-      props.push({ k: "wall", x: 72 });
+      Object.assign(A, { nW: [74, 44], fW: [73.6, 44.4], nEb: -1, fEb: -1 });
+      Object.assign(B, { nW: [74, 44], fW: [73.6, 44.4] });
+      props.push({ k: "wall", x: 76 });
     } else props.push(...held(eq));
     return { label: "Wadenheben", frame: FR_STAND, frames: [A, B], props, muscles: ["calves"],
       timing: T(0.3, 0.7, 0.4, 0.9), trace: { at: (J) => J.n.heel, off: -5 } };
   },
 
   /** Beinpresse (45°, Maschine) */
-  legPress() {
+  legPress(o = {}) {
+    // Horizontal/sitzend: aufrechter Rücken, Platte vor dem Körper, Schlitten auf Hüfthöhe.
+    if (o.variant === "horizontal") {
+      const hip = [30, 72], rail = dirDown(90);
+      const base = { hx: hip[0], hy: hip[1], tr: -22, nk: 26, nW: [37, 78], fW: [36.6, 78.2], nEb: 1, fEb: 1, nF: 90, fF: 90 };
+      const A = P(base, { nA: add(hip, rail, 20), fA: add(add(hip, rail, 20), [-0.6, 0.4]) });
+      const B = P(base, { nA: add(hip, rail, 35), fA: add(add(hip, rail, 35), [-0.6, 0.4]) });
+      return { label: "Beinpresse horizontal", frame: FR_STAND, frames: [A, B],
+        props: [{ k: "frame", d: "M22 80H86M28 80V94M80 80V94M20 94H90", sw: 2.2 },
+          { k: "pad", x: 30, y: 77.4, w: 18, h: 3.4, a: 0 },
+          { k: "pad", at: (J) => add(lerpP(J.H, J.S, 0.6), J.back, 8.4), a: (J) => J.tr, w: 3.6, h: 24 },
+          { k: "sled", at: (J) => add(lerpP(J.n.heel, J.n.toe, 0.5), rail, 3.6), a: 0, w: 16 }],
+        muscles: ["quads", "glutes"], trace: { at: (J) => J.n.A, off: -7 } };
+    }
     const hip = [34, 72], rail = dirDown(135);
     const base = { hx: hip[0], hy: hip[1], tr: -52, nk: 26, nW: [38.5, 77.5], fW: [38, 77.8], nEb: 1, fEb: 1, nF: 92, fF: 92 };
     const A = P(base, { nA: add(hip, rail, 19), fA: add(add(hip, rail, 19), [-0.6, 0.4]) });
     const B = P(base, { nA: add(hip, rail, 35.5), fA: add(add(hip, rail, 35.5), [-0.6, 0.4]) });
     return { label: "Beinpresse", frame: FR_STAND, frames: [A, B],
-      props: [{ k: "frame", d: "M44 86L88 42M30 82V94M44 86V94M24 94H88", sw: 2.2 },
+      props: [{ k: "frame", d: "M44 86L88 42M48 89L91 46M30 82V94M44 86V94M86 46V94M24 93.4H92", sw: 2.2 },
         { k: "pad", x: 33, y: 78.6, w: 16, h: 3.4, a: -14 },
         { k: "pad", at: (J) => add(lerpP(J.H, J.S, 0.6), J.back, 8.4), a: (J) => J.tr, w: 3.6, h: 24 },
         { k: "sled", at: (J) => add(lerpP(J.n.heel, J.n.toe, 0.5), rail, 3.6), a: -45, w: 16 }],
@@ -702,7 +729,8 @@ export const PATTERNS = {
     const B = P(base, { nS: 84, fS: 83 });
     const roller = (J) => add(lerpP(J.n.K, J.n.A, 0.84), dirDown(J.n.aS + 90), 4.4);
     return { label: "Beinstrecker", frame: FR_STAND, frames: [A, B],
-      props: [...machineSeat(44, 67, 36.6, 48, -8), { k: "frame", d: "M70 94V66", sw: 2.2 },
+      props: [...machineSeat(44, 67, 36.6, 48, -8), { k: "frame", d: "M70 94V66H64", sw: 2.4 },
+        { k: "frame", d: "M50.5 67V71", sw: 2 },
         { k: "roller", pivot: (J) => add(J.n.K, [0, 0]), at: roller, r: 3 }],
       muscles: ["quads"], trace: { at: (J) => J.n.A, off: 6 } };
   },
@@ -714,7 +742,8 @@ export const PATTERNS = {
     const B = P(base, { nS: -196, fS: -197 });
     const roller = (J) => add(lerpP(J.n.K, J.n.A, 0.86), dirDown(J.n.aS - 90), 4.2);
     return { label: "Beinbeuger", frame: [0, 18, 96, 96], frames: [A, B],
-      props: [{ k: "bench", x: 32, y: 72.8, w: 50 }, { k: "roller", pivot: (J) => J.n.K, at: roller, r: 3 }],
+      props: [{ k: "bench", x: 32, y: 72.8, w: 50 }, { k: "frame", d: "M26 94V66H29", sw: 2.4 },
+        { k: "roller", pivot: (J) => J.n.K, at: roller, r: 3 }],
       muscles: ["hams"], trace: { at: (J) => J.n.A, off: -6 } };
   },
 
@@ -803,14 +832,14 @@ export const PATTERNS = {
   hipAbd(o) {
     const eq = o.equipment || "kabel";
     if (eq === "maschine") {
-      const seat = { hx: 50, hy: 66, lU: 18, lL: 10, rU: 18, rL: 10, lTl: 0.5, rTl: 0.5 };
+      const seat = { ...FSEAT, lU: 18, lL: 10, rU: 18, rL: 10, lTl: 0.5, rTl: 0.5 };
+      delete seat.lA; delete seat.rA;
       const add2 = o.variant === "add";
       const close = { lT: 6, lS: 2, rT: 6, rS: 2 }, open = { lT: 64, lS: 8, rT: 64, rS: 8 };
       const A = P(seat, add2 ? open : close), B = P(seat, add2 ? close : open);
       return { label: add2 ? "Adduktoren" : "Abduktoren", view: "front", frame: FR_STAND, frames: [A, B],
         phases: add2 ? ["Knie zusammen", "öffnen"] : ["Knie auseinander", "zurück"],
-        props: [{ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "pad", x: 50, y: 69, w: 26, h: 4 },
-          { k: "frame", d: "M50 71V94", sw: 2.2 },
+        props: [...frontSeatMachine(),
           { k: "pad", at: (J) => add(J.l.K, [add2 ? 3.4 : -3.8, 0]), w: 3, h: 8, layer: "front" },
           { k: "pad", at: (J) => add(J.r.K, [add2 ? -3.4 : 3.8, 0]), w: 3, h: 8, layer: "front" }],
         muscles: add2 ? ["quads"] : ["glutes"], trace: { at: (J) => J.r.K, off: -5 } };
@@ -874,6 +903,34 @@ export const PATTERNS = {
 const QUAD = { hx: 40, hy: 70.6, St: [62.5, 66.4], nk: 4,
   nT: 2, nS: -90, fT: 1, fS: -91, nF: 0, fF: 0,
   nW: [63.5, 91.4], fW: [63, 91.6], nEb: 1, fEb: 1 };
+
+/** Frontansicht sitzend (Maschine): Oberschenkel zeigen zur Kamera (verkürzt), Füße am Boden. */
+const FSEAT = { hx: 50, hy: 65.5, tr: 0, lT: 14, lTl: 0.32, lS: 3, rT: 14, rTl: 0.32, rS: 3, lF: 62, rF: 62 };
+
+/** Frontansicht: Sitzpolster mit Säule und hohe Rückenlehne (back: von hinten gesehen). */
+function frontSeatMachine(back = false) {
+  return [
+    { k: "frame", d: "M50 72V93.4M38 93.4H62", sw: 2.4 },
+    { k: "pad", x: 50, y: 44, w: back ? 14 : 19, h: 44, r: 4 },
+    { k: "pad", x: 50, y: 69.6, w: 30, h: 4.2, r: 1.8 },
+  ];
+}
+
+/** Butterfly-Gestell: Rahmen über dem Sitz, Hebel vom Drehpunkt zu senkrechten Armpolstern. */
+function pecArms(at = "forearm") {
+  const pl = [40, 17], pr = [60, 17];
+  // forearm: senkrechtes Polster am Unterarm (Butterfly); hand: Griff in der Hand (Reverse Butterfly)
+  const spot = (J, s) => (at === "forearm" ? lerpP(J[s].E, J[s].W, 0.5) : J[s].G);
+  const pad = (s) => (at === "forearm"
+    ? { k: "pad", at: (J) => spot(J, s), w: 3.4, h: 12, r: 1.5, layer: "front" }
+    : { k: "pad", at: (J) => spot(J, s), w: 3, h: 7, r: 1.4, layer: "front" });
+  return [
+    { k: "frame", d: "M18 93.4V15H82V93.4M14 93.4H22M78 93.4H86", sw: 2.4 },
+    { k: "lever", from: pl, to: (J) => (at === "forearm" ? J.l.W : J.l.G) }, { k: "lever", from: pr, to: (J) => (at === "forearm" ? J.r.W : J.r.G) },
+    { k: "pad", x: pl[0], y: pl[1], w: 3, h: 3, r: 1.5, cls: "nga-pivot" }, { k: "pad", x: pr[0], y: pr[1], w: 3, h: 3, r: 1.5, cls: "nga-pivot" },
+    pad("l"), pad("r"),
+  ];
+}
 
 /** Sitz + Rückenpolster einer Maschine/Bank (bx = null → nur Sitz). */
 function machineSeat(sx, sy, bx, by, ba = 0) {

@@ -64,14 +64,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <body>
 <header>
   <h1>Übungsanimationen</h1>
-  <p class="intro">Kleine Mannequins machen jede Übung vor – aus etwa 30 Bewegungsmustern und passenden Geräten zusammengesetzt. Die arbeitende Muskulatur ist zart getönt. Vergleiche den Pixel-Look mit der glatten Variante.</p>
+  <p class="intro">Eine präzise Figur macht jede Übung vor – aus 40 Bewegungsmustern und passenden Geräten zusammengesetzt. Groß zeigt die glatte Ansicht Gelenkwinkel und Kontaktpunkte genau, das Mini nutzt den Pixel-Look. Bewegte Körperteile sind rosa, die Endposition steht blass dahinter.</p>
 </header>
 
 <div class="bar" role="toolbar" aria-label="Ansicht">
   <div class="seg" id="mode" role="group" aria-label="Darstellung">
-    <button data-m="both" aria-pressed="true">Vergleich</button>
+    <button data-m="vector" aria-pressed="true">Glatt</button>
+    <button data-m="both" aria-pressed="false">Vergleich</button>
     <button data-m="pixel" aria-pressed="false">Pixel</button>
-    <button data-m="vector" aria-pressed="false">Glatt</button>
   </div>
   <button class="btn" id="theme" aria-pressed="false" title="Hell/Dunkel umschalten">
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M13 9.5A5.5 5.5 0 1 1 6.5 3a4.3 4.3 0 0 0 6.5 6.5Z"/></svg>
@@ -80,17 +80,59 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <button class="btn" id="calm" aria-pressed="false" title="So sieht es mit „Bewegung reduzieren“ aus">Ruhige Ansicht</button>
 </div>
 
-<main class="grid mode-both" id="grid" aria-live="polite"></main>
+<main class="grid mode-vector" id="grid" aria-live="polite"></main>
 
 <div class="legend" aria-hidden="true">
   <span><i style="background:var(--accent)"></i>arbeitende Muskeln</span>
   <span><i style="background:var(--sage)"></i>Keimi-Spross</span>
-  <span>Mini-Vorschau: 56 px · Groß: bis 300 px</span>
+  <span>Mini-Vorschau: 56 px (Pixel) · Groß: bis 300 px (Glatt)</span>
 </div>
 
 <script type="module">
-/* src/ui/anim/figure.js */
+/* src/ui/adopt-css.js */
 const __m1 = (() => {
+/**
+ * Stile aus dem Code einfügen, ohne die Content-Security-Policy zu verletzen.
+ * `style-src 'self'` verbietet <style>-Elemente mit Inhalt; „adoptierte“ Stylesheets
+ * (CSSStyleSheet + document.adoptedStyleSheets) sind davon nicht betroffen.
+ * Ohne Unterstützung (alte Browser, Tests) fällt es auf ein <style>-Element zurück.
+ */
+
+const done = new WeakMap();
+
+/**
+ * @param {string} id     Kennung, damit jedes Stylesheet nur einmal eingefügt wird
+ * @param {string} css
+ * @param {Document} [doc]
+ */
+function adoptCss(id, css, doc = globalThis.document) {
+  if (!doc) return;
+  let ids = done.get(doc);
+  if (!ids) done.set(doc, (ids = new Set()));
+  if (ids.has(id) || doc.getElementById?.(id)) return;
+  ids.add(id);
+  const View = doc.defaultView;
+  if (View && 'adoptedStyleSheets' in doc && typeof View.CSSStyleSheet === 'function') {
+    try {
+      const sheet = new View.CSSStyleSheet();
+      sheet.replaceSync(css);
+      doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, sheet];
+      return;
+    } catch {
+      /* Rückfall unten */
+    }
+  }
+  const style = doc.createElement('style');
+  style.id = id;
+  style.textContent = css;
+  doc.head.appendChild(style);
+}
+
+return { adoptCss };
+})();
+
+/* src/ui/anim/figure.js */
+const __m2 = (() => {
 /**
  * Nachtgarten – Übungsanimationen: die Figur.
  *
@@ -145,6 +187,18 @@ const SEG = {
   torso: 22, neck: 3.2, headR: 6.6,
   upper: 13, fore: 12, hand: 2.4,
   shoulderHalf: 8.2, hipHalf: 4.6, // Frontansicht
+};
+/**
+ * Zeichenstile:
+ *  - "precise" (Standard für Anleitungen): erwachsene Proportionen (kleinerer Kopf, sichtbarer
+ *    Hals), schlankere Glieder, dezente Gelenkpunkte – Winkel von Knie, Hüfte, Ellbogen,
+ *    Schulter und Wirbelsäule sind klar ablesbar. Ohne Wangen, Spross nur auf Wunsch.
+ *  - "cute": die ursprüngliche runde Figur mit großem Kopf (z. B. für Teilen-Karten).
+ * Das Skelett (SEG) ist für beide gleich – Posen funktionieren unverändert.
+ */
+const STYLE = {
+  precise: { headR: 4.7, neckGap: 1.4, wid: { thigh: 6.2, shin: 5.1, foot: 4.0, torso: 11.4, upper: 4.7, fore: 4.0, hand: 4.2, torsoFront: 13 } },
+  cute: { headR: 6.6, neckGap: 0, wid: null },
 };
 /** Strichbreiten der „Pillen“. */
 const WID = {
@@ -240,7 +294,7 @@ function solveFront(p) {
   const hdA = tr + (p.nk || 0);
   const Hd = add(N, dirUp(hdA), SEG.neck + SEG.headR);
   const sh = add(N, u, -1.6 + (p.sh || 0));
-  const J = { view: "front", H: P, S: N, Hd, tr, hdA, u, right };
+  const J = { view: "front", H: P, S: N, Hd, tr, hdA, u, right, br: p.br || 0, pf: p.pf || 0 };
   for (const s of ["l", "r"]) {
     const m = s === "l" ? -1 : 1; // Spiegelung
     const mir = (v) => (v == null ? v : v * m);
@@ -325,7 +379,8 @@ const HL_FRONT = {
 /**
  * Erstellt die Figur in den gegebenen Ebenen.
  * layers: {farLeg, farArm, torso, head, nearLeg, nearArm}
- * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost}
+ * opts: {view, back, detail, muscles, breath, pelvic, moving, ghost, style, sprout, cheeks}
+ *   style: "precise" (Standard) | "cute";  sprout/cheeks: Keimi-Spross bzw. Wangen an/aus
  *   moving: Set bewegter Segmente ("n.thigh", "f.fore", "l.upper", "torso", …) → Altrosa-Betonung
  *   ghost:  ganze Figur einfarbig als „Geist“ (Endpose)
  * Gibt {update(J)} zurück.
@@ -339,6 +394,10 @@ function createFigure(layers, opts = {}) {
   const parts = {};
   const hls = []; // {spec, el, side}
   const mv = opts.moving || new Set();
+  const style = STYLE[opts.style] ? opts.style : "precise";
+  const precise = style === "precise";
+  const W = STYLE[style].wid || WID;
+  const headR = STYLE[style].headR;
   const M = (key) => (mv.has(key) ? " nga-move" : "");
 
   for (const s of sides) {
@@ -348,22 +407,28 @@ function createFigure(layers, opts = {}) {
     // Rückansicht: Arme hinter dem Rumpf (Hände vor dem Körper sind verdeckt)
     const armG = el("g", { class: cls }, view === "side" ? (far ? layers.farArm : layers.nearArm) : opts.back ? layers.farArm : layers.nearArm);
     const P = (parts[s] = {
-      thigh: el("line", { "stroke-width": WID.thigh, class: M(s + ".thigh") }, legG),
-      shin: el("line", { "stroke-width": WID.shin, class: M(s + ".shin") }, legG),
-      foot: el("line", { "stroke-width": WID.foot, class: M(s + ".foot") }, legG),
-      upper: el("line", { "stroke-width": WID.upper, class: M(s + ".upper") }, armG),
-      fore: el("line", { "stroke-width": WID.fore, class: M(s + ".fore") }, armG),
-      hand: el("circle", { r: WID.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
+      thigh: el("line", { "stroke-width": W.thigh, class: M(s + ".thigh") }, legG),
+      shin: el("line", { "stroke-width": W.shin, class: M(s + ".shin") }, legG),
+      foot: el("line", { "stroke-width": W.foot, class: M(s + ".foot") }, legG),
+      upper: el("line", { "stroke-width": W.upper, class: M(s + ".upper") }, armG),
+      fore: el("line", { "stroke-width": W.fore, class: M(s + ".fore") }, armG),
+      hand: el("circle", { r: W.hand / 2, class: "nga-hand" + M(s + ".fore") }, armG),
       legG, armG,
     });
+    // dezente Gelenkpunkte (Knie, Ellbogen; nah zusätzlich Hüfte und Schulter)
+    if (precise && detail && !opts.ghost) {
+      P.jK = el("circle", { r: 1.05, class: "nga-joint" }, legG);
+      P.jE = el("circle", { r: 0.95, class: "nga-joint" }, armG);
+      if (!far && view === "side") { P.jH = el("circle", { r: 1.2, class: "nga-joint" }, legG); P.jS = el("circle", { r: 1.1, class: "nga-joint" }, armG); }
+    }
     for (const m of muscles) for (const spec of HL[m]) {
       if (spec.seg === "torso") continue;
       const g = spec.seg === "upper" || spec.seg === "fore" ? armG : legG;
       const ref = P[spec.seg];
       const e = spec.dot
-        ? el("circle", { r: WID.upper * 0.62, class: far ? "nga-work nga-work-far" : "nga-work" })
+        ? el("circle", { r: W.upper * 0.62, class: far ? "nga-work nga-work-far" : "nga-work" })
         : el("line", { class: far ? "nga-work nga-work-far" : "nga-work",
-          "stroke-width": WID[spec.seg] * (spec.w || (spec.side ? 0.5 : 0.56)) });
+          "stroke-width": W[spec.seg] * (spec.w || (spec.side ? 0.5 : 0.56)) });
       g.insertBefore(e, ref.nextSibling);
       hls.push({ spec, el: e, side: s });
     }
@@ -371,10 +436,11 @@ function createFigure(layers, opts = {}) {
 
   const torsoG = el("g", { class: "nga-limb" }, layers.torso);
   const torso = el(view === "front" ? "line" : "path", { class: M("torso").trim(),
-    "stroke-width": view === "front" ? WID.torsoFront : WID.torso, fill: "none" }, torsoG);
+    "stroke-width": view === "front" ? W.torsoFront : W.torso, fill: "none" }, torsoG);
+  const neck = precise ? el("line", { "stroke-width": 3.1, class: "nga-neck" }, torsoG) : null;
   for (const m of muscles) for (const spec of HL[m]) {
     if (spec.seg !== "torso") continue;
-    const w = spec.across ? 4.6 : WID.torso * (spec.w || 0.48);
+    const w = spec.across ? 4.6 : W.torso * (spec.w || 0.48);
     const e = el(spec.across || view === "front" ? "line" : "path",
       { class: "nga-work", "stroke-width": w, fill: "none" }, torsoG);
     hls.push({ spec, el: e, side: "t" });
@@ -386,28 +452,33 @@ function createFigure(layers, opts = {}) {
   if (opts.ghost) for (const k in layers) layers[k].classList.add("nga-ghost");
   const headG = el("g", { class: "nga-head" }, layers.head);
   const cheeks = [];
-  el("circle", { r: SEG.headR, cx: 0, cy: 0, class: "nga-skull" }, headG);
+  el("circle", { r: headR, cx: 0, cy: 0, class: "nga-skull" + (precise ? " nga-skull--precise" : "") }, headG);
+  const showCheeks = opts.cheeks ?? !precise; // in der Anleitung ohne Wangen
+  const k = headR / SEG.headR; // Gesicht mitskalieren
   if (detail) {
-    const er = opts.pixel ? 1.1 : 0.72, cr = opts.pixel ? 1.3 : 1.25; // im Pixelraster etwas größer
+    const er = (opts.pixel ? 1.1 : 0.72) * (precise ? 0.85 : 1), cr = opts.pixel ? 1.3 : 1.25;
     if (view === "front" && !opts.back) {
-      el("circle", { cx: -2.3, cy: -0.4, r: er, class: "nga-eye" }, headG);
-      el("circle", { cx: 2.3, cy: -0.4, r: er, class: "nga-eye" }, headG);
-      cheeks.push(el("circle", { cx: -3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG),
+      el("circle", { cx: -2.3 * k, cy: -0.4 * k, r: er, class: "nga-eye" }, headG);
+      el("circle", { cx: 2.3 * k, cy: -0.4 * k, r: er, class: "nga-eye" }, headG);
+      if (showCheeks) cheeks.push(el("circle", { cx: -3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG),
         el("circle", { cx: 3.7, cy: 1.8, r: cr, class: "nga-cheek" }, headG));
     } else if (view === "side") {
-      el("circle", { cx: 3.1, cy: -0.9, r: er, class: "nga-eye" }, headG);
-      el("circle", { cx: 3.4, cy: 2.2, r: cr, class: "nga-cheek" }, headG);
+      el("circle", { cx: 3.1 * k, cy: -0.9 * k, r: er, class: "nga-eye" }, headG);
+      // Nase andeuten: zeigt präzise die Blickrichtung
+      if (precise) el("path", { d: `M${f1(headR - 0.4)} ${f1(-0.2)}l1.1 1.1l-1.1 0.5`, class: "nga-nose" }, headG);
+      if (showCheeks) el("circle", { cx: 3.4, cy: 2.2, r: cr, class: "nga-cheek" }, headG);
     }
   }
-  sprout(headG);
+  // Keimi-Spross: in der Anleitung standardmäßig aus (opts.sprout), im Stil „cute“ an
+  if (opts.sprout ?? !precise) { const sg = el("g", precise ? { transform: `translate(0 ${f1(SEG.headR - headR)}) scale(0.8)` } : {}, headG); sprout(sg); }
 
   /* Hilfen für Hinweis-Geometrie */
   const segPts = (J, s, seg) => {
     const L = J[s];
-    if (seg === "thigh") return [L.hip, L.K, WID.thigh];
-    if (seg === "shin") return [L.K, L.A, WID.shin];
-    if (seg === "upper") return [L.root, L.E, WID.upper];
-    return [L.E, L.W, WID.fore];
+    if (seg === "thigh") return [L.hip, L.K, W.thigh];
+    if (seg === "shin") return [L.K, L.A, W.shin];
+    if (seg === "upper") return [L.root, L.E, W.upper];
+    return [L.E, L.W, W.fore];
   };
   const bez = (J, t) => {
     const a = J.H, c = J.C, b = J.S, m = 1 - t;
@@ -430,15 +501,20 @@ function createFigure(layers, opts = {}) {
       setLine(P.upper, L.root, L.E);
       setLine(P.fore, L.E, L.W);
       setCirc(P.hand, add(L.W, dirDown(L.aH ?? L.aL), SEG.hand * 0.55));
+      if (P.jK) { setCirc(P.jK, L.K); setCirc(P.jE, L.E); }
+      if (P.jH) { setCirc(P.jH, L.hip); setCirc(P.jS, L.root); }
     }
     if (view === "front") {
-      setLine(torso, J.H, add(J.S, J.u, -1));
+      setLine(torso, J.H, add(J.S, J.u, precise ? -2.2 : -1));
     } else {
-      const s = add(J.S, J.u, -0.6);
+      const s = add(J.S, J.u, precise ? -1.6 : -0.6);
       torso.setAttribute("d", `M${f1(J.H[0])} ${f1(J.H[1])}Q${f1(J.C[0])} ${f1(J.C[1])} ${f1(s[0])} ${f1(s[1])}`);
-      if (J.br) torso.setAttribute("stroke-width", f1(WID.torso + J.br * 1.6));
+      if (J.br) torso.setAttribute("stroke-width", f1(W.torso + J.br * 1.6));
     }
-    headG.setAttribute("transform", `translate(${f1(J.Hd[0])} ${f1(J.Hd[1])}) rotate(${f1(J.hdA)})`);
+    // Kopf: im präzisen Stil kleiner und mit sichtbarem Hals
+    const hd = precise ? add(J.S, dirUp(J.hdA), SEG.neck + STYLE.precise.neckGap + headR) : J.Hd;
+    if (neck) setLine(neck, add(J.S, J.u, -1), hd);
+    headG.setAttribute("transform", `translate(${f1(hd[0])} ${f1(hd[1])}) rotate(${f1(J.hdA)})`);
     // Frontansicht liegend: Wangen ausblenden (wirken gedreht im Pixelraster unruhig)
     if (cheeks.length) { const lying = Math.abs(((J.hdA % 360) + 540) % 360 - 180) > 50; for (const c of cheeks) c.style.display = lying ? "none" : ""; }
 
@@ -452,7 +528,7 @@ function createFigure(layers, opts = {}) {
           } else setLine(h.el, lerpP(J.H, J.S, sp.t[0]), lerpP(J.H, J.S, sp.t[1]));
           continue;
         }
-        const off = sp.side * (WID.torso / 2 - (WID.torso * 0.48) / 2 - 0.2);
+        const off = sp.side * (W.torso / 2 - (W.torso * 0.48) / 2 - 0.2);
         let d = "";
         for (let i = 0; i <= 6; i++) {
           const t = sp.t[0] + ((sp.t[1] - sp.t[0]) * i) / 6;
@@ -473,7 +549,7 @@ function createFigure(layers, opts = {}) {
     }
 
     if (breathEl) {
-      const c = view === "front" ? lerpP(J.H, J.S, 0.35) : add(bez(J, 0.38), bezN(J, 0.38), WID.torso / 2 - 1.2);
+      const c = view === "front" ? lerpP(J.H, J.S, 0.35) : add(bez(J, 0.38), bezN(J, 0.38), W.torso / 2 - 1.2);
       setCirc(breathEl, c);
       breathEl.setAttribute("rx", f1(2.2 + J.br * 2.4));
       breathEl.setAttribute("ry", f1(1.8 + J.br * 2));
@@ -489,11 +565,11 @@ function createFigure(layers, opts = {}) {
   return { update };
 }
 
-return { NS, GROUND, ANKLE_Y, SEG, WID, dirDown, dirUp, add, lerpP, angTo, ik2, solveSide, solveFront, solve, el, createFigure };
+return { NS, GROUND, ANKLE_Y, SEG, STYLE, WID, dirDown, dirUp, add, lerpP, angTo, ik2, solveSide, solveFront, solve, el, createFigure };
 })();
 
 /* src/ui/anim/equipment.js */
-const __m2 = (() => {
+const __m3 = (() => {
 /**
  * Nachtgarten – Übungsanimationen: Geräte-Overlays.
  *
@@ -520,7 +596,7 @@ const __m2 = (() => {
  *              sled (Fußplatte der Beinpresse), step (Stufe); Maschinen werden in
  *              data/patterns.js aus pad/frame/roller/grip/sled zusammengesetzt.
  */
-const { el, add, dirDown, angTo, lerpP, GROUND } = __m1;
+const { el, add, dirDown, angTo, lerpP, GROUND } = __m2;
 
 const f1 = (n) => Math.round(n * 100) / 100;
 const val = (v, J) => (typeof v === "function" ? v(J) : v);
@@ -592,7 +668,8 @@ const KINDS = {
   /** Klimmzugstange: {x, y} – Stange von der Seite (Kreis) mit Halterung */
   pullbar(ctx, s) {
     const L = ctx.layer(s, "back");
-    el("path", { d: `M${f1(s.x)} ${f1(s.y)}V2`, class: "nga-frame", "stroke-width": 2.2 }, L);
+    // Klimmzug-Gestell: Stange (von der Seite) am Ausleger, Pfosten bis zum Boden
+    el("path", { d: `M${f1(s.x)} ${f1(s.y)}V${f1(s.y - 5)}H${f1(s.x - 16)}V${GROUND - 0.6}M${f1(s.x - 21)} ${GROUND - 0.6}h10`, class: "nga-frame", "stroke-width": 2.4 }, L);
     el("circle", { cx: s.x, cy: s.y, r: 1.9, class: "nga-bar" }, ctx.layer({}, "front"));
     return { static: true };
   },
@@ -758,7 +835,7 @@ return { CABLE_Y, pulleyPos, createEquipment };
 })();
 
 /* src/data/patterns.js */
-const __m3 = (() => {
+const __m4 = (() => {
 /**
  * Nachtgarten – Bewegungsmuster für die Übungsanimationen.
  *
@@ -782,8 +859,8 @@ const __m3 = (() => {
  * "V-Griff" | "Einzelgriff" | "Fußschlaufe") für den Kabelzug, uni (einarmig/einbeinig)
  * und musterspezifische Varianten (variant).
  */
-const { ANKLE_Y: AY, GROUND, add, dirDown, lerpP, SEG } = __m1;
-const { pulleyPos } = __m2;
+const { ANKLE_Y: AY, GROUND, add, dirDown, lerpP, SEG } = __m2;
+const { pulleyPos } = __m3;
 
 /* ------------------------------------------------------------ Helfer */
 
@@ -1010,10 +1087,13 @@ const PATTERNS = {
 
   /** Dips am Barren */
   dip(o) {
-    const A = { hx: 48.5, hy: 50, tr: 8, nW: [52, 55], fW: [51.5, 55.4], nEb: -1, fEb: -1, nT: 22, nS: -40, fT: 16, fS: -46, nk: 0 };
-    const B = P(A, { hx: 46, hy: 62, tr: 16 });
+    // Barren: Holm auf Hüfthöhe, Füße deutlich frei über dem Boden
+    const A = { hx: 48.5, hy: 45, tr: 8, nW: [52, 49.6], fW: [51.5, 50], nEb: -1, fEb: -1, nT: 24, nS: -72, fT: 18, fS: -78, nk: 0 };
+    const B = P(A, { hx: 46, hy: 57, tr: 18 });
     return { label: "Dips", frame: FR_STAND, frames: [A, B],
-      props: [{ k: "frame", d: "M38 57H66M42 57V94M62 57V94", sw: 2.4 }], muscles: ["triceps", "chest"],
+      props: [{ k: "frame", d: "M39 50.2H71M42 51V94M68 51V94M37 93.4H46M64 93.4H73", sw: 2.4 },
+        { k: "frame", d: "M35 52.2H67", sw: 2.4, cls: "nga-frame nga-far-env", layer: "back" }],
+      muscles: ["triceps", "chest"],
       trace: { at: (J) => J.S, off: -7 } };
   },
 
@@ -1091,9 +1171,10 @@ const PATTERNS = {
   pullV(o) {
     const eq = o.equipment || "kabel";
     if (eq === "stange" || eq === "koerper") {
-      const bar = [52, 13];
-      const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 10, nS: -22, fT: 6, fS: -28, nk: -6 };
-      const B = P(A, { hy: 41, nk: -14, nEb: 1, fEb: 1 });
+      const bar = [52, 11];
+      // hängt frei: Knie gebeugt, Füße nach hinten – deutlicher Abstand zum Boden
+      const A = { hx: 51, hy: 58.2, tr: 2, nW: [52, 13.2], fW: [51.6, 13.4], nT: 14, nS: -76, fT: 10, fS: -82, nk: -6 };
+      const B = P(A, { hy: 39, nk: -14, nEb: 1, fEb: 1 });
       return { label: "Klimmzug", frame: [0, -2, 100, 100], frames: [A, B], phases: ["hochziehen", "runter"],
         props: [{ k: "pullbar", x: bar[0], y: bar[1] }], muscles: ["back", "biceps"], trace: { at: (J) => J.S, off: -7 } };
     }
@@ -1113,10 +1194,10 @@ const PATTERNS = {
   /** Beinheben: hängend (stange) oder liegend */
   legRaise(o) {
     if (o.equipment === "stange" || o.variant === "hang") {
-      const A = { hx: 51, hy: 60.4, tr: 2, nW: [52, 15.2], fW: [51.6, 15.4], nT: 4, nS: 2, fT: 2, fS: 0, nk: -6 };
+      const A = { hx: 51, hy: 58.2, tr: 2, nW: [52, 13.2], fW: [51.6, 13.4], nT: 4, nS: 2, fT: 2, fS: 0, nk: -6 };
       const B = P(A, { hx: 49.5, tr: -6, nT: 92, nS: 46, fT: 90, fS: 44 });
       return { label: "Hängendes Beinheben", frame: [0, -2, 100, 100], frames: [A, B],
-        props: [{ k: "pullbar", x: 52, y: 13 }], muscles: ["abs"], trace: { at: (J) => J.n.K, off: -7 } };
+        props: [{ k: "pullbar", x: 52, y: 11 }], muscles: ["abs"], trace: { at: (J) => J.n.K, off: -7 } };
     }
     const A = { hx: 56, hy: 87, tr: -90, nk: 0, nT: 92, nS: 92, fT: 92, fS: 92, nF: 60, fF: 60, nU: -84, nL: -84, fU: -84, fL: -84 };
     const B = P(A, { nT: 178, nS: 150, fT: 178, fS: 150 });
@@ -1243,23 +1324,27 @@ const PATTERNS = {
     const props = [];
     let A, B;
     if (eq === "maschine") {
-      const seat = { hx: 50, hy: 66, lT: 10, lTl: 0.3, lS: 4, rT: 10, rTl: 0.3, rS: 4, lA: null };
-      A = P(seat, { lW: [20.5, 42], rW: [79.5, 42], lEb: -1, rEb: -1 });
-      B = P(seat, { lW: [47.4, 37], rW: [52.6, 37], lEb: -1, rEb: -1 });
-      delete A.lA; delete B.lA;
-      props.push({ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "frame", d: "M12 94V22H88V94", sw: 2.2 },
-        { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
-      return { label: "Butterfly", view: "front", frame: FR_STAND, frames: [A, B], props, muscles: ["chest"],
+      // Butterfly / Pec Deck: aufrecht sitzend, Rückenlehne, Armpolster an Hebeln vom Gestell
+      // Oberarm waagerecht auf Schulterhöhe, Unterarm senkrecht am Polster; die Ellbogen schwenken
+      // nach vorn zur Mitte (Oberarm zeigt dann zur Kamera → verkürzt).
+      A = P(FSEAT, { lU: 88, lUl: 1, lL: 178, rU: 88, rUl: 1, rL: 178 });
+      B = P(FSEAT, { lU: 88, lUl: 0.3, lL: 178, rU: 88, rUl: 0.3, rL: 178 });
+      props.push(...frontSeatMachine(), ...pecArms("forearm"));
+      return { label: "Butterfly", view: "front", frame: FR_STAND, frames: [A, B], props, muscles: ["chest"], emph: ["arms"],
         trace: { at: g("r"), off: 6 } };
     }
-    if (eq !== "kabel") { // Kurzhantel-Fliegende auf der Bank, Draufsicht
-      const base = P(FSTAND, { hy: 60, lA: [45.6, 96], rA: [54.4, 96] });
-      A = P(base, { lW: [18, 37], rW: [82, 37], lEb: -1, rEb: -1 });
-      B = P(base, { lW: [47, 35], rW: [53, 35], lEb: -1, rEb: -1 });
-      props.push({ k: "pad", x: 50, y: 42, w: 18, h: 50, r: 4 });
-      if (eq === "kurzhantel") props.push(db("l", 0), db("r", 0));
-      return { label: "Fliegende auf der Bank", view: "front", floor: false, frame: FR_STAND, frames: [A, B], props,
-        muscles: ["chest"], trace: { at: g("r"), off: 6 } };
+    if (eq !== "kabel" || o.variant === "bench") {
+      // Fliegende auf der Flachbank (Seitenansicht): Arme öffnen seitlich bis unter Bankhöhe
+      // (verkürzt, weil sie zur Seite zeigen) und kommen gestreckt über der Brust zusammen.
+      const base = { hx: 58, hy: 67.6, tr: -90, nA: [76, AY], fA: [74.5, AY], nk: 4 };
+      A = P(base, { nW: [32.5, 80.5], nUl: 0.55, nLl: 0.55, nEb: 1, fW: [32, 80], fUl: 0.55, fLl: 0.55, fEb: 1 });
+      B = P(base, { nW: [37.6, 44.4], nUl: 1, nLl: 1, fW: [37.2, 44.8], fUl: 1, fLl: 1 });
+      props.push({ k: "bench", x: 14, y: 74.5, w: 50 });
+      if (eq === "kabel") props.push({ k: "pad", x: 33, y: 92, w: 4.4, h: 4.4, r: 2.2, cls: "nga-pulley" },
+        { k: "cable", from: [33, 91], to: g("n"), handle: "Einzelgriff" });
+      else if (eq === "kurzhantel") props.push(...held("kurzhantel"));
+      return { label: "Fliegende auf der Bank", frame: FR_FLOOR, frames: [A, B], props, phases: ["zusammen", "öffnen"],
+        muscles: ["chest"], emph: ["arms"], trace: { at: g("n"), off: 7 } };
     }
     const h = H(o, "hoch");
     const pl = pulleyPos(10, h, 1), pr = pulleyPos(90, h, -1);
@@ -1285,10 +1370,15 @@ const PATTERNS = {
     const eq = o.equipment || "kabel";
     const back = eq !== "band";
     const seated = eq === "maschine";
-    const base = seated ? { hx: 50, hy: 66, lT: 10, lTl: 0.3, lS: 4, rT: 10, rTl: 0.3, rS: 4 } : P(FSTAND);
+    const base = seated ? P(FSEAT) : P(FSTAND);
     const sy = seated ? 45 : 34;
-    const A = P(base, { lW: [47, sy + 1], rW: [53, sy + 1] });
-    const B = P(base, { lW: [17.5, sy], rW: [82.5, sy] });
+    // Arme gestreckt auf Schulterhöhe: vorn zusammen (zur Kamera hin verkürzt) → weit auseinander
+    let A = P(base, { lW: [47, sy + 1], rW: [53, sy + 1] });
+    let B = P(base, { lW: [17.5, sy], rW: [82.5, sy] });
+    if (seated) {
+      A = P(base, { lU: 90, lUl: 0.28, lL: 90, lLl: 0.28, rU: 90, rUl: 0.28, rL: 90, rLl: 0.28 });
+      B = P(base, { lU: 90, lUl: 1, lL: 92, lLl: 1, rU: 90, rUl: 1, rL: 92, rLl: 1 });
+    }
     const props = [];
     if (eq === "kabel") {
       const pl = pulleyPos(10, "mittel", 1), pr = pulleyPos(90, "mittel", -1);
@@ -1296,9 +1386,9 @@ const PATTERNS = {
         { k: "cable", from: pr, to: g("l"), handle: "Einzelgriff", layer: "farProp" },
         { k: "cable", from: pl, to: g("r"), handle: "Einzelgriff", layer: "farProp" });
     } else if (eq === "band") props.push({ k: "band", from: g("l"), to: g("r"), sag: 0.5, layer: "front" });
-    else if (eq === "maschine") props.push({ k: "frame", d: "M12 94V24H88V94", sw: 2.2 }, { k: "grip", at: g("l") }, { k: "grip", at: g("r") });
+    else if (eq === "maschine") props.push(...frontSeatMachine(true), ...pecArms("hand"));
     else if (eq === "kurzhantel") props.push(db("l"), db("r"));
-    return { phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
+    return { emph: seated ? ["arms"] : undefined, phases: ["auseinander", "zurück"], label: back ? "Reverse Fly" : "Band-Zug auseinander", view: "front", back, frame: FR_STAND, frames: [A, B], props,
       muscles: ["shoulders", "back"], trace: { at: g("r"), off: -6 } };
   },
 
@@ -1422,34 +1512,48 @@ const PATTERNS = {
   /** Wadenheben (stehend, Maschine, einbeinig mit uni) */
   calfRaise(o) {
     const eq = o.equipment || "koerper";
-    const lift = (F) => { const d = dirDown(F); return [6.4 - d[0] * 6.4, d[1] * 6.4]; };
-    const [dxB, dyB] = lift(50);
-    const A = { hx: 50, hy: HY, tr: 0, nT: 0, nS: 0, fT: 0, fS: 0, nF: 90, fF: 90, nU: 2, nL: 4, fU: -2, fL: 0 };
-    const B = P(A, { hx: 50 + dxB, hy: HY - dyB, nF: 50, fF: 50 });
+    // Auf einer Stufe: Fußballen fest auf der Kante, Fersen sinken unter die Stufe und heben sich hoch.
+    const stepTop = GROUND - 4, toe = [60, stepTop - 2];
+    const ankleFor = (F) => { const d = dirDown(F); return [toe[0] - d[0] * SEG.foot, toe[1] - d[1] * SEG.foot]; };
+    const aA = ankleFor(112), aB = ankleFor(56);
+    const A = { hx: aA[0], hy: aA[1] - 37, tr: 0, nT: 0, nS: 0, fT: 0, fS: 0, nF: 112, fF: 112, nU: 2, nL: 4, fU: -2, fL: 0 };
+    const B = P(A, { hx: aB[0], hy: aB[1] - 37, nF: 56, fF: 56 });
     if (o.uni) { A.fT = B.fT = 6; A.fS = B.fS = -70; A.fF = B.fF = 80; }
-    const props = [];
+    const props = [{ k: "step", x: 53.5, w: 18, h: 4 }];
     if (eq === "maschine") {
       Object.assign(A, { nWr: [4, 4], fWr: [3.6, 4], nEb: -1, fEb: -1 });
       Object.assign(B, { nWr: [4, 4], fWr: [3.6, 4] });
-      props.push({ k: "frame", d: "M30 94V14H50", sw: 2.2 }, { k: "pad", at: (J) => add(J.S, J.u, 1.6), w: 12, h: 3.4 },
-        { k: "step", x: 46, w: 16, h: 2 });
+      props.push({ k: "frame", d: "M34 94V12H52", sw: 2.2 }, { k: "pad", at: (J) => add(J.S, J.u, 1.6), w: 12, h: 3.4 });
     } else if (o.wall) {
-      Object.assign(A, { nW: [70, 44], fW: [69.6, 44.4], nEb: -1, fEb: -1 });
-      Object.assign(B, { nW: [70, 44], fW: [69.6, 44.4] });
-      props.push({ k: "wall", x: 72 });
+      Object.assign(A, { nW: [74, 44], fW: [73.6, 44.4], nEb: -1, fEb: -1 });
+      Object.assign(B, { nW: [74, 44], fW: [73.6, 44.4] });
+      props.push({ k: "wall", x: 76 });
     } else props.push(...held(eq));
     return { label: "Wadenheben", frame: FR_STAND, frames: [A, B], props, muscles: ["calves"],
       timing: T(0.3, 0.7, 0.4, 0.9), trace: { at: (J) => J.n.heel, off: -5 } };
   },
 
   /** Beinpresse (45°, Maschine) */
-  legPress() {
+  legPress(o = {}) {
+    // Horizontal/sitzend: aufrechter Rücken, Platte vor dem Körper, Schlitten auf Hüfthöhe.
+    if (o.variant === "horizontal") {
+      const hip = [30, 72], rail = dirDown(90);
+      const base = { hx: hip[0], hy: hip[1], tr: -22, nk: 26, nW: [37, 78], fW: [36.6, 78.2], nEb: 1, fEb: 1, nF: 90, fF: 90 };
+      const A = P(base, { nA: add(hip, rail, 20), fA: add(add(hip, rail, 20), [-0.6, 0.4]) });
+      const B = P(base, { nA: add(hip, rail, 35), fA: add(add(hip, rail, 35), [-0.6, 0.4]) });
+      return { label: "Beinpresse horizontal", frame: FR_STAND, frames: [A, B],
+        props: [{ k: "frame", d: "M22 80H86M28 80V94M80 80V94M20 94H90", sw: 2.2 },
+          { k: "pad", x: 30, y: 77.4, w: 18, h: 3.4, a: 0 },
+          { k: "pad", at: (J) => add(lerpP(J.H, J.S, 0.6), J.back, 8.4), a: (J) => J.tr, w: 3.6, h: 24 },
+          { k: "sled", at: (J) => add(lerpP(J.n.heel, J.n.toe, 0.5), rail, 3.6), a: 0, w: 16 }],
+        muscles: ["quads", "glutes"], trace: { at: (J) => J.n.A, off: -7 } };
+    }
     const hip = [34, 72], rail = dirDown(135);
     const base = { hx: hip[0], hy: hip[1], tr: -52, nk: 26, nW: [38.5, 77.5], fW: [38, 77.8], nEb: 1, fEb: 1, nF: 92, fF: 92 };
     const A = P(base, { nA: add(hip, rail, 19), fA: add(add(hip, rail, 19), [-0.6, 0.4]) });
     const B = P(base, { nA: add(hip, rail, 35.5), fA: add(add(hip, rail, 35.5), [-0.6, 0.4]) });
     return { label: "Beinpresse", frame: FR_STAND, frames: [A, B],
-      props: [{ k: "frame", d: "M44 86L88 42M30 82V94M44 86V94M24 94H88", sw: 2.2 },
+      props: [{ k: "frame", d: "M44 86L88 42M48 89L91 46M30 82V94M44 86V94M86 46V94M24 93.4H92", sw: 2.2 },
         { k: "pad", x: 33, y: 78.6, w: 16, h: 3.4, a: -14 },
         { k: "pad", at: (J) => add(lerpP(J.H, J.S, 0.6), J.back, 8.4), a: (J) => J.tr, w: 3.6, h: 24 },
         { k: "sled", at: (J) => add(lerpP(J.n.heel, J.n.toe, 0.5), rail, 3.6), a: -45, w: 16 }],
@@ -1463,7 +1567,8 @@ const PATTERNS = {
     const B = P(base, { nS: 84, fS: 83 });
     const roller = (J) => add(lerpP(J.n.K, J.n.A, 0.84), dirDown(J.n.aS + 90), 4.4);
     return { label: "Beinstrecker", frame: FR_STAND, frames: [A, B],
-      props: [...machineSeat(44, 67, 36.6, 48, -8), { k: "frame", d: "M70 94V66", sw: 2.2 },
+      props: [...machineSeat(44, 67, 36.6, 48, -8), { k: "frame", d: "M70 94V66H64", sw: 2.4 },
+        { k: "frame", d: "M50.5 67V71", sw: 2 },
         { k: "roller", pivot: (J) => add(J.n.K, [0, 0]), at: roller, r: 3 }],
       muscles: ["quads"], trace: { at: (J) => J.n.A, off: 6 } };
   },
@@ -1475,7 +1580,8 @@ const PATTERNS = {
     const B = P(base, { nS: -196, fS: -197 });
     const roller = (J) => add(lerpP(J.n.K, J.n.A, 0.86), dirDown(J.n.aS - 90), 4.2);
     return { label: "Beinbeuger", frame: [0, 18, 96, 96], frames: [A, B],
-      props: [{ k: "bench", x: 32, y: 72.8, w: 50 }, { k: "roller", pivot: (J) => J.n.K, at: roller, r: 3 }],
+      props: [{ k: "bench", x: 32, y: 72.8, w: 50 }, { k: "frame", d: "M26 94V66H29", sw: 2.4 },
+        { k: "roller", pivot: (J) => J.n.K, at: roller, r: 3 }],
       muscles: ["hams"], trace: { at: (J) => J.n.A, off: -6 } };
   },
 
@@ -1564,14 +1670,14 @@ const PATTERNS = {
   hipAbd(o) {
     const eq = o.equipment || "kabel";
     if (eq === "maschine") {
-      const seat = { hx: 50, hy: 66, lU: 18, lL: 10, rU: 18, rL: 10, lTl: 0.5, rTl: 0.5 };
+      const seat = { ...FSEAT, lU: 18, lL: 10, rU: 18, rL: 10, lTl: 0.5, rTl: 0.5 };
+      delete seat.lA; delete seat.rA;
       const add2 = o.variant === "add";
       const close = { lT: 6, lS: 2, rT: 6, rS: 2 }, open = { lT: 64, lS: 8, rT: 64, rS: 8 };
       const A = P(seat, add2 ? open : close), B = P(seat, add2 ? close : open);
       return { label: add2 ? "Adduktoren" : "Abduktoren", view: "front", frame: FR_STAND, frames: [A, B],
         phases: add2 ? ["Knie zusammen", "öffnen"] : ["Knie auseinander", "zurück"],
-        props: [{ k: "pad", x: 50, y: 48, w: 22, h: 40, r: 5 }, { k: "pad", x: 50, y: 69, w: 26, h: 4 },
-          { k: "frame", d: "M50 71V94", sw: 2.2 },
+        props: [...frontSeatMachine(),
           { k: "pad", at: (J) => add(J.l.K, [add2 ? 3.4 : -3.8, 0]), w: 3, h: 8, layer: "front" },
           { k: "pad", at: (J) => add(J.r.K, [add2 ? -3.4 : 3.8, 0]), w: 3, h: 8, layer: "front" }],
         muscles: add2 ? ["quads"] : ["glutes"], trace: { at: (J) => J.r.K, off: -5 } };
@@ -1636,6 +1742,34 @@ const QUAD = { hx: 40, hy: 70.6, St: [62.5, 66.4], nk: 4,
   nT: 2, nS: -90, fT: 1, fS: -91, nF: 0, fF: 0,
   nW: [63.5, 91.4], fW: [63, 91.6], nEb: 1, fEb: 1 };
 
+/** Frontansicht sitzend (Maschine): Oberschenkel zeigen zur Kamera (verkürzt), Füße am Boden. */
+const FSEAT = { hx: 50, hy: 65.5, tr: 0, lT: 14, lTl: 0.32, lS: 3, rT: 14, rTl: 0.32, rS: 3, lF: 62, rF: 62 };
+
+/** Frontansicht: Sitzpolster mit Säule und hohe Rückenlehne (back: von hinten gesehen). */
+function frontSeatMachine(back = false) {
+  return [
+    { k: "frame", d: "M50 72V93.4M38 93.4H62", sw: 2.4 },
+    { k: "pad", x: 50, y: 44, w: back ? 14 : 19, h: 44, r: 4 },
+    { k: "pad", x: 50, y: 69.6, w: 30, h: 4.2, r: 1.8 },
+  ];
+}
+
+/** Butterfly-Gestell: Rahmen über dem Sitz, Hebel vom Drehpunkt zu senkrechten Armpolstern. */
+function pecArms(at = "forearm") {
+  const pl = [40, 17], pr = [60, 17];
+  // forearm: senkrechtes Polster am Unterarm (Butterfly); hand: Griff in der Hand (Reverse Butterfly)
+  const spot = (J, s) => (at === "forearm" ? lerpP(J[s].E, J[s].W, 0.5) : J[s].G);
+  const pad = (s) => (at === "forearm"
+    ? { k: "pad", at: (J) => spot(J, s), w: 3.4, h: 12, r: 1.5, layer: "front" }
+    : { k: "pad", at: (J) => spot(J, s), w: 3, h: 7, r: 1.4, layer: "front" });
+  return [
+    { k: "frame", d: "M18 93.4V15H82V93.4M14 93.4H22M78 93.4H86", sw: 2.4 },
+    { k: "lever", from: pl, to: (J) => (at === "forearm" ? J.l.W : J.l.G) }, { k: "lever", from: pr, to: (J) => (at === "forearm" ? J.r.W : J.r.G) },
+    { k: "pad", x: pl[0], y: pl[1], w: 3, h: 3, r: 1.5, cls: "nga-pivot" }, { k: "pad", x: pr[0], y: pr[1], w: 3, h: 3, r: 1.5, cls: "nga-pivot" },
+    pad("l"), pad("r"),
+  ];
+}
+
 /** Sitz + Rückenpolster einer Maschine/Bank (bx = null → nur Sitz). */
 function machineSeat(sx, sy, bx, by, ba = 0) {
   const parts = [{ k: "frame", d: `M${sx} ${sy + 2}V94M${sx - 7} 93.4h14`, sw: 2.2 }, { k: "pad", x: sx, y: sy, w: 16, h: 3.4 }];
@@ -1684,7 +1818,7 @@ return { PATTERNS, PATTERN_NAMES, buildPattern, PHASES };
 })();
 
 /* src/ui/anim/pixel.js */
-const __m4 = (() => {
+const __m5 = (() => {
 /**
  * Nachtgarten – Übungsanimationen: Pixel-Look („Sprite“-Darstellung).
  *
@@ -1698,7 +1832,7 @@ const __m4 = (() => {
 
 /** Namen der Farb-Variablen (ohne „--anim-“), die die Palette bilden. */
 const PALETTE_VARS = ["figure", "figure-far", "head", "face", "work", "sprout", "weight", "weight-back",
-  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace"];
+  "env", "env-line", "cable", "band", "floor", "mat", "hole", "move", "move-far", "ghost", "trace", "joint"];
 /** Gewichte für die Mehrheitswahl: feine Details setzen sich eher durch. */
 const PALETTE_WEIGHTS = { face: 3.2, sprout: 2.2, work: 1.4, cable: 2.4, band: 1.8, weight: 1.4, "env-line": 1.3, trace: 2.6, ghost: 0.8 };
 
@@ -1824,10 +1958,11 @@ const __m0 = (() => {
  * - Zwei Darstellungen: "pixel" (Standard – kleines Pixel-Mannequin, 5–8 Sprite-Bilder
  *   je Bewegung, harte Abendruhe-Palette) und "vector" (glatt, stufenlos, mit Pfeil).
  */
-const { createFigure, solve, el, NS, GROUND } = __m1;
-const { createEquipment } = __m2;
-const { buildPattern } = __m3;
-const { PALETTE_VARS, PALETTE_WEIGHTS, PIXEL_CSS, resolveVars, parseColor, bakeCss, rasterize, onThemeChange } = __m4;
+const { adoptCss } = __m1;
+const { createFigure, solve, el, NS, GROUND } = __m2;
+const { createEquipment } = __m3;
+const { buildPattern } = __m4;
+const { PALETTE_VARS, PALETTE_WEIGHTS, PIXEL_CSS, resolveVars, parseColor, bakeCss, rasterize, onThemeChange } = __m5;
 
 /* ------------------------------------------------------------ Stil */
 
@@ -1837,21 +1972,21 @@ const ANIM_VARS_CSS = `
   --anim-work:#A9695D; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
   --anim-env:#EFE7E2; --anim-env-line:#D2C7C1; --anim-cable:#9A8F8A; --anim-band:#9DAA8F;
   --anim-floor:#E2D8D2; --anim-mat:#E3E8DD; --anim-trace:#B58C83; --anim-hole:#FFFCFA;
-  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7;
+  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7; --anim-joint:#6B605B;
 }
 @media (prefers-color-scheme:dark){:where(:root:not([data-theme="light"])){
-  --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
+  --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
-  --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
-  --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
-  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
+  --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
+  --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C; --anim-joint:#EEE7E3;
 }}
 :where(:root[data-theme="dark"]){
-  --anim-figure:#BDB1AB; --anim-figure-far:#6A615E; --anim-head:#ECE3DE; --anim-face:#3A3433;
+  --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
-  --anim-env:#2F2A29; --anim-env-line:#4B4442; --anim-cable:#8A807C; --anim-band:#AFBCA2;
-  --anim-floor:#3A3433; --anim-mat:#343A31; --anim-trace:#D3A99F; --anim-hole:#252222;
-  --anim-move:#D3A99F; --anim-move-far:#7D625C; --anim-ghost:#3B3534;
+  --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
+  --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C; --anim-joint:#EEE7E3;
 }`;
 /** Regeln für die Szene (Farben nur über --anim-*). */
 const ANIM_RULES_CSS = `
@@ -1863,6 +1998,11 @@ const ANIM_RULES_CSS = `
 .nga .nga-hand{fill:var(--anim-figure)}
 .nga .nga-far .nga-hand{fill:var(--anim-figure-far)}
 .nga .nga-skull{fill:var(--anim-head);stroke:var(--anim-figure);stroke-width:2.1}
+.nga .nga-skull--precise{stroke-width:1.5}
+.nga .nga-limb .nga-neck{stroke:var(--anim-figure);stroke-linecap:round}
+.nga .nga-nose{fill:none;stroke:var(--anim-figure);stroke-width:.7;stroke-linejoin:round}
+.nga .nga-joint{fill:var(--anim-joint);opacity:.7}
+.nga .nga-far .nga-joint{opacity:.35}
 .nga .nga-eye{fill:var(--anim-face)}
 .nga .nga-cheek{fill:var(--anim-work);opacity:.42}
 .nga .nga-sprout path{fill:var(--anim-sprout)}
@@ -1923,6 +2063,11 @@ let cssDone = false;
 /** Fügt die Standard-Stile einmalig ein (im Dokument oder in einem ShadowRoot). */
 function injectAnimCss(root = document.head) {
   if (cssDone && root === document.head) return;
+  if (root === document.head) {
+    adoptCss("nga-css", ANIM_CSS);
+    cssDone = true;
+    return;
+  }
   const st = document.createElement("style");
   st.dataset.nga = "1";
   st.textContent = ANIM_CSS;
@@ -2030,7 +2175,7 @@ function hasMotion(def) {
 }
 
 /** Baut eine Szene (Figur + Geräte) in eine Gruppe. */
-function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true }) {
+function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true, style = "precise", sprout }) {
   const L = {};
   for (const n of LAYERS) L[n] = el("g", { class: "nga-l-" + n }, parent);
   if (def.floor !== false) {
@@ -2039,12 +2184,12 @@ function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true 
   }
   const equip = createEquipment(L, def.props, { detail });
   const moving = emphasis ? movingSegments(def) : new Set();
-  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving,
+  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving, style, sprout,
     muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
   if (ghost && hasMotion(def)) { // Endpose als einfarbige Silhouette ganz hinten
     const gl = {};
     for (const n of ["farLeg", "farArm", "torso", "head", "nearLeg", "nearArm"]) gl[n] = el("g", {}, L.ghost);
-    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true }).update(solve(def.frames[def.frames.length - 1], def.view));
+    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true, style, sprout }).update(solve(def.frames[def.frames.length - 1], def.view));
   }
   return {
     L,
@@ -2148,7 +2293,7 @@ function vectorRunner(wrap, def, o) {
   svg.setAttribute("focusable", "false");
   svg.setAttribute("viewBox", o.frame.join(" "));
   wrap.appendChild(svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame, style: o.style, sprout: o.sprout });
   if (o.arrow) drawTrace(scene.L.trace, def);
   let lastS = -1;
   scene.render(def.frames[0]);
@@ -2170,14 +2315,14 @@ function vectorRunner(wrap, def, o) {
       wrap.appendChild(s2);
       if (o.thumb) {
         s2.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
-        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame }).render(def.reducedPose || last);
+        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame, style: o.style, sprout: o.sprout }).render(def.reducedPose || last);
         return;
       }
       wrap.classList.add("nga-pair");
       const gap = w * 0.16;
       s2.setAttribute("viewBox", `${x} ${y} ${w * 2 + gap} ${h}`);
-      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame }).render(def.frames[0]);
-      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame }).render(last);
+      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame, style: o.style, sprout: o.sprout }).render(def.frames[0]);
+      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame, style: o.style, sprout: o.sprout }).render(last);
       const ax = x + w + gap / 2, ay = y + h * 0.5;
       el("path", { class: "nga-pairarrow", d: `M${ax - 4} ${ay}h8m-3 -3l3 3l-3 3` }, s2);
     },
@@ -2216,7 +2361,7 @@ function pixelRunner(wrap, def, o) {
   svg.setAttribute("viewBox", o.frame.join(" "));
   svg.setAttribute("width", grid); svg.setAttribute("height", grid);
   const style = el("style", {}, svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame, style: o.style, sprout: o.sprout });
   if (o.arrow) drawTrace(scene.L.trace, def, 3.8); // Pixel-Bewegungsspur
 
   async function prepare() {
@@ -2293,7 +2438,10 @@ function pixelRunner(wrap, def, o) {
  * @param {object} cfg
  *   pattern, equipment, options – siehe data/patterns.js bzw. data/exercise-map.js
  *   size: "thumb" | "small" | "large" | Zahl (px)
- *   renderer: "pixel" (Standard, Sprite-Look) | "vector" (glatt, stufenlos)
+ *   renderer: "vector" (glatt, stufenlos – Standard für die große Anleitung) | "pixel" (Sprite-Look,
+ *             Standard für Minis); ohne Angabe: groß = vector, Mini = pixel
+ *   style: "precise" (Standard: erwachsene Proportionen, Gelenkpunkte) | "cute" (runde Figur)
+ *   sprout: Keimi-Spross auf dem Kopf (Standard: nur im Mini bzw. Stil „cute“)
  *   muscles: überschreibt die getönten Muskeln; label: Bildbeschreibung
  *   arrow: Bewegungsspur mit Pfeil (Standard: groß ja), ghost: Endpose als blasse Silhouette (Standard: groß ja)
  *   phases: Phasen-Beschriftung unter der großen Ansicht („runter · hoch“, Standard: groß ja)
@@ -2313,7 +2461,8 @@ function createExerciseAnim(host, cfg = {}) {
   const reduced = cfg.reduced ?? !!(reducedMQ && reducedMQ.matches);
   // Ausschnitt: Mini eng um die Figur, groß etwas luftiger inkl. Kabelrollen
   const frame = thumb ? def.thumbFrame || autoFrame(def) : def.largeFrame || autoFrame(def, 7, true);
-  const renderer = cfg.renderer === "vector" ? "vector" : "pixel";
+  // Darstellung: groß glatt (präzise Winkel und Kontaktpunkte), Mini im Pixel-Look (klare Silhouette)
+  const renderer = cfg.renderer === "vector" || cfg.renderer === "pixel" ? cfg.renderer : thumb ? "pixel" : "vector";
 
   const wrap = document.createElement("div");
   wrap.className = "nga-wrap nga-wrap--" + renderer + (thumb ? " nga-wrap--thumb" : "");
@@ -2322,8 +2471,10 @@ function createExerciseAnim(host, cfg = {}) {
   wrap.setAttribute("aria-label", cfg.label || def.label || "Übungsanimation");
   host.appendChild(wrap);
 
-  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
-    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow]) };
+  const style = cfg.style || "precise";
+  const sprout = cfg.sprout ?? (style === "cute" || thumb); // Spross nur im Mini (Wiedererkennung), nicht in der Anleitung
+  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid, style, sprout,
+    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow, style, sprout]) };
   // Phasen-Beschriftung (z. B. „runter · hoch“): aktive Richtung wird betont
   let phaseEl = null;
   if ((cfg.phases ?? !thumb) && !reduced && def.phases) {
@@ -2396,7 +2547,7 @@ return { ANIM_VARS_CSS, ANIM_RULES_CSS, ANIM_CSS, injectAnimCss, lerpPose, phase
 })();
 
 /* src/data/exercise-map.js */
-const __m5 = (() => {
+const __m6 = (() => {
 /**
  * Nachtgarten – Zuordnung Übung → Animation.
  *
@@ -2469,7 +2620,7 @@ const OVERRIDES = {
   cablecurl: O("curl", "kabel", { handle: "Stange" }),
   k_crosshigh: O("fly", "kabel", { height: "hoch" }),
   k_crosslow: O("fly", "kabel", { height: "tief" }),
-  k_flyflat: O("fly", "bank"),
+  k_flyflat: O("fly", "kabel", { variant: "bench" }),
   k_cpress: O("pushH", "kabel", { variant: "stand" }),
   k_row: O("pullH", "kabel", { handle: "V-Griff" }),
   k_row1: O("pullH", "kabel", { uni: true, handle: "Einzelgriff" }),
@@ -2549,6 +2700,7 @@ const RULES = [
   [/marsch|march|gehen\b|walk|spazier/, () => ["march", "koerper"]],
   [/hip thrust|hüftstoß/, (s, eq) => ["hipthrust", eq, { variant: "bench" }]],
   [/glute bridge|beckenheben|brücke|bridge/, (s) => ["hipthrust", "koerper", { variant: "floor", uni: has(s, /einbein|single/) }]],
+  [/wade|calf/, (s, eq) => ["calfRaise", eq === "maschine" || has(s, /maschine|machine|presse|press/) ? "maschine" : eq === "sonstiges" ? "koerper" : eq, { uni: has(s, /einbein|single|one.?leg/), wall: has(s, /wand|wall/) }]],
   [/donkey|eselstritt|kickback.*(vierfü|quadruped)/, () => ["kickback", "koerper"]],
   [/adduktion|adduktor|adduct/, (s, eq) => ["hipAbd", eq === "maschine" ? "maschine" : "kabel", { variant: "add" }]],
   [/abduktion|abduktor|abduct|fire hydrant/, (s, eq) => ["hipAbd", eq === "maschine" ? "maschine" : "kabel"]],
@@ -2556,7 +2708,6 @@ const RULES = [
   [/beinstrecker|leg extension/, () => ["legExt", "maschine"]],
   [/beinbeuger|leg curl|hamstring curl/, () => ["legCurl", "maschine"]],
   [/beinpresse|leg press/, () => ["legPress", "maschine"]],
-  [/wade|calf/, (s, eq) => ["calfRaise", eq === "maschine" ? "maschine" : eq, { uni: has(s, /einbein|single|one.?leg/), wall: has(s, /wand|wall/) }]],
   [/halbkniestand|hüftbeuger|hip flexor/, () => ["splitsquat", "koerper", { variant: "kneel" }]],
   [/swing/, (s, eq) => ["hinge", eq === "koerper" ? "kettlebell" : eq]],
   [/pull.?through/, () => ["hinge", "kabel"]],
@@ -2575,10 +2726,12 @@ const RULES = [
   [/hängend.*bein|hanging.*(leg|knee)|beinheben|leg raise|knee raise|knieheben/, (s) => ["legRaise", has(s, /hängend|hanging/) ? "stange" : "koerper"]],
   [/crunch|sit.?up|bauchpresse|bauchmaschine|russian twist/, (s, eq) => ["crunch", eq === "kabel" || eq === "maschine" ? eq : "koerper"]],
   [/reverse fl|reverse butterfly|rear delt|pull.?apart|auseinander|band.?zug/, (s, eq) => ["rearFly", has(s, /band|pull.?apart|auseinander/) ? "band" : eq]],
-  [/butterfly|fliegende|\bfly|flye|crossover|cross.?over/, (s, eq, c) => {
-    if (has(s, /butterfly|maschine|machine|pec deck/) || eq === "maschine") return ["fly", "maschine"];
-    if (eq === "kabel" || has(s, /kabel|cable/)) return ["fly", "kabel", { height: c.height || "hoch" }];
-    return ["fly", eq === "kurzhantel" ? "kurzhantel" : "bank"];
+  [/butterfly|pec.?deck|fliegende|\bfly|\bflys|flye|crossover|cross.?over/, (s, eq, c) => {
+    // Butterfly / Pec Deck ist immer die Sitz-Maschine – nie Fliegende am Boden
+    if (has(s, /butterfly|pec.?deck|maschine|machine/) || eq === "maschine") return ["fly", "maschine"];
+    const onBench = has(s, /bank|bench|liegend|lying|flach|flat|schräg|incline|boden|floor/);
+    if (eq === "kabel" || has(s, /kabel|cable/)) return ["fly", "kabel", onBench ? { variant: "bench" } : { height: c.height || "hoch" }];
+    return ["fly", eq === "kurzhantel" || eq === "koerper" ? "kurzhantel" : eq === "band" ? "band" : "bank"];
   }],
   [/seitheben|lateral raise|side raise|seitlich.*heben/, (s, eq) => ["latRaise", eq]],
   [/armkreis|arm circle|schulterkreis/, () => ["latRaise", "koerper", { variant: "circle" }]],
@@ -2656,10 +2809,12 @@ function mapExercise(ex = {}, prefs = {}) {
   if (ov) {
     const options = { ...ov.options };
     if (prefs.handle || ex.att) options.handle = prefs.handle || ex.att;
-    if (prefs.height) options.height = prefs.height;
+    // Eine fest zugeordnete Rollenhöhe („Crossover von oben“) gehört zur Übung und gewinnt.
+    if (prefs.height && !ov.options.height) options.height = prefs.height;
     return { pattern: ov.pattern, equipment: ov.equipment, options, muscles, source: "override" };
   }
-  const ctx = { muscles, handle: handleOf(name, prefs.handle || ex.att), height: prefs.height || heightOf(name) };
+  // Höhe aus dem Namen („von oben“) geht vor die allgemeine Voreinstellung
+  const ctx = { muscles, handle: handleOf(name, prefs.handle || ex.att), height: heightOf(name) || prefs.height };
   for (const [re, fn] of RULES) {
     if (!re.test(name)) continue;
     const [pattern, eqo, opt = {}] = fn(name, eq, ctx);
@@ -2680,7 +2835,7 @@ return { GEAR, OVERRIDES, gearFromName, mapExercise };
 /* Seite */
 
 const { createExerciseAnim } = __m0;
-const { mapExercise } = __m5;
+const { mapExercise } = __m6;
 
 /* Muskelnamen (wie in data/muscles.js) */
 const MUSCLE = { chest: "Brust", shoulders: "Schultern", biceps: "Bizeps", triceps: "Trizeps", forearms: "Unterarme",
@@ -2705,6 +2860,10 @@ const EX = [
   { id: "legext", n: "Beinstrecker", g: "Maschinen", m: ["quads"] },
   { id: "legcurl", n: "Beinbeuger", g: "Maschinen", m: ["hams"] },
   { id: "chestpress", n: "Brustpresse", g: "Maschinen", m: ["chest", "triceps"] },
+  { id: "fly", n: "Butterfly", g: "Maschinen", m: ["chest"] },
+  { n: "Kurzhantel-Flys", g: "Kurzhanteln", m: ["chest"] },
+  { id: "dips", n: "Dips", g: "Körpergewicht", m: ["triceps", "chest"] },
+  { id: "calf", n: "Wadenheben", g: "Körpergewicht", m: ["calves"] },
   { id: "bench", n: "Bankdrücken", g: "Langhantel", m: ["chest", "triceps", "shoulders"] },
   { id: "squat", n: "Kniebeugen", g: "Langhantel", m: ["quads", "glutes"] },
   { id: "rdl", n: "Rumänisches Kreuzheben", g: "Langhantel", m: ["hams", "glutes", "lowerback"] },
@@ -2723,7 +2882,7 @@ const EX = [
 ];
 
 const grid = document.getElementById("grid");
-const st = { mode: "both", calm: false };
+const st = { mode: "vector", calm: false };
 let insts = [];
 
 function build() {
@@ -2749,11 +2908,13 @@ function build() {
         label: `${ex.n} – Animation`, renderer: r, offset: i * 0.37, reduced: st.calm || undefined };
       insts.push(createExerciseAnim(fig, { ...cfg, size: "large" }));
       if (renderers.length > 1) fig.insertAdjacentHTML("beforeend", `<figcaption>${r === "pixel" ? "Pixel" : "Glatt"}</figcaption>`);
-      const mini = document.createElement("div");
-      mini.className = "mini";
-      minis.appendChild(mini);
-      insts.push(createExerciseAnim(mini, { ...cfg, size: "thumb", label: `${ex.n} – Mini-Vorschau` }));
     }
+    // Mini immer im Pixel-Look (Standard für kleine Größen)
+    const mini = document.createElement("div");
+    mini.className = "mini";
+    minis.appendChild(mini);
+    insts.push(createExerciseAnim(mini, { pattern: map.pattern, equipment: map.equipment, options: map.options, muscles: map.muscles,
+      size: "thumb", offset: i * 0.37, reduced: st.calm || undefined, label: `${ex.n} – Mini-Vorschau` }));
     minis.insertAdjacentHTML("beforeend", "<span>Mini</span>");
   });
 }

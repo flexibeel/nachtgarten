@@ -28,21 +28,21 @@ export const ANIM_VARS_CSS = `
   --anim-work:#A9695D; --anim-sprout:#93A485; --anim-weight:#5F5652; --anim-weight-back:#8D8380;
   --anim-env:#EFE7E2; --anim-env-line:#D2C7C1; --anim-cable:#9A8F8A; --anim-band:#9DAA8F;
   --anim-floor:#E2D8D2; --anim-mat:#E3E8DD; --anim-trace:#B58C83; --anim-hole:#FFFCFA;
-  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7;
+  --anim-move:#CB9C91; --anim-move-far:#E6CEC7; --anim-ghost:#E7DDD7; --anim-joint:#6B605B;
 }
 @media (prefers-color-scheme:dark){:where(:root:not([data-theme="light"])){
   --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
   --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
-  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C; --anim-joint:#EEE7E3;
 }}
 :where(:root[data-theme="dark"]){
   --anim-figure:#BDB1AB; --anim-figure-far:#746B68; --anim-head:#ECE3DE; --anim-face:#3A3433;
   --anim-work:#F1CDC4; --anim-sprout:#AFBCA2; --anim-weight:#E4DBD6; --anim-weight-back:#9E9590;
   --anim-env:#3A3534; --anim-env-line:#575050; --anim-cable:#928884; --anim-band:#AFBCA2;
   --anim-floor:#46403F; --anim-mat:#3B4237; --anim-trace:#D3A99F; --anim-hole:#2E2A2A;
-  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C;
+  --anim-move:#D3A99F; --anim-move-far:#84685F; --anim-ghost:#433D3C; --anim-joint:#EEE7E3;
 }`;
 /** Regeln für die Szene (Farben nur über --anim-*). */
 export const ANIM_RULES_CSS = `
@@ -54,6 +54,11 @@ export const ANIM_RULES_CSS = `
 .nga .nga-hand{fill:var(--anim-figure)}
 .nga .nga-far .nga-hand{fill:var(--anim-figure-far)}
 .nga .nga-skull{fill:var(--anim-head);stroke:var(--anim-figure);stroke-width:2.1}
+.nga .nga-skull--precise{stroke-width:1.5}
+.nga .nga-limb .nga-neck{stroke:var(--anim-figure);stroke-linecap:round}
+.nga .nga-nose{fill:none;stroke:var(--anim-figure);stroke-width:.7;stroke-linejoin:round}
+.nga .nga-joint{fill:var(--anim-joint);opacity:.7}
+.nga .nga-far .nga-joint{opacity:.35}
 .nga .nga-eye{fill:var(--anim-face)}
 .nga .nga-cheek{fill:var(--anim-work);opacity:.42}
 .nga .nga-sprout path{fill:var(--anim-sprout)}
@@ -226,7 +231,7 @@ function hasMotion(def) {
 }
 
 /** Baut eine Szene (Figur + Geräte) in eine Gruppe. */
-function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true }) {
+function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true, style = "precise", sprout }) {
   const L = {};
   for (const n of LAYERS) L[n] = el("g", { class: "nga-l-" + n }, parent);
   if (def.floor !== false) {
@@ -235,12 +240,12 @@ function buildScene(parent, def, { detail, ghost, pixel, frame, emphasis = true 
   }
   const equip = createEquipment(L, def.props, { detail });
   const moving = emphasis ? movingSegments(def) : new Set();
-  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving,
+  const fig = createFigure(L, { view: def.view, back: def.back, detail, pixel, moving, style, sprout,
     muscles: def.muscles, breath: def.breath, pelvic: def.pelvic });
   if (ghost && hasMotion(def)) { // Endpose als einfarbige Silhouette ganz hinten
     const gl = {};
     for (const n of ["farLeg", "farArm", "torso", "head", "nearLeg", "nearArm"]) gl[n] = el("g", {}, L.ghost);
-    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true }).update(solve(def.frames[def.frames.length - 1], def.view));
+    createFigure(gl, { view: def.view, back: def.back, detail: false, ghost: true, style, sprout }).update(solve(def.frames[def.frames.length - 1], def.view));
   }
   return {
     L,
@@ -344,7 +349,7 @@ function vectorRunner(wrap, def, o) {
   svg.setAttribute("focusable", "false");
   svg.setAttribute("viewBox", o.frame.join(" "));
   wrap.appendChild(svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, ghost: o.ghost, frame: o.frame, style: o.style, sprout: o.sprout });
   if (o.arrow) drawTrace(scene.L.trace, def);
   let lastS = -1;
   scene.render(def.frames[0]);
@@ -366,14 +371,14 @@ function vectorRunner(wrap, def, o) {
       wrap.appendChild(s2);
       if (o.thumb) {
         s2.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
-        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame }).render(def.reducedPose || last);
+        buildScene(el("g", {}, s2), def, { detail: false, frame: o.frame, style: o.style, sprout: o.sprout }).render(def.reducedPose || last);
         return;
       }
       wrap.classList.add("nga-pair");
       const gap = w * 0.16;
       s2.setAttribute("viewBox", `${x} ${y} ${w * 2 + gap} ${h}`);
-      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame }).render(def.frames[0]);
-      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame }).render(last);
+      buildScene(el("g", {}, s2), def, { detail: true, frame: o.frame, style: o.style, sprout: o.sprout }).render(def.frames[0]);
+      buildScene(el("g", { transform: `translate(${w + gap} 0)` }, s2), def, { detail: true, frame: o.frame, style: o.style, sprout: o.sprout }).render(last);
       const ax = x + w + gap / 2, ay = y + h * 0.5;
       el("path", { class: "nga-pairarrow", d: `M${ax - 4} ${ay}h8m-3 -3l3 3l-3 3` }, s2);
     },
@@ -412,7 +417,7 @@ function pixelRunner(wrap, def, o) {
   svg.setAttribute("viewBox", o.frame.join(" "));
   svg.setAttribute("width", grid); svg.setAttribute("height", grid);
   const style = el("style", {}, svg);
-  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame });
+  const scene = buildScene(el("g", {}, svg), def, { detail: !o.thumb, pixel: true, ghost: o.ghost, frame: o.frame, style: o.style, sprout: o.sprout });
   if (o.arrow) drawTrace(scene.L.trace, def, 3.8); // Pixel-Bewegungsspur
 
   async function prepare() {
@@ -489,7 +494,10 @@ function pixelRunner(wrap, def, o) {
  * @param {object} cfg
  *   pattern, equipment, options – siehe data/patterns.js bzw. data/exercise-map.js
  *   size: "thumb" | "small" | "large" | Zahl (px)
- *   renderer: "pixel" (Standard, Sprite-Look) | "vector" (glatt, stufenlos)
+ *   renderer: "vector" (glatt, stufenlos – Standard für die große Anleitung) | "pixel" (Sprite-Look,
+ *             Standard für Minis); ohne Angabe: groß = vector, Mini = pixel
+ *   style: "precise" (Standard: erwachsene Proportionen, Gelenkpunkte) | "cute" (runde Figur)
+ *   sprout: Keimi-Spross auf dem Kopf (Standard: nur im Mini bzw. Stil „cute“)
  *   muscles: überschreibt die getönten Muskeln; label: Bildbeschreibung
  *   arrow: Bewegungsspur mit Pfeil (Standard: groß ja), ghost: Endpose als blasse Silhouette (Standard: groß ja)
  *   phases: Phasen-Beschriftung unter der großen Ansicht („runter · hoch“, Standard: groß ja)
@@ -509,7 +517,8 @@ export function createExerciseAnim(host, cfg = {}) {
   const reduced = cfg.reduced ?? !!(reducedMQ && reducedMQ.matches);
   // Ausschnitt: Mini eng um die Figur, groß etwas luftiger inkl. Kabelrollen
   const frame = thumb ? def.thumbFrame || autoFrame(def) : def.largeFrame || autoFrame(def, 7, true);
-  const renderer = cfg.renderer === "vector" ? "vector" : "pixel";
+  // Darstellung: groß glatt (präzise Winkel und Kontaktpunkte), Mini im Pixel-Look (klare Silhouette)
+  const renderer = cfg.renderer === "vector" || cfg.renderer === "pixel" ? cfg.renderer : thumb ? "pixel" : "vector";
 
   const wrap = document.createElement("div");
   wrap.className = "nga-wrap nga-wrap--" + renderer + (thumb ? " nga-wrap--thumb" : "");
@@ -518,8 +527,10 @@ export function createExerciseAnim(host, cfg = {}) {
   wrap.setAttribute("aria-label", cfg.label || def.label || "Übungsanimation");
   host.appendChild(wrap);
 
-  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid,
-    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow]) };
+  const style = cfg.style || "precise";
+  const sprout = cfg.sprout ?? (style === "cute" || thumb); // Spross nur im Mini (Wiedererkennung), nicht in der Anleitung
+  const o = { thumb, frame, ghost: cfg.ghost ?? !thumb, arrow: cfg.arrow ?? !thumb, grid: cfg.grid, style, sprout,
+    key: JSON.stringify([cfg.pattern, opts, cfg.muscles || null, thumb, cfg.ghost, cfg.arrow, style, sprout]) };
   // Phasen-Beschriftung (z. B. „runter · hoch“): aktive Richtung wird betont
   let phaseEl = null;
   if ((cfg.phases ?? !thumb) && !reduced && def.phases) {
