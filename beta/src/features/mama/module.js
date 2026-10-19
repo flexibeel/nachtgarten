@@ -1,6 +1,6 @@
 /**
  * Modul „Schwangerschaft & Rückbildung“: Tab Mama und eine Kachel mit SSW bzw. Wochen
- * nach der Geburt. „Sport starten“ führt dann zum Plan der Woche (training/module.js).
+ * nach der Geburt. „Sport starten“ führt zur Mama-Ansicht mit „Heute für dich“; Heimpläne laufen im Player.
  */
 
 import { mamaStatus } from '../../domain/pregnancy.js';
@@ -8,7 +8,7 @@ import { t } from '../../data/texts/i18n.js';
 import { replace } from '../../ui/dom.js';
 import { linkTile } from '../../ui/tile.js';
 import { reactivePart } from '../part.js';
-import { placeholder } from '../placeholder/placeholder.js';
+import { mountMama } from './mama-view.js';
 import { statusLabel } from './status.js';
 
 /** @param {import('../context.js').AppContext} ctx */
@@ -37,6 +37,6 @@ export const mamaModule = {
   labelKey: 'module.mama.label',
   hintKey: 'module.mama.hint',
   icon: 'mama',
-  views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount: placeholder('mama', { classic: 'mama' }) }],
+  views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount: mountMama }],
   tiles: [{ id: 'mama', titleKey: 'tile.mama', render: statusTile, size: 'small' }],
 };
