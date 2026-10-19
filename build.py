@@ -31,7 +31,6 @@ src=src.replace("<title>"+(m.group(1) if m else "")+"</title>","<title>Nachtgart
 out=head+src+tail
 pass
 open("index.html","w").write(out)
-shutil.rmtree("demos",ignore_errors=True);pass
 man={"name":"Nachtgarten","short_name":"Nachtgarten","description":"Dein persönlicher Begleiter für Training, Fokus und Alltag.","lang":"de","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#0F1312","theme_color":"#0F1312",
  "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
 json.dump(man,open("manifest.webmanifest","w"),ensure_ascii=False,indent=1)
@@ -45,6 +44,5 @@ self.addEventListener("fetch",e=>{{const u=new URL(e.request.url);if(e.request.m
  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))}});
 '''
 open("sw.js","w").write(sw)
-open("README.md","w").write("# Nachtgarten\n\nPersönliche Begleiter-App (PWA). Läuft komplett im Browser, alle Daten bleiben lokal auf dem Gerät.\n\n- Übungsfotos und Anleitungen: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (gemeinfrei, Unlicense)\n- Schriften: Bricolage Grotesque, Onest, JetBrains Mono (SIL Open Font License)\n")
 open(".nojekyll","w").write("")
 print("built",len(out)//1024,"KB, version",ver)
