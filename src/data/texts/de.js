@@ -592,6 +592,7 @@ export const TEXTS = Object.freeze({
   'wizard.results': 'Das könnte zu dir passen',
   'wizard.none': 'Dazu passt keine Vorlage richtig. Schau gern bei allen Plänen.',
   'library.steps': 'Ausführliche Anleitung',
+  'share.companionSeal': 'Mit Begleiter-Siegel',
   'share.title': 'Teilen',
   'share.choose': 'Vorlage wählen',
   'share.detail': 'Detailgrad',

@@ -188,6 +188,22 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
 - **Erinnerung** „Sicherung machen?“ auf Heute (`backupDue`): mit Daten, nicht in der ersten Woche, höchstens
   monatlich (`settings.backupAt`, `settings.backupNudgeAt`), auch in Schlicht.
 
+## Entscheidungen (Übung zuerst, Varianten, übersichtlicher)
+
+- **„So geht’s“ zuerst** (`showIntro` in domain/live-session.js): Beim ersten Mal einer Übung zeigt das Live-Training
+  die große Animation, zwei, drei kurze Hinweise (`cues`) und die Geräte-Wahl; eine Hauptaktion „Los geht’s“. Danach
+  die Eintrage-Ansicht mit kleiner Animation (antippen = wieder groß). Einstellung `settings.howTo`
+  (`first` | `always` | `never`, unter „Mehr“). Gesehen merkt `exercises.seen`.
+- **Varianten** (`data/variants.js`, `domain/variants.js`): kuratierte Gruppen (Beinpresse 45°/horizontal/Hack/Kurzhantel,
+  Bankdrücken, Rudern …). Jede Variante hat eine eigene Id (vorhandene Übung oder abgeleitet „press~horizontal“),
+  dadurch Verlauf, letztes Gewicht und Vorschlag je Gerät. Gewählte Variante je Gruppe in `exercises.variants`; ein Plan
+  startet an der zuletzt gewählten Maschine (`applyVariants`). Kabel: Aufsatz und Rollenhöhe als Chips in „So geht’s“.
+- **Weniger Lärm**: Kontextzeile gedämpft, Name groß; Zeit, Anleitung-Einstellung und ausführliche Anleitung unter
+  „Mehr“; eine Hauptaktion je Ansicht. Bibliothek: Kategorien als Kacheln mit Pixel-Symbol, dann Liste mit Vorschau
+  (Standbild, bewegt sich beim Drücken, erst gebaut, wenn sichtbar).
+- **Teilen**: Standard-Zeichen ist der schlichte Mond der Karten; das eigene Tier als Siegel nur über
+  „Mit Begleiter-Siegel“ (aus).
+
 ## Releases
 
 - `main` = live auf GitHub Pages. Entwicklung auf `v2`, Zusammenführung erst nach grünen Tests.

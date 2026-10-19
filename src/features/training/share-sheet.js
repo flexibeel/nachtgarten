@@ -7,6 +7,7 @@
 import { trainingDaysThisMonth } from '../../domain/garden.js';
 import { t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
+import { switchRow } from '../../ui/fields.js';
 import { segmented } from '../../ui/chips.js';
 import { icon } from '../../ui/icons.js';
 import { openSheet } from '../../ui/sheet.js';
@@ -49,17 +50,15 @@ export function shareData(ctx, summary) {
 export function openShare(ctx, summary) {
   const data = shareData(ctx, summary);
   const suggestions = suggestCards(data);
-  // Stempel und Siegel zeigen das eigene Tier (in Schlicht der Mond).
-  const seal = isPlain(ctx)
-    ? { seal: 'mond' }
-    : { sealRows: sealForSpecies(ctx.companion().species) ?? undefined, companion: { species: ctx.companion().species } };
-  const state = { index: 0, detail: /** @type {'kompakt'|'detailliert'} */ ('kompakt'), format: /** @type {'story'|'feed'} */ ('story') };
+  // Standard ist das schlichte Mond-Zeichen der Karten; das eigene Tier als Siegel nur auf Wunsch.
+  const animalSeal = () => ({ sealRows: sealForSpecies(ctx.companion().species) ?? undefined, companion: { species: ctx.companion().species } });
+  const state = { withCompanion: false, index: 0, detail: /** @type {'kompakt'|'detailliert'} */ ('kompakt'), format: /** @type {'story'|'feed'} */ ('story') };
   const rail = h('div', { class: 'share-rail', role: 'listbox', 'aria-label': t('share.choose') });
   const reason = h('p', { class: 'share-reason', 'aria-live': 'polite' });
   /** @type {string[]} */
   let urls = [];
 
-  const optsFor = (s, extra = {}) => ({ ...s.opts, detail: state.detail, format: state.format, ...seal, ...extra });
+  const optsFor = (s, extra = {}) => ({ ...s.opts, detail: state.detail, format: state.format, ...(state.withCompanion ? animalSeal() : {}), ...extra });
   const render = (s, extra) => renderCard(data, s, optsFor(s, extra));
 
   const paint = async () => {
@@ -112,6 +111,9 @@ export function openShare(ctx, summary) {
   const toggles = h('div', { class: 'share-toggles' },
     segmented({ label: t('share.detail'), options: [{ value: 'kompakt', label: t('share.compact') }, { value: 'detailliert', label: t('share.detailed') }], value: state.detail, onChange: (v) => { state.detail = v; paint(); } }),
     segmented({ label: t('share.format'), options: [{ value: 'story', label: t('share.story') }, { value: 'feed', label: t('share.feed') }], value: state.format, onChange: (v) => { state.format = v; paint(); } }),
+    isPlain(ctx)
+      ? null
+      : switchRow({ label: t('share.companionSeal'), checked: false, onChange: (on) => { state.withCompanion = on; paint(); } }),
   );
 
   const current = () => suggestions[state.index];

@@ -589,6 +589,7 @@ export const TEXTS = Object.freeze({
   'wizard.results': 'These could suit you',
   'wizard.none': 'No template fits well. Have a look at all plans.',
   'library.steps': 'Detailed instructions',
+  'share.companionSeal': 'With companion seal',
   'share.title': 'Share',
   'share.choose': 'Choose a design',
   'share.detail': 'Detail',

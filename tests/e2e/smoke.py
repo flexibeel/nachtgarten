@@ -359,6 +359,7 @@ def check_live(browser, base, scheme):
     page.click(".finish .sheet-footer .button-primary")
     page.wait_for_selector(".share .share-card .share-img")
     check(page.locator(".share-card").count() >= 3, "zu wenige Vorschläge")
+    check(page.get_attribute(".share .switch-row:has-text('Begleiter-Siegel')", "aria-checked") == "false", "Begleiter-Siegel nicht standardmäßig aus")
     page.wait_for_timeout(400)
     shot(page, f"{scheme}_share")
     page.click(".share .segment:has-text('Detailliert')")
