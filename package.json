@@ -2,9 +2,11 @@
   "name": "nachtgarten",
   "version": "2.0.0-dev",
   "private": true,
-  "description": "Nachtgarten v2 – persönliche Begleiter-App (PWA), Domain- und Kernlogik",
+  "description": "Nachtgarten v2 – persönliche Begleiter-App (PWA)",
   "type": "module",
   "scripts": {
-    "test": "node --test \"tests/unit/**/*.test.js\""
+    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "test:e2e": "python3 tests/e2e/smoke.py",
+    "deploy:beta": "python3 scripts/deploy-beta.py"
   }
 }

@@ -26,23 +26,27 @@ Core (core/*)                Speicher-Adapter, Datum, Router, Ereignisse, Plattf
 ## Ordner
 
 ```
-index.html                Shell: Kopf, Wurzel-Element, Tab-Leiste, lädt src/main.js
-manifest.webmanifest, sw.js, icons/, fonts/, demos/
+index.html                Shell: Kopf (CSP, Manifest, Icons, theme-color je Schema), lädt src/main.js
+manifest.webmanifest, sw.js, icons/, fonts/
 src/
-  main.js                 Start, Migration alter Daten, Router-Setup
+  main.js                 Start: v1-Daten übernehmen, Design, Registry, Shell, Router, Onboarding
   core/                   store.js, dates.js, events.js, router.js, platform.js, format.js
-  domain/                 training.js, progression.js, week.js, pregnancy.js, account.js,
-                          buddy.js, habits.js, feed.js, ics.js, backup.js, migrate.js
-  data/                   exercises.js, patterns.js, mama-plans.js, begin-plans.js, texts/*
-  ui/                     sheet.js, toast.js, stepper.js, numpad.js, chips.js, icons.js,
-                          actionbar.js, anim/ (Übungsanimationen)
-  features/               heute/, training/, live/, library/, mama/, player/,
-                          focus/ (Umlenken & Zeitkonto), feed/, profile/, onboarding/
-  styles/                 tokens.css (Design-Werte hell/dunkel), base.css, components.css
+  domain/                 training.js, progression.js, week.js, pregnancy.js, account.js, buddy.js,
+                          companion.js, modules.js, today.js, habits.js, feed.js, ics.js, backup.js, migrate.js
+  data/                   goals.js, gear.js, companions.js, mama-safety.js, muscles.js, patterns.js,
+                          texts/de.js (Hinweise), texts/companion.js (Sätze des Begleiters)
+  ui/                     dom.js, icons.js, sheet.js, toast.js, chips.js, stepper.js, numpad.js, fields.js,
+                          card.js, tile.js, ring.js, actionbar.js, theme.js, companion.js,
+                          companions/<art>.js (Zeichnung je Begleiter-Art), anim/ (Übungsanimationen)
+  features/               context.js, registry.js, modules.js, shell.js, part.js,
+                          heute/, onboarding/, profile/, privacy/, settings/, companion/, placeholder/,
+                          training/, mama/, habits/, focus/, ideen/   (je Modul: module.js + Kacheln)
+  styles/                 tokens.css (Design-Werte hell/dunkel), base.css, components.css, screens.css
 tests/
-  unit/                   node --test (Domain-Logik)
-  e2e/                    Playwright (wichtigste Abläufe im simulierten Handy)
-docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, BACKLOG.md, NATIVE.md
+  unit/                   node --test (Domain-Logik, Registry, reine UI-Logik)
+  e2e/smoke.py            Playwright (Python) im simulierten Handy, hell und dunkel
+scripts/deploy-beta.py    Beta nach main/beta/ kopieren, committen, pushen
+docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.md
 ```
 
 ## Regeln
@@ -85,6 +89,41 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, BACKLOG.md, NATIV
 - **Tests**: `npm test` startet `node --test "tests/unit/**/*.test.js"` (Node ≥ 21 erwartet ein
   Datei-Muster statt eines Ordners). Die Tests laufen fest in `Europe/Berlin`
   (`tests/unit/helpers/env.js`), damit Zeitumstellungs-Fälle überall gleich geprüft werden.
+
+## Entscheidungen (Stufe 2: Shell, Design-System, erste Bildschirme)
+
+- **Module & Registry** (`features/registry.js`, Logik in `domain/modules.js`): Jedes Feature ist ein
+  Modul `{id, label, hint, icon, views[], tiles[]}` und meldet sich in `features/modules.js` an.
+  Eine Ansicht (`{route, title, mount, tab?, chrome?, aliases?, modules?}`) wird Route und optional Tab,
+  eine Kachel (`{id, title, render(ctx) → {el, destroy}, size?, modules?}`) erscheint auf „Heute“.
+  `modules` erlaubt geteilte Teile („Sport starten“ und Wochenring gehören zu Training, sind aber
+  auch bei Schwangerschaft & Rückbildung sichtbar). Shell, Tab-Leiste, „Heute“, Onboarding und Profil
+  fragen nur die Registry: **ein ausgeschaltetes Modul ist überall unsichtbar** (keine Kachel, kein Tab,
+  Direktsprung landet auf „Heute“, keine Sätze des Begleiters dazu). Module heute: `train`, `mama`,
+  `habits`, `handy`, `ideen`; ein Modul „Aufhören“ (Rauchen, Cannabis) kommt als weiteres Modul dazu.
+- **Einstellungen**: `ng2.settings.enabledModules` (null = Standard `train` + `habits`) und
+  `ng2.settings.tileOrder` (Kachel-Ids; neue Kacheln reihen sich an ihrer Standard-Position dahinter ein).
+  Das letzte Modul lässt sich nicht abschalten. Reihenfolge ändert man im Profil („Heute anordnen“).
+  v1-Schwerpunkte (`lab.foci`) werden zu Modulen, plus `habits` (in v1 immer sichtbar).
+- **Begleiter**: `profile.companion = {species, name}`; Ton, an/aus und Wachstum bleiben in `ng2.buddy`.
+  Arten stehen in `data/companions.js` (Standardname, Stufen-Namen), ihre Zeichnung in
+  `ui/companions/<art>.js`; `ui/companion.js` wählt sie über die Art-Id. Texte nutzen nur Platzhalter
+  (`{name}` Begleiter, `{user}` Person); artspezifische Sätze liegen getrennt (`SPECIES_LINES`).
+  Neue Art = Eintrag in `SPECIES` + Zeichenfunktion in `ART` (+ optional eigene Sätze).
+- **Bildschirme** bestehen aus `ui/`-Bausteinen; ein Bildschirmteil ist ein `Part` `{el, destroy}`, der
+  über `ctx.watch(bereiche, …)` nur auf die Speicher-Bereiche hört, die er zeigt (`features/part.js`).
+- **App-Kontext** (`features/context.js`): Speicher, Ereignisse, Registry, Uhr, Navigation, Design –
+  Features greifen auf nichts Globales zu. `ctx.reload()` baut nach Wiederherstellen/Löschen neu auf.
+- **Router**: Hash-Routen (`#heute`, `#training`, `#live`, `#mama`, `#umlenken` → `#fokus`, `#feed`,
+  `#kurz`, `#ideen`); ohne Hash gilt die Startansicht aus den Einstellungen (nur erreichbare Ziele).
+- **Design**: `data-theme` am Wurzelelement (fehlt = System über `prefers-color-scheme`), `theme-color`
+  je Schema. Schriften lokal (WOFF, Latein + Deutsch). Keine Inline-Skripte/-Styles (CSP im Kopf).
+- **Plattform** (`core/platform.js`): Haptik (nur direkt nach einer Berührung), Wake Lock, Datei
+  speichern (Teilen-Menü oder Download), Datei wählen, Zwischenablage, Standalone, Installations-Dialog.
+  Alles fällt ohne Unterstützung still weg.
+- **Beta**: `scripts/deploy-beta.py` kopiert die lauffähige App nach `main:/beta/` (eigenes Manifest
+  „Nachtgarten Beta“, eigener Service Worker mit eigenem Cache-Präfix). v2 speichert unter `ng2.*` und
+  liest `lab.*` nur, deshalb können v1 und Beta denselben Ursprung teilen.
 
 ## Releases
 

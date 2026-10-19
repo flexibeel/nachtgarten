@@ -1,7 +1,50 @@
-const V="ng-a9ae104eff";const SHELL=["./","index.html","manifest.webmanifest","fonts/bricolage.woff","fonts/onest.woff","fonts/jetbrains.woff","icons/icon-192.png","icons/icon-512.png","icons/apple-touch-icon.png"];
-self.addEventListener("install",e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
-self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V&&k!=="ng-demos").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
-self.addEventListener("fetch",e=>{const u=new URL(e.request.url);if(e.request.method!=="GET"||u.origin!==location.origin)return;
- if(u.pathname.includes("/demos/")){e.respondWith(caches.open("ng-demos").then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(n=>{if(n.ok)c.put(e.request,n.clone());return n}))));return}
- if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(n=>{caches.open(V).then(c=>c.put("index.html",n.clone()));return n}).catch(()=>caches.match("index.html")));return}
- e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});
+/*
+ * Service Worker: Netz zuerst, bei fehlendem Netz aus dem Zwischenspeicher.
+ * So gibt es nie veraltete Dateien, offline läuft die zuletzt geladene Fassung.
+ * PREFIX, VERSION und PRECACHE ersetzt scripts/deploy-beta.py beim Veröffentlichen.
+ * Aufgeräumt werden nur eigene alte Caches (gleicher PREFIX), nie die anderer Fassungen.
+ */
+const PREFIX = 'ng2-dev-';
+const VERSION = 'local';
+const CACHE = PREFIX + VERSION;
+const PRECACHE = ['./', 'index.html'];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .catch(() => {})
+      .then(() => self.skipWaiting()),
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim()),
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (event.request.method !== 'GET' || url.origin !== location.origin) return;
+  const scope = new URL(self.registration.scope);
+  if (!url.pathname.startsWith(scope.pathname)) return;
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request.mode === 'navigate' ? 'index.html' : event.request, copy));
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cache = await caches.open(CACHE);
+        return (await cache.match(event.request, { ignoreSearch: true })) ?? (event.request.mode === 'navigate' ? cache.match('index.html') : Response.error());
+      }),
+  );
+});
