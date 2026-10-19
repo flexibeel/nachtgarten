@@ -18,12 +18,12 @@ import { settingsPart } from './settings.js';
  * @returns {{nodes: HTMLElement[], parts: Part[]}}
  */
 function moduleTiles(ctx) {
-  const { enabledModules, tileOrder } = ctx.store.settings.get();
+  const { enabledModules, tileOrder, hiddenTiles = [] } = ctx.store.settings.get();
   const parts = [];
   const nodes = [];
   /** @type {HTMLElement|null} */
   let grid = null;
-  for (const tile of ctx.registry.tiles(enabledModules, tileOrder)) {
+  for (const tile of ctx.registry.tiles(enabledModules, tileOrder).filter((x) => !hiddenTiles.includes(x.id))) {
     const part = tile.render(ctx);
     parts.push(part);
     if (!part.el) continue;
@@ -59,10 +59,13 @@ export function mountHeute(ctx, view) {
   paintTiles();
 
   // Module an/aus oder neue Reihenfolge: Kacheln neu zusammenstellen.
-  let last = JSON.stringify([ctx.store.settings.get().enabledModules, ctx.store.settings.get().tileOrder]);
+  const key = () => {
+    const { enabledModules, tileOrder, hiddenTiles } = ctx.store.settings.get();
+    return JSON.stringify([enabledModules, tileOrder, hiddenTiles]);
+  };
+  let last = key();
   const off = ctx.watch(['settings'], () => {
-    const { enabledModules, tileOrder } = ctx.store.settings.get();
-    const next = JSON.stringify([enabledModules, tileOrder]);
+    const next = key();
     if (next !== last) {
       last = next;
       paintTiles();

@@ -72,7 +72,7 @@ test('App-Registry: alle Module angemeldet, Standard zeigt Training und Gewohnhe
   const r = createAppRegistry();
   assert.deepEqual(r.ids(), ['train', 'mama', 'habits', 'handy', 'ideen']);
   assert.deepEqual(r.enabled(null), ['train', 'habits']);
-  assert.deepEqual(r.tiles(null).map((t) => t.id), ['sport', 'week', 'one-thing', 'habit', 'dump']);
+  assert.deepEqual(r.tiles(null).map((t) => t.id), ['garden', 'sport', 'week', 'one-thing', 'habit', 'dump']);
   assert.deepEqual(r.tabs(null).map((t) => t.route), ['training']);
   assert.deepEqual(r.tabs(['ideen']).map((t) => t.route), ['ideen'], 'Ideen-Labor nur, wenn an');
   assert.equal(r.view('fokus', ['train']), null);

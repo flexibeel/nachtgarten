@@ -79,9 +79,31 @@ function tileOrderList(ctx) {
         },
         icon(delta < 0 ? 'chevronUp' : 'chevronDown', { size: 20 }),
       );
+    const hidden = ctx.store.settings.get().hiddenTiles ?? [];
+    const eye = (tile) => {
+      const off = hidden.includes(tile.id);
+      return h(
+        'button',
+        {
+          type: 'button',
+          class: 'icon-button order-eye',
+          'aria-pressed': String(!off),
+          'aria-label': t('profile.show', { title: t(tile.titleKey) }),
+          on: {
+            click: () => {
+              haptic('select');
+              ctx.store.settings.update((s) => ({ ...s, hiddenTiles: off ? (s.hiddenTiles ?? []).filter((x) => x !== tile.id) : [...(s.hiddenTiles ?? []), tile.id] }));
+            },
+          },
+        },
+        icon(off ? 'eyeOff' : 'eye', { size: 20 }),
+      );
+    };
     replace(
       list,
-      tiles.map((tile, i) => h('li', { class: 'order-item' }, h('span', { class: 'order-title', text: t(tile.titleKey) }), arrow(tile, -1, i), arrow(tile, 1, i))),
+      tiles.map((tile, i) =>
+        h('li', { class: ['order-item', hidden.includes(tile.id) && 'is-hidden'] }, h('span', { class: 'order-title', text: t(tile.titleKey) }), eye(tile), arrow(tile, -1, i), arrow(tile, 1, i)),
+      ),
     );
   };
   paint();
@@ -204,7 +226,7 @@ function buildProfile(ctx, sheet, cleanups) {
       ),
     ),
     section(t('profile.modules'), modules, mamaEdit),
-    section(t('profile.order'), order.el),
+    section(t('profile.order'), order.el, h('p', { class: 'field-hint', text: t('profile.orderHint') })),
     companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }),
     section(t('profile.view'), lang.el, theme.el, start.el),
     section(t('data.title'), privacyPanel(ctx)),
