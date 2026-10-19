@@ -8,6 +8,7 @@
 
 import { AREA_NAMES, SCHEMA_VERSION, defaultOf } from '../core/store.js';
 import { convertV1 } from './migrate.js';
+import { daysBetween, isDateKey } from '../core/dates.js';
 
 /** @typedef {import('../core/store.js').Store} Store */
 /** @typedef {import('../core/store.js').AreaName} AreaName */
@@ -119,4 +120,22 @@ export function restoreBackup(store, data, now) {
     createdAt: meta.createdAt ?? stamp,
     migratedFromV1: meta.migratedFromV1 ?? stamp,
   });
+}
+
+/** Höchstens so oft erinnert „Heute“ an eine Sicherung (Tage). */
+export const BACKUP_NUDGE_DAYS = 30;
+/** Neue Nutzer bekommen die erste Erinnerung frühestens nach so vielen Tagen. */
+export const BACKUP_GRACE_DAYS = 7;
+
+/**
+ * Ist eine sanfte Erinnerung „Sicherung machen?“ fällig?
+ * Nur mit eigenen Daten (Pläne oder Trainings), höchstens einmal im Monat, nicht in der ersten Woche.
+ * @param {{backupAt: string|null, nudgeAt: string|null, createdAt: string|null, today: string, hasData: boolean}} input
+ */
+export function backupDue({ backupAt, nudgeAt, createdAt, today, hasData }) {
+  if (!hasData) return false;
+  const since = (/** @type {string|null} */ day) => (day && isDateKey(day) ? daysBetween(day, today) : Infinity);
+  const created = createdAt ? String(createdAt).slice(0, 10) : null;
+  if (since(created) < BACKUP_GRACE_DAYS) return false;
+  return since(backupAt) >= BACKUP_NUDGE_DAYS && since(nudgeAt) >= BACKUP_NUDGE_DAYS;
 }

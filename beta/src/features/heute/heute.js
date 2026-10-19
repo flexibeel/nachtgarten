@@ -8,6 +8,7 @@ import { h } from '../../ui/dom.js';
 import { headerPart } from './header.js';
 import { companionPart } from './companion-row.js';
 import { settingsPart } from './settings.js';
+import { backupNudgePart } from './backup-nudge.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 /** @typedef {import('../part.js').Part} Part */
@@ -45,7 +46,7 @@ function moduleTiles(ctx) {
  */
 export function mountHeute(ctx, view) {
   const head = [headerPart(ctx), companionPart(ctx)];
-  const tail = [settingsPart(ctx)];
+  const tail = [backupNudgePart(ctx), settingsPart(ctx)];
   const slot = h('div', { class: 'heute-modules' });
   /** @type {Part[]} */
   let tileParts = [];
