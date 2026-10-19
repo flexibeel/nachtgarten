@@ -13,7 +13,7 @@ import { icon } from '../../ui/icons.js';
 import { openSheet } from '../../ui/sheet.js';
 import { createExerciseAnim } from '../../ui/anim/player.js';
 import { DEFAULT_FAVORITES } from '../../data/library.js';
-import { curatedList, dbReady, findExercise, loadDb } from './exercises.js';
+import { curatedList, dbReady, exerciseInstructions, findExercise, loadDb } from './exercises.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 /** @typedef {import('./exercises.js').LibExercise} LibExercise */
@@ -243,6 +243,12 @@ export function openExerciseDetail(ctx, id, { onPick } = {}) {
     ...ex.muscles.slice(0, 3).map((m) => t(`muscle.${m}`)),
   ].filter(Boolean);
   const cues = ex.cues?.length ? ex.cues : [t('library.defaultCue')];
+  const steps = h('details', { class: 'ex-steps', hidden: true });
+  exerciseInstructions(ex).then((list) => {
+    if (!list?.length) return;
+    replace(steps, h('summary', { class: 'ex-steps-summary', text: t('library.steps') }), h('ol', { class: 'ex-steps-list' }, list.map((x) => h('li', { text: x }))));
+    steps.hidden = false;
+  });
   const pick = onPick ? h('button', { type: 'button', class: 'button button-primary button-wide', text: t('library.take') }) : null;
   const sheet = openSheet({
     title: ex.name,
@@ -251,6 +257,7 @@ export function openExerciseDetail(ctx, id, { onPick } = {}) {
       stage,
       h('ul', { class: 'ex-facts' }, facts.map((f) => h('li', { class: 'ex-fact', text: f }))),
       h('ol', { class: 'ex-cues' }, cues.map((c) => h('li', { text: c }))),
+      steps,
     ],
     actions: pick ?? undefined,
     onClose: () => anim?.destroy(),

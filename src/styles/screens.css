@@ -1846,3 +1846,22 @@
 .wizard .sheet-footer .button[hidden] {
   display: none;
 }
+.ex-steps[hidden] {
+  display: none;
+}
+.ex-steps-summary {
+  min-height: var(--target);
+  color: var(--accent-ink);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+}
+.ex-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: 1.4em;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-snug);
+}

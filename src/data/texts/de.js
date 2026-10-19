@@ -519,4 +519,5 @@ export const TEXTS = Object.freeze({
   'wizard.experience.erfahren.hint': 'Seit Jahren regelmäßig',
   'wizard.results': 'Das könnte zu dir passen',
   'wizard.none': 'Dazu passt keine Vorlage richtig. Schau gern bei allen Plänen.',
+  'library.steps': 'Ausführliche Anleitung',
 });

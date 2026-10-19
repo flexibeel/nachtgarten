@@ -3,16 +3,44 @@
  * eigene/übernommene Übungen aus dem Speicher und allgemeine Plan-Übungen (g_…).
  * Liefert immer das v2-Format {id, name, gear, muscles, attachment?, cues?, en?, source?}.
  *
- * TODO(i18n): Die deutschen Übersetzungen eines anderen Arbeitsstrangs liegen unter
- * src/data/i18n/ (exercises.de.names.json, Schlüssel = englischer Name mit „_“ statt Leerzeichen,
- * Anleitungen in exercises.de.cNN.json). Sobald sie committet sind, hier in `dbExercise`
- * einhängen; bis dahin gelten die deutschen Namen und Hinweise aus v1 (data/exercise-db.js).
+ * Deutsche Namen und ausführliche Anleitungen kommen aus src/data/i18n/ (createExerciseI18n,
+ * Schlüssel = free-exercise-db-Id, hier über den englischen Namen gefunden). Fehlt dort etwas,
+ * gelten die deutschen Namen und Kurz-Hinweise aus v1 (data/exercise-db.js).
  */
 
 import { CURATED } from '../../data/library.js';
 import { PLAN_EXERCISES } from '../../data/plans.js';
 import { G_MAP } from '../../data/plan-exercise-map.js';
 import { getLang } from '../../data/texts/i18n.js';
+import { createExerciseI18n } from '../../data/i18n/exercises.js';
+
+const texts = createExerciseI18n({
+  load: (file) =>
+    fetch(new URL(`../../data/i18n/${file}`, import.meta.url)).then((r) => {
+      if (!r.ok) throw new Error(file);
+      return r.json();
+    }),
+});
+/** Englischer Name → Id der Übersetzungen (ohne Satz- und Leerzeichen verglichen). */
+let textKeys = /** @type {Map<string, string>|null} */ (null);
+const squash = (/** @type {string} */ s) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const loadTexts = () =>
+  texts
+    .ready()
+    .then(() => (textKeys = new Map(texts.ids().map((k) => [squash(k), k]))))
+    .catch(() => null);
+/** @param {string|undefined} en */
+const textKey = (en) => (en && textKeys ? textKeys.get(squash(en)) : undefined);
+
+/**
+ * Ausführliche deutsche Anleitung (Schritte) oder null.
+ * @param {{en?: string}} ex
+ */
+export async function exerciseInstructions(ex) {
+  if (getLang() !== 'de') return null;
+  const key = textKey(ex.en);
+  return key ? texts.instructions(key).catch(() => null) : null;
+}
 
 /** @typedef {import('../../core/store.js').Exercise & {cues?: string[], en?: string, pop?: boolean, db?: number, pattern?: string}} LibExercise */
 
@@ -24,7 +52,7 @@ let loading = null;
 /** Offene Datenbank laden (einmal). */
 export function loadDb() {
   if (DB) return Promise.resolve(DB);
-  loading ??= import('../../data/exercise-db.js').then((m) => (DB = m));
+  loading ??= Promise.all([import('../../data/exercise-db.js'), loadTexts()]).then(([m]) => (DB = m));
   return loading;
 }
 export const dbReady = () => !!DB;
@@ -42,7 +70,7 @@ function dbExercise(index) {
   /** @type {LibExercise} */
   const ex = {
     id: `db${index}`,
-    name: getLang() === 'en' ? en : de,
+    name: getLang() === 'en' ? en : texts.name(textKey(en) ?? '', 'de', de),
     en,
     gear: DB.GEAR_CODES[g] ?? 'Sonstiges',
     muscles: [...m].map((c) => DB.MUSCLE_CODES[c]).filter(Boolean),
