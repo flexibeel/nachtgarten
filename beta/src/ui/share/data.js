@@ -190,10 +190,9 @@ export function facts(data, focus) {
   const edition = data.edition ? `Nr. ${data.edition} · ` : '';
   if (data.type === 'kraft') {
     const s = summarizeStrength(data);
-    const stats = [
-      { value: fmtInt(s.sets), label: s.sets === 1 ? 'Satz' : 'Sätze' },
-      { value: fmtInt((data.durationS || 0) / 60), unit: 'min', label: 'Dauer' },
-    ];
+    const stats = [{ value: fmtInt(s.sets), label: s.sets === 1 ? 'Satz' : 'Sätze' }];
+    // Ohne Zeitmessung keine „0 min“ auf der Karte.
+    if (data.durationS > 0) stats.push({ value: fmtInt(data.durationS / 60), unit: 'min', label: 'Dauer' });
     let hero = { value: fmtInt(s.volume), unit: 'kg', label: 'Kilogramm bewegt' };
     if (focus === 'bestwert' && s.prs.length) {
       const pr = s.prs[0];

@@ -16,7 +16,7 @@
  *   theme: 'hell'|'dunkel', transparent?: boolean,
  *   format?: 'story' (1080×1920, Standard) | 'feed' (1080×1350) | 'kompakt' (nur Sticker: eng zugeschnitten),
  *   detail?: 'kompakt' (Standard) | 'detailliert', focus?: 'bestwert',
- *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', companion?: {rows, colors}
+ *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', sealRows?: string[] (9 × 9, „#“ ausgespart), companion?: {rows, colors}
  * }
  * Schriften vorher laden (ensureFonts). In der Story bleibt alles Beschriftete in der
  * sicheren Zone (oben 250 px, unten 340 px frei).
@@ -316,7 +316,7 @@ export const SEALS = {
 
 /** Das Siegel: ein kleiner Pixel-Stempel in Altrosa, Motiv ausgespart – wie der rote Stempel unter einem Holzschnitt. */
 function seal(ctx, x, y, size, pal, rand, opts, motif = 'keim') {
-  const rows = SEALS[motif] || SEALS.keim;
+  const rows = opts.sealRows || SEALS[motif] || SEALS.keim;
   const n = 11;
   const p = Math.max(1, Math.round(size / n));
   const S = p * n;
@@ -756,8 +756,8 @@ export function programmKarte(workout, opts = {}) {
   statRow(ctx, [
     { value: fmtInt(s.volume), unit: 'kg', label: 'Volumen' },
     { value: fmtInt(s.sets), label: s.sets === 1 ? 'Satz' : 'Sätze' },
-    { value: fmtInt((workout.durationS || 0) / 60), unit: 'min', label: 'Dauer' },
-  ], x1, x2, yS, pal, { px: feed ? 58 : 66, labelPx: feed ? 24 : 26, align: 'spread' });
+    workout.durationS > 0 ? { value: fmtInt(workout.durationS / 60), unit: 'min', label: 'Dauer' } : null,
+  ].filter(Boolean), x1, x2, yS, pal, { px: feed ? 58 : 66, labelPx: feed ? 24 : 26, align: 'spread' });
   const yEnd = fr.bottom - (feed ? 0 : 12);
   signature(ctx, x2, yEnd, pal, rand, o, { align: 'right', px: feed ? 28 : 30 });
   if (workout.place) write(ctx, workout.place, x1, yEnd, { px: feed ? 28 : 30, italic: true, color: pal.muted });
