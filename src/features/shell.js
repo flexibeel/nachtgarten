@@ -42,6 +42,8 @@ export function createShell(ctx, root) {
   const tabbar = h('nav', { class: 'tabbar', 'aria-label': 'Hauptbereiche', 'data-toast-avoid': '' });
   const app = h('div', { class: 'app' }, main, tabbar);
   replace(root, app);
+  // Name aus index.html (die Beta heißt „Nachtgarten Beta“).
+  const appTitle = document.title || 'Nachtgarten';
 
   /** @type {(() => void) | void} */
   let cleanup;
@@ -76,7 +78,7 @@ export function createShell(ctx, root) {
     app.dataset.route = view.route;
     tabbar.hidden = chrome !== 'tabs';
     paintTabs();
-    document.title = view === HEUTE ? 'Nachtgarten' : `${view.title} · Nachtgarten`;
+    document.title = view === HEUTE ? appTitle : `${view.title} · ${appTitle}`;
     cleanup = view.mount(ctx, main, route);
   };
 

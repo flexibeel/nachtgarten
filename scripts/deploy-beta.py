@@ -68,7 +68,8 @@ def beta_manifest():
 
 def beta_sw(files, version):
     source = (V2 / "sw.js").read_text()
-    precache = ["./"] + [f for f in files if not f.endswith((".png",)) or f.startswith("icons/icon-")]
+    # Was die App zum Starten braucht; keine Startbilder, Lizenztexte oder Werkzeuge.
+    precache = ["./"] + [f for f in files if f.endswith((".html", ".js", ".css", ".woff", ".svg", ".webmanifest")) or f.startswith("icons/icon-")]
     replaced = (
         source.replace("const PREFIX = 'ng2-dev-';", "const PREFIX = 'ng2-beta-';")
         .replace("const VERSION = 'local';", f"const VERSION = '{version}';")
