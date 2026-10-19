@@ -25,7 +25,7 @@ export const trainingModule = {
     { route: 'live', titleKey: 'view.live', chrome: 'bare', aliases: ['start', 'sport'], modules: SPORT_MODULES, mount: mountLive },
     { route: 'editor', titleKey: 'view.editor', chrome: 'bare', tabOf: 'training', mount: mountEditor },
     { route: 'einheit', titleKey: 'view.editor', chrome: 'bare', tabOf: 'training', mount: mountSession },
-    { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: placeholder('kurz', { back: true }) },
+    { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: placeholder('kurz', { back: true, classic: 'kurz' }) },
   ],
   tiles: [
     { id: 'garden', titleKey: 'tile.garden', render: gardenPart, modules: SPORT_MODULES },

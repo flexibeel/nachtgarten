@@ -30,7 +30,7 @@ export const focusModule = {
   icon: 'phone',
   views: [
     { route: 'fokus', titleKey: 'view.fokus', tab: { labelKey: 'tab.fokus', icon: 'fokus' }, aliases: ['umlenken'], mount: mountFokus },
-    { route: 'feed', titleKey: 'view.feed', chrome: 'bare', tabOf: 'fokus', mount: placeholder('feed', { back: true }) },
+    { route: 'feed', titleKey: 'view.feed', chrome: 'bare', tabOf: 'fokus', mount: placeholder('feed', { back: true, classic: 'feed' }) },
   ],
   tiles: [
     { id: 'umlenken', titleKey: 'tile.umlenken', render: umlenkenTile, size: 'small' },

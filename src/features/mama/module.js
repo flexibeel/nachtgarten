@@ -37,6 +37,6 @@ export const mamaModule = {
   labelKey: 'module.mama.label',
   hintKey: 'module.mama.hint',
   icon: 'mama',
-  views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount: placeholder('mama') }],
+  views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount: placeholder('mama', { classic: 'mama' }) }],
   tiles: [{ id: 'mama', titleKey: 'tile.mama', render: statusTile, size: 'small' }],
 };

@@ -14,6 +14,8 @@ import { openAllPlans, openWizard } from './plans-ui.js';
 import { planById } from '../../data/plans.js';
 import { sharePlanLink } from './plan-link.js';
 import { openCreatePlan } from './plan-editor.js';
+import { openCalendarExport } from './calendar-export.js';
+import { classicCard } from '../classic/classic.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -93,11 +95,12 @@ export function mountTraining(ctx, view) {
 
   const more = h('div', { class: 'list-buttons training-more' },
     h('button', { type: 'button', class: 'list-button', on: { click: () => openLibrary(ctx) } }, icon('list'), h('span', { text: t('training.library') })),
+    h('button', { type: 'button', class: 'list-button ics-button', on: { click: () => openCalendarExport(ctx) } }, icon('calendar'), h('span', { text: t('ics.button') })),
   );
   const last = ctx.store.lastCard.get();
   if (last?.items) more.append(h('button', { type: 'button', class: 'list-button', on: { click: () => openSummary(ctx, last) } }, icon('check'), h('span', { text: t('training.last') })));
 
-  view.append(head, live.el, finder.el, plans.el, card({ variant: 'plain' }, more));
+  view.append(head, live.el, finder.el, plans.el, card({ variant: 'plain' }, more), classicCard({ hash: 'training', what: t('classic.training'), compact: true }));
   return () => {
     live.destroy?.();
     finder.destroy?.();

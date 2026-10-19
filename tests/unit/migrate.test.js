@@ -194,3 +194,9 @@ test('übernommene Daten funktionieren mit der Domain-Logik', () => {
   assert.equal(review.activities.km, 6.2);
   assert.equal(review.comparison.mode, 'sameWeekday');
 });
+
+test('Sprache aus v1 (lab.lang) wird zur Sprache der Oberfläche', () => {
+  assert.equal(convertV1({ 'lab.lang': '"en"' }).settings.lang, 'en');
+  assert.equal(convertV1({ 'lab.lang': '"de"', 'lab.theme': 'dark' }).settings.lang, 'de');
+  assert.equal(convertV1({ 'lab.installSkip': 'true' }).settings, undefined);
+});
