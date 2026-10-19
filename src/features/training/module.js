@@ -3,7 +3,7 @@
  * Kacheln „Sport starten“ und „Deine Woche“ (auch für Schwangerschaft & Rückbildung).
  */
 
-import { placeholder } from '../placeholder/placeholder.js';
+import { mountPlayer } from '../player/player.js';
 import { sportPart } from './sport-tile.js';
 import { weekPart } from './week-tile.js';
 import { mountTraining } from './training.js';
@@ -25,7 +25,8 @@ export const trainingModule = {
     { route: 'live', titleKey: 'view.live', chrome: 'bare', aliases: ['start', 'sport'], modules: SPORT_MODULES, mount: mountLive },
     { route: 'editor', titleKey: 'view.editor', chrome: 'bare', tabOf: 'training', mount: mountEditor },
     { route: 'einheit', titleKey: 'view.editor', chrome: 'bare', tabOf: 'training', mount: mountSession },
-    { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: placeholder('kurz', { back: true, classic: 'kurz' }) },
+    { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: (ctx, view) => mountPlayer(ctx, view, { params: { plan: 'b1', von: 'training' } }) },
+    { route: 'player', titleKey: 'view.player', chrome: 'bare', modules: SPORT_MODULES, mount: mountPlayer },
   ],
   tiles: [
     { id: 'garden', titleKey: 'tile.garden', render: gardenPart, modules: SPORT_MODULES },

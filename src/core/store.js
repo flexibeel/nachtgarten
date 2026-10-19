@@ -37,6 +37,7 @@
  * | ng2.motto      | motto      | eigener Leitsatz auf „Heute“                                    | null     |
  * | ng2.gate       | gate       | „Wirklich jetzt?“: Entscheidungen (60 Tage), Schonfrist nach „Trotzdem öffnen“ | s. u. |
  * | ng2.programs   | programs   | eigene Pläne aus dem Editor: Einheiten, Übungen (Sätze, Wdh., RIR, Pause), Wochentage | []  |
+ * | ng2.player     | player     | pausierter Heimplan im Timer: Plan, Kurzversion, Rückweg, Timer-Stand (zum Fortsetzen) | null |
  */
 
 export const PREFIX = 'ng2.';
@@ -388,6 +389,7 @@ const AREAS = /** @type {const} */ ({
   ideas: () => ({ likes: [] }),
   motto: () => null,
   gate: () => ({ log: [], graceUntil: null }),
+  player: () => null,
 });
 
 /** @typedef {keyof typeof AREAS} AreaName */
