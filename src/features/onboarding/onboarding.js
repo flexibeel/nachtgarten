@@ -6,13 +6,13 @@
 import { haptic } from '../../core/platform.js';
 import { BODYWEIGHT, gearOptions } from '../../data/gear.js';
 import { goalOptions } from '../../data/goals.js';
-import { SPECIES, speciesInfo } from '../../data/companions.js';
+import { FEATURED_SPECIES, speciesInfo } from '../../data/companions.js';
 import { TONES, companionLine, onboardingLine } from '../../data/texts/companion.js';
 import { t } from '../../data/texts/i18n.js';
 import { COMPANION_NAME_MAX, companionOf } from '../../domain/companion.js';
 import { h, replace } from '../../ui/dom.js';
 import { chipGroup, segmented } from '../../ui/chips.js';
-import { switchRow, textField } from '../../ui/fields.js';
+import { textField } from '../../ui/fields.js';
 import { icon } from '../../ui/icons.js';
 import { companionSpeech } from '../../ui/companion.js';
 import { openSheet } from '../../ui/sheet.js';
@@ -20,6 +20,7 @@ import { toast } from '../../ui/toast.js';
 import { mamaForm } from '../mama/mama-setup.js';
 import { languageControl } from '../settings/controls.js';
 import { neighbourStep, onboardingSteps } from './steps.js';
+import { PLAIN, companionPicker } from '../companion/picker.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 /** @typedef {import('./steps.js').StepId} StepId */
@@ -57,10 +58,11 @@ export function openOnboarding(ctx, { onDone } = {}) {
     goal: profile?.goal ?? '',
     days: profile?.days || 3,
     gear: store.gear.exists() ? store.gear.get() : [BODYWEIGHT],
-    species: companion.species,
-    companionName: companion.name,
+    // Neue Profile starten mit Elli; bestehende behalten ihren Begleiter.
+    species: profile?.companion ? companion.species : FEATURED_SPECIES,
+    companionName: profile?.companion ? companion.name : '',
     tone: buddy.tone,
-    companionOn: buddy.on,
+    plain: typeof settings.plain === 'boolean' ? settings.plain : !buddy.on,
     /** @type {import('../../core/store.js').MamaState|null} */
     mama: store.mama.get(),
   };
@@ -83,7 +85,10 @@ export function openOnboarding(ctx, { onDone } = {}) {
     size: 'tall',
     className: 'onboarding',
     actions: [h('div', { class: 'onboarding-actions' }, back, next), privacy],
-    onClose: () => offLang(),
+    onClose: () => {
+      offLang();
+      speech?.destroy();
+    },
   });
 
   const steps = () => onboardingSteps(ctx.registry.enabled(draft.modules.length ? draft.modules : null));
@@ -199,19 +204,18 @@ export function openOnboarding(ctx, { onDone } = {}) {
         const paintSample = () =>
           (sample.textContent = t('common.quote', { text: companionLine('liveSet3', { species: draft.species, tone: draft.tone, user: draft.name, name: cName(), random: () => 0 }) }));
         paintSample();
+        const picker = companionPicker({
+          value: draft.plain ? PLAIN : draft.species,
+          withPlain: true,
+          onChange: (v) => {
+            draft.plain = v === PLAIN;
+            if (!draft.plain) draft.species = v;
+            paint();
+          },
+        });
+        if (draft.plain) return [picker, h('p', { class: 'field-hint plain-note', text: t('companion.plainOnboarding') })];
         return [
-          SPECIES.length > 1
-            ? chipGroup({
-                label: t('companion.species'),
-                options: SPECIES.map((sp) => ({ value: sp.id, label: t(`species.${sp.id}`) })),
-                selected: [draft.species],
-                allowEmpty: false,
-                onChange: ([v]) => {
-                  draft.species = v;
-                  paint();
-                },
-              })
-            : null,
+          picker,
           textField({
             label: t('companion.name'),
             value: draft.companionName,
@@ -237,12 +241,6 @@ export function openOnboarding(ctx, { onDone } = {}) {
             }),
             sample,
           ),
-          switchRow({
-            label: t('companion.show'),
-            hint: t('companion.showHintOnboarding'),
-            checked: draft.companionOn,
-            onChange: (v) => (draft.companionOn = v),
-          }),
         ];
       }
       default:
@@ -250,9 +248,12 @@ export function openOnboarding(ctx, { onDone } = {}) {
     }
   };
 
+  /** @type {{destroy: () => void}|null} */
+  let speech = null;
   const paint = () => {
     const title = t(`onboarding.title.${step}`);
-    const speech = companionSpeech({
+    speech?.destroy();
+    speech = companionSpeech({
       species: draft.species,
       name: cName(),
       stage: 1,
@@ -260,7 +261,8 @@ export function openOnboarding(ctx, { onDone } = {}) {
       line: onboardingLine(step, { user: draft.name, name: cName() }),
       size: 'large',
     });
-    replace(sheet.body, progress, speech.el, h('h1', { class: 'onboarding-title', tabindex: '-1', text: title }), h('div', { class: 'onboarding-content' }, content(step)));
+    const quiet = draft.plain && step === 'companion';
+    replace(sheet.body, progress, quiet ? null : speech.el, h('h1', { class: 'onboarding-title', tabindex: '-1', text: title }), h('div', { class: 'onboarding-content' }, content(step)));
     sheet.setTitle(title);
     privacyText.textContent = t('privacy.optional');
     paintButtons();
@@ -291,9 +293,9 @@ export function openOnboarding(ctx, { onDone } = {}) {
       days: draft.days,
       companion: { species: draft.species, name: cName() },
     });
-    store.settings.update((s) => ({ ...s, enabledModules: modules }));
+    store.settings.update((s) => ({ ...s, enabledModules: modules, plain: draft.plain }));
     store.gear.set(draft.gear);
-    store.buddy.update((b) => ({ ...b, tone: draft.tone, on: draft.companionOn }));
+    store.buddy.update((b) => ({ ...b, tone: draft.tone, on: !draft.plain }));
     if (draft.mama && modules.includes('mama')) store.mama.set(draft.mama);
     haptic('success');
     const name = draft.name.trim();

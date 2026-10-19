@@ -75,3 +75,22 @@ export function lineFor(ctx, context, extra = {}) {
     ...extra,
   });
 }
+
+/**
+ * „Schlicht“: Begleiter, Garten und Sätze ausgeblendet. Ohne eigene Einstellung gilt
+ * der alte Schalter „Begleiter zeigen“ (buddy.on, auch aus v1).
+ * @param {AppContext} ctx
+ */
+export function isPlain(ctx) {
+  const plain = ctx.store.settings.get().plain;
+  return typeof plain === 'boolean' ? plain : !ctx.store.buddy.get().on;
+}
+
+/**
+ * @param {AppContext} ctx
+ * @param {boolean} plain
+ */
+export function setPlain(ctx, plain) {
+  ctx.store.settings.update((s) => ({ ...s, plain }));
+  ctx.store.buddy.update((b) => ({ ...b, on: !plain }));
+}

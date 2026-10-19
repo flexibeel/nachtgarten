@@ -790,67 +790,10 @@
 .companion-bubble.is-new .companion-text {
   animation: bubble-in var(--dur-2) var(--ease-out);
 }
-.keimling-body {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: keimling-breathe 4.2s ease-in-out infinite;
-}
-.keimling-sprout {
-  transform-box: view-box;
-  transform-origin: 32px 31px;
-  animation: keimling-sway 5.6s ease-in-out infinite;
-}
-.keimling.is-tired .keimling-sprout {
-  transform: rotate(-14deg);
-  animation: none;
-}
-.keimling.is-tired .keimling-body {
-  animation-duration: 6.5s;
-}
-.keimling.is-cheer .keimling-all {
-  animation: keimling-pump 0.9s ease-in-out infinite;
-}
-.keimling-z {
-  transform-box: fill-box;
-  animation: keimling-z 3s ease-in-out infinite;
-}
-.keimling-z-late {
-  animation-delay: 0.6s;
-}
 .companion-slot.is-hopping {
   animation: companion-hop 0.55s var(--ease-spring);
 }
 
-@keyframes keimling-breathe {
-  50% {
-    transform: scale(1.025, 0.975);
-  }
-}
-@keyframes keimling-sway {
-  0%,
-  100% {
-    transform: rotate(-4deg);
-  }
-  50% {
-    transform: rotate(4deg);
-  }
-}
-@keyframes keimling-pump {
-  45% {
-    transform: translateY(-3px);
-  }
-}
-@keyframes keimling-z {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: translateY(-2px);
-  }
-}
 @keyframes companion-hop {
   30% {
     transform: translateY(-9px) scale(1.04, 0.96);
@@ -867,4 +810,82 @@
     opacity: 0;
     transform: translateY(4px);
   }
+}
+
+/* ---------------------------------------------------------------- Begleiter-Auswahl */
+
+.companion-figure {
+  image-rendering: pixelated;
+}
+.species-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-2);
+}
+.species-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 118px;
+  padding: var(--space-3) var(--space-2) var(--space-3);
+  border: var(--border) solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--card);
+  color: var(--text);
+  transition: border-color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.species-card:active {
+  transform: scale(0.97);
+}
+.species-card[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.species-figure {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  color: var(--muted);
+}
+.species-figure .companion-figure {
+  width: 56px;
+  height: 56px;
+}
+.species-name {
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-md);
+}
+.species-kind {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.species-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+}
+.species-card.is-plain .species-figure {
+  border-radius: var(--radius-pill);
+  background: var(--soft);
+  width: 48px;
+  height: 48px;
+  margin: 4px 0;
+}
+.profile-companion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.profile-companion[hidden] {
+  display: none;
 }

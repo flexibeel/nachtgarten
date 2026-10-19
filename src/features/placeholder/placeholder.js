@@ -6,7 +6,7 @@ import { t } from '../../data/texts/i18n.js';
 import { append, h } from '../../ui/dom.js';
 import { icon } from '../../ui/icons.js';
 import { companionFigure } from '../../ui/companion.js';
-import { companionStage } from '../companion/companion-state.js';
+import { companionStage, isPlain } from '../companion/companion-state.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
 
@@ -23,10 +23,10 @@ export const placeholder = (route, { back = false } = {}) => (ctx, view) => {
     h(
       'div',
       { class: 'placeholder' },
-      h('div', { class: 'placeholder-figure' }, companionFigure({ species, mood: 'calm', stage: companionStage(ctx), label: name })),
+      isPlain(ctx) ? null : h('div', { class: 'placeholder-figure' }, companionFigure({ species, mood: 'calm', stage: companionStage(ctx), label: name })),
       h('h1', { class: 'placeholder-title', text: t(`view.${route}`) }),
       h('p', { class: 'placeholder-intro', text: t(`placeholder.${route}`) }),
-      h('p', { class: 'placeholder-note', text: t('placeholder.note', { name }) }),
+      isPlain(ctx) ? null : h('p', { class: 'placeholder-note', text: t('placeholder.note', { name }) }),
       h('a', { class: 'button button-quiet', href: '#heute', text: t('placeholder.toHeute') }),
     ),
   ]);

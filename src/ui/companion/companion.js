@@ -11,6 +11,7 @@
  * bei „Bewegung reduzieren“ still auf einem ausgewählten Schlüsselbild.
  */
 
+import { adoptCss } from '../adopt-css.js';
 import { GRID, SPECIES, STATES, STATE_LABELS, STILL_FRAME, colorVar, paletteCss } from './sprites.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -18,11 +19,7 @@ const STYLE_ID = 'ng-companion-palette';
 
 /** Fügt die Farbvariablen einmal pro Dokument ein. */
 export function ensurePalette(doc = globalThis.document) {
-  if (!doc || doc.getElementById(STYLE_ID)) return;
-  const style = doc.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = paletteCss();
-  doc.head.appendChild(style);
+  adoptCss(STYLE_ID, paletteCss(), doc);
 }
 
 /**
@@ -118,6 +115,7 @@ export function mountSprite(parent, opts = {}) {
   let shown = -1;
   let start = 0;
   let raf = 0;
+  let seen = false;
   const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
   const reduced = () => (current.reducedMotion ?? (mq ? mq.matches : false));
 
@@ -149,6 +147,12 @@ export function mountSprite(parent, opts = {}) {
   }
 
   function tick(now) {
+    // Aus dem Dokument entfernt (Ansicht gewechselt): Schleife beenden statt weiterzulaufen.
+    if (svg.isConnected) seen = true;
+    else if (seen) {
+      raf = 0;
+      return;
+    }
     if (!start) start = now;
     let t = (now - start) % total;
     let i = 0;

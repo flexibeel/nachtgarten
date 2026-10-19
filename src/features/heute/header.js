@@ -12,7 +12,7 @@ import { companionFigure } from '../../ui/companion.js';
 import { oppositeTheme, resolveTheme } from '../../ui/theme.js';
 import { toast } from '../../ui/toast.js';
 import { openProfile } from '../profile/profile.js';
-import { companionStage } from '../companion/companion-state.js';
+import { companionStage, isPlain } from '../companion/companion-state.js';
 import { reactivePart } from '../part.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
@@ -58,7 +58,7 @@ function avatarButton(ctx) {
   const button = h('button', { type: 'button', class: 'avatar', 'aria-label': t('heute.openProfile'), on: { click: () => openProfile(ctx) } });
   const name = ctx.store.profile.get()?.name?.trim() ?? '';
   if (name) button.append(h('span', { class: 'avatar-initial', text: name.charAt(0).toUpperCase() }));
-  else if (ctx.store.buddy.get().on) button.append(companionFigure({ species: ctx.companion().species, mood: 'calm', stage: companionStage(ctx) }));
+  else if (!isPlain(ctx)) button.append(companionFigure({ species: ctx.companion().species, mood: 'calm', stage: companionStage(ctx) }));
   else button.append(icon('user'));
   return button;
 }
@@ -70,7 +70,7 @@ export function headerPart(ctx) {
   const offTheme = ctx.bus.on('theme', () => quick?.paint());
   const part = reactivePart(
     ctx,
-    ['profile', 'buddy'],
+    ['profile', 'buddy', 'settings'],
     (el) => {
       const now = toDate(ctx.now());
       const name = ctx.store.profile.get()?.name?.trim() ?? '';

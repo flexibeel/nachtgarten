@@ -6,7 +6,7 @@ import { prefersReducedMotion } from '../../core/platform.js';
 import { t } from '../../data/texts/i18n.js';
 import { replace } from '../../ui/dom.js';
 import { companionSpeech } from '../../ui/companion.js';
-import { lineFor, stageName, visitCompanion } from '../companion/companion-state.js';
+import { isPlain, lineFor, stageName, visitCompanion } from '../companion/companion-state.js';
 import { reactivePart } from '../part.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
@@ -19,19 +19,23 @@ export function companionPart(ctx) {
   // Besuch einmal beim Öffnen vermerken; spätere Änderungen (Name, Ton, Art) zeichnen nur neu.
   const snap = visitCompanion(ctx);
   let wake = snap.wake;
+  /** @type {{destroy: () => void}|null} */
+  let speech = null;
   const part = reactivePart(
     ctx,
-    ['buddy', 'profile'],
+    ['buddy', 'profile', 'settings'],
     (el) => {
       clearTimeout(timer);
-      const on = ctx.store.buddy.get().on;
+      speech?.destroy();
+      speech = null;
+      const on = !isPlain(ctx);
       el.hidden = !on;
       if (!on) return replace(el);
       const { species, name } = ctx.companion();
       const waking = wake;
       wake = false;
       let taps = 0;
-      const speech = companionSpeech({
+      const current = companionSpeech({
         species,
         name,
         stage: snap.stage,
@@ -41,12 +45,13 @@ export function companionPart(ctx) {
         onTap: () => {
           taps += 1;
           const context = taps % 3 === 0 && snap.context !== 'sleepy' ? snap.context : 'tap';
-          speech.say(lineFor(ctx, context, { count: snap.redirects }), taps % 4 === 3 ? 'cheer' : 'happy');
+          current.say(lineFor(ctx, context, { count: snap.redirects }), taps % 4 === 3 ? 'cheer' : 'happy');
         },
       });
-      replace(el, speech.el);
+      speech = current;
+      replace(el, current.el);
       if (waking) {
-        timer = window.setTimeout(() => speech.say(lineFor(ctx, 'back'), 'happy'), prefersReducedMotion() ? 0 : WAKE_DELAY);
+        timer = window.setTimeout(() => current.say(lineFor(ctx, 'back'), 'happy'), prefersReducedMotion() ? 0 : WAKE_DELAY);
       }
     },
     'heute-companion',
@@ -55,6 +60,7 @@ export function companionPart(ctx) {
     el: part.el,
     destroy: () => {
       clearTimeout(timer);
+      speech?.destroy();
       part.destroy?.();
     },
   };

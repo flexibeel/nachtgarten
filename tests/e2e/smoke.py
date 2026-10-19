@@ -233,6 +233,37 @@ def check_default_path(browser, base, scheme):
     context.close()
 
 
+def check_plain_onboarding(browser, base, scheme):
+    """Onboarding mit „Ohne Begleiter“: Heute ohne Figur, Profil zeigt Schlicht an."""
+    context, page, errors = new_page(browser, scheme)
+    page.goto(base)
+    page.wait_for_selector(".onboarding")
+    while "Begleiter" not in page.inner_text(".onboarding-title"):
+        page.click(NEXT)
+        page.wait_for_timeout(80)
+    check(page.locator(".species-card").count() == 8, "Tiere + Ohne Begleiter fehlen")
+    check(page.get_attribute(".species-card[data-species=elefant]", "aria-checked") == "true", "Elli nicht vorausgewählt")
+    shot(page, f"{scheme}_onboarding_species")
+    page.click(".species-card.is-plain")
+    check(page.locator(".onboarding .companion-bubble").count() == 0, "Begleiter spricht trotz Schlicht")
+    shot(page, f"{scheme}_onboarding_plain")
+    page.click(NEXT)
+    page.wait_for_selector(".heute-greeting")
+    check(page.locator(".companion-bubble").count() == 0, "Begleiter auf Heute trotz Schlicht")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.settings')).plain") is True, "Schlicht nicht gespeichert")
+    page.click(".avatar")
+    page.wait_for_selector(".profile.sheet-panel")
+    row = page.locator(".switch-row:has-text('Schlicht')")
+    check(row.get_attribute("aria-checked") == "true", "Schlicht im Profil nicht an")
+    row.click()
+    page.wait_for_selector(".profile .species-card")
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".companion-bubble")
+    no_horizontal_scroll(page, "Heute")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -249,6 +280,7 @@ def run():
                 check_deep_links(page, base, scheme)
                 check(not errors, "Seitenfehler:\n" + "\n".join(errors))
                 check_default_path(browser, base, scheme)
+                check_plain_onboarding(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

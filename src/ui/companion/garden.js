@@ -9,6 +9,7 @@
  * Der gewählte Begleiter sitzt mittendrin (companion.js → mountSprite).
  */
 
+import { adoptCss } from '../adopt-css.js';
 import { mountSprite, gridToRects, ensurePalette } from './companion.js';
 
 export const GARDEN_W = 128;
@@ -258,11 +259,7 @@ export function gardenMarkup(opts = {}) {
 
 const GARDEN_STYLE_ID = 'ng-garden-style';
 function ensureGardenCss(doc) {
-  if (!doc || doc.getElementById(GARDEN_STYLE_ID)) return;
-  const st = doc.createElement('style');
-  st.id = GARDEN_STYLE_ID;
-  st.textContent = gardenCss();
-  doc.head.appendChild(st);
+  adoptCss(GARDEN_STYLE_ID, gardenCss(), doc);
 }
 
 /** Jahreszeit aus dem Datum (meteorologisch). */
