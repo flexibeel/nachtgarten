@@ -200,13 +200,13 @@ def check_backup(page, tmp):
 
 def check_deep_links(page, base, scheme):
     page.goto(base + "#training")
-    page.wait_for_selector(".placeholder")
-    check("Training" in page.inner_text(".placeholder-title"), "#training zeigt nicht Training")
+    page.wait_for_selector(".page-title")
+    check("Training" in page.inner_text(".page-title"), "#training zeigt nicht Training")
     check(page.get_attribute(".tab[aria-current=page]", "href") == "#training", "Tab nicht markiert")
     shot(page, f"{scheme}_training")
     no_horizontal_scroll(page, "Training")
     page.goto(base + "#live")
-    page.wait_for_selector(".back-link")
+    page.wait_for_selector(".live .back-link")
     check(page.is_hidden(".tabbar"), "Tab-Leiste im Live-Training sichtbar")
     page.goto(base + "#umlenken")
     page.wait_for_selector(".placeholder-title:has-text('Fokus')")
@@ -264,6 +264,75 @@ def check_plain_onboarding(browser, base, scheme):
     context.close()
 
 
+PLAN = [{"id": "ok", "name": "Oberkörper", "items": [
+    {"exercise": "bench", "sets": 2, "reps": "8–10"}, {"exercise": "latpull", "sets": 2, "reps": "10–12"}, {"exercise": "g_inclinedb", "sets": 2, "reps": "8–12"}]}]
+
+
+def fits_screen(page, where):
+    over = page.evaluate("document.scrollingElement.scrollHeight - window.innerHeight")
+    check(over <= 0, f"{where}: Live-Bildschirm scrollt ({over}px)")
+    bottom = page.evaluate("document.querySelector('.live-rir').getBoundingClientRect().bottom")
+    bar = page.evaluate("document.querySelector('.live-bar').getBoundingClientRect().top")
+    check(bottom <= bar + 1, f"{where}: Eingaben verdeckt von der Aktionsleiste ({bottom} > {bar})")
+    no_horizontal_scroll(page, where)
+
+
+def check_live(browser, base, scheme):
+    """Live-Training aus einem Plan: 2 Sätze mit Pause, beenden, Zusammenfassung."""
+    context, page, errors = new_page(browser, scheme)
+    page.goto(base)
+    page.wait_for_selector(".onboarding")
+    while page.locator(".onboarding").count():
+        page.click(NEXT)
+        page.wait_for_timeout(80)
+    page.evaluate("plans => localStorage.setItem('ng2.plans', JSON.stringify(plans))", PLAN)
+    page.goto(base + "#training")
+    page.wait_for_selector(".plan-row")
+    shot(page, f"{scheme}_training")
+    page.click(".plan-row")
+    page.wait_for_selector(".live-name")
+    check("Bankdrücken" in page.inner_text(".live-name"), "erste Plan-Übung nicht gewählt")
+    shot(page, f"{scheme}_live")
+    fits_screen(page, "Live 390")
+    page.click(".live-done")
+    page.wait_for_selector(".rest .rest-time")
+    shot(page, f"{scheme}_live_rest")
+    fits_screen(page, "Pause 390")
+    page.set_viewport_size({"width": 375, "height": 667})
+    page.wait_for_timeout(200)
+    shot(page, f"{scheme}_live_rest_375")
+    fits_screen(page, "Pause 375")
+    page.click(".rest-skip")
+    page.wait_for_selector(".live-sets")
+    page.click(".stepper-button[aria-label*='Wiederholungen erhöhen']")
+    page.click(".live-rir-chip >> nth=2")
+    page.click(".live-done")
+    page.wait_for_selector(".rest")
+    check("Latzug" in page.inner_text(".live-name"), "nach dem Soll nicht zur nächsten Übung")
+    shot(page, f"{scheme}_live_375")
+    fits_screen(page, "Live 375")
+    page.set_viewport_size(VIEWPORT)
+    live = page.evaluate("JSON.parse(localStorage.getItem('ng2.live'))")
+    check(len(live["sets"]) == 2 and live["sets"][1]["rir"] == 2, f"Sätze falsch gespeichert: {live['sets']}")
+    page.click(".live-switch")
+    page.wait_for_selector(".live-switcher")
+    check(page.locator(".switch-row-item").count() == 3, "Übungsliste unvollständig")
+    page.click(".switch-row-item >> nth=2")
+    page.wait_for_selector(".live-name:has-text('Schrägbank')")
+    page.reload()
+    page.wait_for_selector(".rest .rest-time")  # Pause überlebt Neuladen
+    page.click(".live-finish")
+    page.wait_for_selector(".finish.sheet-panel")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.live'))") is None, "Training nicht beendet")
+    sessions = page.evaluate("JSON.parse(localStorage.getItem('ng2.sessions'))")
+    check(len(sessions) == 1 and sessions[0]["setCount"] == 2 and sessions[0]["planId"] == "ok", "Eintrag fehlt")
+    shot(page, f"{scheme}_finish")
+    page.click(".finish .sheet-footer .button-quiet")
+    page.wait_for_selector(".finish.sheet-panel", state="detached")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -281,6 +350,7 @@ def run():
                 check(not errors, "Seitenfehler:\n" + "\n".join(errors))
                 check_default_path(browser, base, scheme)
                 check_plain_onboarding(browser, base, scheme)
+                check_live(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

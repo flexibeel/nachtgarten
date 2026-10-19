@@ -174,6 +174,7 @@ export const SCHEMA_VERSION = 1;
  * @property {LiveQueue|null} queue
  * @property {MetricValues|null} metrics
  * @property {boolean} legHintDismissed
+ * @property {{start: number, duration: number}|null} [rest]   laufende Satzpause
  */
 
 /**

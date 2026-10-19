@@ -6,6 +6,8 @@
 import { placeholder } from '../placeholder/placeholder.js';
 import { sportPart } from './sport-tile.js';
 import { weekPart } from './week-tile.js';
+import { mountTraining } from './training.js';
+import { mountLive } from './live.js';
 
 /** Module, für die es „Sport starten“ und den Wochenring gibt. */
 const SPORT_MODULES = ['train', 'mama'];
@@ -17,8 +19,8 @@ export const trainingModule = {
   hintKey: 'module.train.hint',
   icon: 'training',
   views: [
-    { route: 'training', titleKey: 'view.training', tab: { labelKey: 'tab.training', icon: 'training' }, mount: placeholder('training') },
-    { route: 'live', titleKey: 'view.live', chrome: 'bare', aliases: ['start', 'sport'], modules: SPORT_MODULES, mount: placeholder('live', { back: true }) },
+    { route: 'training', titleKey: 'view.training', tab: { labelKey: 'tab.training', icon: 'training' }, mount: mountTraining },
+    { route: 'live', titleKey: 'view.live', chrome: 'bare', aliases: ['start', 'sport'], modules: SPORT_MODULES, mount: mountLive },
     { route: 'kurz', titleKey: 'view.kurz', chrome: 'bare', modules: SPORT_MODULES, mount: placeholder('kurz', { back: true }) },
   ],
   tiles: [
