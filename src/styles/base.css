@@ -1,0 +1,208 @@
+/* Grundlagen: Reset, Typografie, Fokus, Layout der Shell. Werte nur aus tokens.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-body);
+  font-variant-numeric: tabular-nums;
+  font-optical-sizing: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  transition: background-color var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: var(--lh-tight);
+  letter-spacing: -0.005em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+svg {
+  flex: none;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-small);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------------ Shell */
+
+.app {
+  min-height: 100dvh;
+}
+
+.view {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + var(--space-6)) var(--gutter)
+    calc(var(--tabbar-height) + var(--safe-bottom) + var(--space-8));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.app[data-chrome='bare'] .view {
+  padding-bottom: calc(var(--safe-bottom) + var(--space-8));
+}
+
+/* Übergänge zwischen Ansichten (View Transitions; ohne Unterstützung oder mit
+   reduzierter Bewegung sofort). data-nav setzt die Shell:
+   push = tiefer (neue Seite schiebt sich von rechts herein), pop = zurück, fade = Tab-Wechsel. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-2);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(root) {
+  animation-name: view-out;
+}
+::view-transition-new(root) {
+  animation-name: view-in;
+}
+:root[data-nav='push']::view-transition-old(root),
+:root[data-nav='push']::view-transition-new(root),
+:root[data-nav='pop']::view-transition-old(root),
+:root[data-nav='pop']::view-transition-new(root) {
+  animation-duration: var(--dur-nav);
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+}
+:root[data-nav='push']::view-transition-old(root) {
+  animation-name: nav-behind-out;
+}
+:root[data-nav='push']::view-transition-new(root) {
+  animation-name: nav-front-in;
+  box-shadow: -12px 0 32px -16px rgb(0 0 0 / 0.25);
+}
+:root[data-nav='pop']::view-transition-old(root) {
+  z-index: 1;
+  animation-name: nav-front-out;
+  box-shadow: -12px 0 32px -16px rgb(0 0 0 / 0.25);
+}
+:root[data-nav='pop']::view-transition-new(root) {
+  animation-name: nav-behind-in;
+}
+::view-transition-group(tabbar) {
+  animation: none;
+}
+.tabbar {
+  view-transition-name: tabbar;
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes view-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes nav-front-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes nav-front-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes nav-behind-out {
+  to {
+    opacity: 0.55;
+    transform: translateX(-24%);
+  }
+}
+@keyframes nav-behind-in {
+  from {
+    opacity: 0.55;
+    transform: translateX(-24%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

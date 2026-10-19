@@ -1,0 +1,353 @@
+/**
+ * Profil-Sheet (über den Avatar auf „Heute“): Name, Ziel, Module, Reihenfolge auf „Heute“,
+ * Begleiter, Ansicht, Daten. Änderungen werden sofort gespeichert.
+ */
+
+import { haptic } from '../../core/platform.js';
+import { moveTile, toggleModule } from '../../domain/modules.js';
+import { COMPANION_NAME_MAX, withCompanion } from '../../domain/companion.js';
+import { speciesInfo } from '../../data/companions.js';
+import { goalLabel, goalOptions } from '../../data/goals.js';
+import { TONES, companionLine } from '../../data/texts/companion.js';
+import { t, tList } from '../../data/texts/i18n.js';
+import { h, replace } from '../../ui/dom.js';
+import { chipGroup, segmented } from '../../ui/chips.js';
+import { switchRow, textField } from '../../ui/fields.js';
+import { companionFigure } from '../../ui/companion.js';
+import { icon } from '../../ui/icons.js';
+import { openSheet } from '../../ui/sheet.js';
+import { toast } from '../../ui/toast.js';
+import { companionStage, isPlain, setPlain, stageName } from '../companion/companion-state.js';
+import { companionPicker } from '../companion/picker.js';
+import { mamaForm } from '../mama/mama-setup.js';
+import { openOnboarding } from '../onboarding/onboarding.js';
+import { privacyPanel } from '../privacy/privacy.js';
+import { languageControl, settingRow, startViewControl, themeControl } from '../settings/controls.js';
+
+/** @typedef {import('../context.js').AppContext} AppContext */
+
+const emptyProfile = () => ({ name: '', goal: '', age: null, weight: null, days: 3 });
+
+/**
+ * @param {string} title
+ * @param {...import('../../ui/dom.js').Child} children
+ */
+const section = (title, ...children) => h('section', { class: 'profile-section' }, h('h3', { class: 'profile-section-title', text: title }), children);
+
+/**
+ * Angaben für Schwangerschaft & Rückbildung in eigenem Sheet.
+ * @param {AppContext} ctx
+ */
+export function openMamaSheet(ctx) {
+  const form = mamaForm({ initial: ctx.store.mama.get(), today: ctx.today() });
+  const save = h('button', { type: 'button', class: 'button button-primary button-wide', text: t('common.save') });
+  const sheet = openSheet({ title: t('mama.title'), content: form.el, actions: save });
+  save.addEventListener('click', () => {
+    const result = form.result();
+    if (!result.ok) return haptic('warning');
+    ctx.store.mama.set(result.state);
+    haptic('success');
+    sheet.close('save').then(() => toast(t('common.saved')));
+  });
+}
+
+/**
+ * „Heute anordnen“: sichtbare Kacheln mit Hoch/Runter.
+ * @param {AppContext} ctx
+ */
+function tileOrderList(ctx) {
+  const list = h('ol', { class: 'order-list', 'aria-label': t('profile.orderList') });
+  const paint = () => {
+    const { enabledModules, tileOrder } = ctx.store.settings.get();
+    const tiles = ctx.registry.tiles(enabledModules, tileOrder);
+    const ids = tiles.map((t) => t.id);
+    const move = (id, delta) => {
+      haptic('tap');
+      ctx.store.settings.update((s) => ({ ...s, tileOrder: moveTile(ids, s.tileOrder, id, delta) }));
+      requestAnimationFrame(() => /** @type {HTMLElement|null} */ (list.querySelector(`[data-move="${id}:${delta}"]`))?.focus());
+    };
+    const arrow = (tile, delta, i) =>
+      h(
+        'button',
+        {
+          type: 'button',
+          class: 'icon-button',
+          dataset: { move: `${tile.id}:${delta}` },
+          'aria-label': t(delta < 0 ? 'profile.up' : 'profile.down', { title: t(tile.titleKey) }),
+          disabled: delta < 0 ? i === 0 : i === tiles.length - 1,
+          on: { click: () => move(tile.id, delta) },
+        },
+        icon(delta < 0 ? 'chevronUp' : 'chevronDown', { size: 20 }),
+      );
+    const hidden = ctx.store.settings.get().hiddenTiles ?? [];
+    const eye = (tile) => {
+      const off = hidden.includes(tile.id);
+      return h(
+        'button',
+        {
+          type: 'button',
+          class: 'icon-button order-eye',
+          'aria-pressed': String(!off),
+          'aria-label': t('profile.show', { title: t(tile.titleKey) }),
+          on: {
+            click: () => {
+              haptic('select');
+              ctx.store.settings.update((s) => ({ ...s, hiddenTiles: off ? (s.hiddenTiles ?? []).filter((x) => x !== tile.id) : [...(s.hiddenTiles ?? []), tile.id] }));
+            },
+          },
+        },
+        icon(off ? 'eyeOff' : 'eye', { size: 20 }),
+      );
+    };
+    replace(
+      list,
+      tiles.map((tile, i) =>
+        h('li', { class: ['order-item', hidden.includes(tile.id) && 'is-hidden'] }, h('span', { class: 'order-title', text: t(tile.titleKey) }), eye(tile), arrow(tile, -1, i), arrow(tile, 1, i)),
+      ),
+    );
+  };
+  paint();
+  return { el: list, destroy: ctx.watch(['settings'], paint) };
+}
+
+/** @param {AppContext} ctx */
+export function openProfile(ctx) {
+  /** @type {(() => void)[]} */
+  let cleanups = [];
+  const sheet = openSheet({
+    title: t('profile.title'),
+    size: 'tall',
+    className: 'profile',
+    onClose: () => {
+      offLang();
+      cleanups.forEach((fn) => fn());
+    },
+  });
+  const paint = () => {
+    cleanups.forEach((fn) => fn());
+    cleanups = [];
+    sheet.setTitle(t('profile.title'));
+    sheet.body.replaceChildren(...buildProfile(ctx, sheet, cleanups));
+  };
+  // Sprache gewechselt: Inhalt neu, Bildlauf bleibt.
+  const offLang = ctx.bus.on('lang', () => {
+    const top = sheet.body.scrollTop;
+    paint();
+    sheet.body.scrollTop = top;
+  });
+  paint();
+  return sheet;
+}
+
+/**
+ * Profil als eigene Seite (Tab „Profil“, wenn in der Tab-Leiste Platz ist).
+ * @param {AppContext} ctx
+ * @param {HTMLElement} view
+ * @returns {() => void}
+ */
+export function mountProfilePage(ctx, view) {
+  /** @type {(() => void)[]} */
+  const cleanups = [];
+  const page = h('div', { class: 'profile profile-page' },
+    h('header', { class: 'page-head' }, h('h1', { class: 'page-title', text: t('view.profil') })),
+    buildProfile(ctx, null, cleanups),
+  );
+  view.append(page);
+  return () => cleanups.forEach((fn) => fn());
+}
+
+/**
+ * Inhalt des Profils.
+ * @param {AppContext} ctx
+ * @param {import('../../ui/sheet.js').Sheet|null} sheet   null: als eigene Seite (Tab „Profil“)
+ * @param {(() => void)[]} cleanups   wird befüllt
+ * @returns {Node[]}
+ */
+function buildProfile(ctx, sheet, cleanups) {
+  const { store, registry } = ctx;
+  const profile = store.profile.get() ?? emptyProfile();
+
+  const updateProfile = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), ...patch }));
+  const updateCompanion = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), companion: withCompanion(p, patch) }));
+
+  const hello = h('strong', { class: 'profile-hello' });
+  const goalLine = h('span', { class: 'profile-goal' });
+  const figure = h('span', { class: 'profile-figure' });
+  const paintHead = () => {
+    const p = store.profile.get() ?? emptyProfile();
+    hello.textContent = p.name ? t('profile.hi', { name: p.name }) : t('profile.hiAnon');
+    goalLine.textContent = p.goal ? goalLabel(p.goal) : t('profile.noGoal');
+    const c = ctx.companion();
+    replace(figure, isPlain(ctx) ? icon('user', { size: 32 }) : companionFigure({ species: c.species, mood: 'happy', stage: companionStage(ctx), label: c.name }));
+  };
+  paintHead();
+  cleanups.push(ctx.watch(['profile', 'settings'], paintHead));
+
+  const sample = h('p', { class: 'tone-sample' });
+  const paintSample = () => {
+    const c = ctx.companion();
+    sample.textContent = t('common.quote', {
+      text: companionLine('liveSet3', { species: c.species, name: c.name, tone: store.buddy.get().tone, user: store.profile.get()?.name ?? '', random: () => 0 }),
+    });
+  };
+  paintSample();
+
+  const mamaEdit = h('button', { type: 'button', class: 'link-button', text: t('profile.mamaEdit'), on: { click: () => openMamaSheet(ctx) } });
+  const paintMamaLink = () => (mamaEdit.hidden = !ctx.hasModule('mama'));
+  paintMamaLink();
+
+  const theme = themeControl(ctx);
+  const start = startViewControl(ctx);
+  const lang = languageControl(ctx);
+  const order = tileOrderList(ctx);
+  cleanups.push(theme.destroy, start.destroy, lang.destroy, order.destroy);
+
+  const modules = chipGroup({
+    label: t('profile.modules'),
+    variant: 'card',
+    multiple: true,
+    options: registry.list().map((m) => ({ value: m.id, label: t(m.labelKey), hint: t(m.hintKey), icon: m.icon })),
+    selected: ctx.modules(),
+    onChange: (selected) => {
+      const before = ctx.modules();
+      const changed = selected.find((v) => !before.includes(v)) ?? before.find((v) => !selected.includes(v));
+      if (!changed) return;
+      const next = toggleModule(before, changed, registry.ids());
+      store.settings.update((s) => ({ ...s, enabledModules: next }));
+      modules.setSelected(next);
+      paintMamaLink();
+      if (changed === 'mama' && next.includes('mama') && !store.mama.get()) openMamaSheet(ctx);
+    },
+  });
+
+  return [
+    h('div', { class: 'profile-head' }, figure, h('div', { class: 'profile-head-text' }, hello, goalLine)),
+    section(
+      t('profile.you'),
+      textField({
+        label: t('profile.name'),
+        value: profile.name,
+        placeholder: t('profile.namePlaceholder'),
+        maxlength: 24,
+        autocomplete: 'given-name',
+        onInput: (v) => updateProfile({ name: v.trim() }),
+      }),
+      settingRow(
+        t('profile.goal'),
+        chipGroup({
+          label: t('profile.goal'),
+          options: goalOptions().map(({ value, label }) => ({ value, label })),
+          selected: profile.goal ? [profile.goal] : [],
+          onChange: ([v]) => updateProfile({ goal: v ?? '' }),
+        }),
+      ),
+    ),
+    section(t('profile.modules'), modules, mamaEdit),
+    section(t('profile.order'), order.el, h('p', { class: 'field-hint', text: t('profile.orderHint') })),
+    companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }),
+    section(t('profile.view'), lang.el, theme.el, start.el),
+    section(t('data.title'), privacyPanel(ctx, { details: true })),
+    h('button', {
+      type: 'button',
+      class: 'link-button profile-restart',
+      text: t('profile.restart'),
+      on: {
+        click: async () => {
+          await sheet?.close('restart');
+          openOnboarding(ctx);
+        },
+      },
+    }),
+  ];
+}
+
+/**
+ * Stufe der Verbindung (steht nur hier, nicht an der Sprechblase auf „Heute“).
+ * @param {AppContext} ctx
+ */
+function bondRow(ctx) {
+  const value = h('p', { class: 'profile-bond-value' });
+  const paint = () => {
+    const stage = companionStage(ctx);
+    const total = tList(`species.${ctx.companion().species}.stages`).length || 4;
+    value.textContent = t('companion.bondValue', { stage: stageName(ctx, stage), n: stage, total });
+  };
+  paint();
+  return {
+    el: h('div', { class: 'setting profile-bond' }, h('p', { class: 'setting-label', text: t('companion.bond') }), value, h('p', { class: 'field-hint', text: t('companion.bondHint') })),
+    paint,
+  };
+}
+
+/**
+ * Abschnitt „Begleiter“: Schlicht-Schalter; ist er aus, Auswahl, Name und Ton.
+ * @param {AppContext} ctx
+ * @param {{updateCompanion: (patch: object) => void, paintSample: () => void, sample: HTMLElement, cleanups: (() => void)[]}} parts
+ */
+function companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }) {
+  const { store } = ctx;
+  const details = h('div', { class: 'profile-companion' });
+  const paintDetails = () => {
+    details.hidden = isPlain(ctx);
+    if (details.hidden) return replace(details);
+    const companion = ctx.companion();
+    const bond = bondRow(ctx);
+    const name = textField({
+      label: t('companion.name'),
+      value: companion.name,
+      placeholder: speciesInfo(companion.species).defaultName,
+      maxlength: COMPANION_NAME_MAX,
+      onInput: (v) => {
+        updateCompanion({ name: v });
+        paintSample();
+      },
+    });
+    replace(
+      details,
+      companionPicker({
+        value: companion.species,
+        onChange: (species) => {
+          const before = ctx.companion();
+          // Hieß er wie die alte Art, bekommt er den Namen der neuen.
+          const keepName = before.name !== speciesInfo(before.species).defaultName;
+          updateCompanion(keepName ? { species } : { species, name: '' });
+          name.input.value = ctx.companion().name;
+          name.input.placeholder = speciesInfo(species).defaultName;
+          paintSample();
+          bond.paint();
+        },
+      }),
+      name,
+      bond.el,
+      h(
+        'div',
+        { class: 'setting' },
+        h('p', { class: 'setting-label', text: t('companion.tone') }),
+        segmented({
+          label: t('companion.tone'),
+          options: TONES.map((id) => ({ value: id, label: t(`tone.${id}`) })),
+          value: store.buddy.get().tone,
+          onChange: (tone) => {
+            store.buddy.update((b) => ({ ...b, tone }));
+            paintSample();
+          },
+        }),
+        sample,
+      ),
+    );
+  };
+  paintDetails();
+  return section(
+    t('companion.section'),
+    switchRow({
+      label: t('companion.plain'),
+      hint: t('companion.plainHint'),
+      checked: isPlain(ctx),
+      onChange: (on) => {
+        setPlain(ctx, on);
+        paintDetails();
+      },
+    }),
+    details,
+  );
+}

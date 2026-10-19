@@ -1,0 +1,958 @@
+/**
+ * Nachtgarten – Teilen: Bildvorlagen für Instagram-Story, Feed und Strava.
+ *
+ * Handschrift (siehe docs/HANDSCHRIFT.md): „Ein Druck aus dem Nachtgarten“.
+ * Jede Einheit wird ein kleiner, signierter Druck – eine Linie, eine Zahl, ein Siegel.
+ *
+ * Jeder Renderer ist eine reine Funktion (data, opts) → Canvas.
+ *   laufSticker   a) transparenter Aufkleber: Route als ein Pinselstrich + drei Zahlen
+ *   laufKarte     b) Route als Sternbild, mit Mondphase zur Laufzeit
+ *   kraftKarte    c) Körperbeet (kompakt) bzw. Programmheft mit Mini-Posen (detailliert)
+ *   bewegungsStudie  g) die Hauptübung als Serienfotografie mit dem Pixel-Mannequin (kraftbilder.js)
+ *   sammelKarte   h) jede Übung eine Sammelkarte; detailliert der ganze Kartensatz (kraftbilder.js)
+ *   pixelStempel  d) Briefmarke mit Pixel-Garten und Begleiter, Poststempel
+ *   minimalTypo   e) nur Ziffern, wie ein Plakat (auch als Bestwert-Karte)
+ *   tempoWelle    f) generative Linien aus dem Tempo je Kilometer
+ *
+ * opts: {
+ *   theme: 'hell'|'dunkel', transparent?: boolean,
+ *   format?: 'story' (1080×1920, Standard) | 'feed' (1080×1350) | 'kompakt' (nur Sticker: eng zugeschnitten),
+ *   detail?: 'kompakt' (Standard) | 'detailliert', focus?: 'bestwert',
+ *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', sealRows?: string[] (9 × 9, „#“ ausgespart),
+ *   companion?: {species?, rows?, colors?} (opt-in: Pixel-Siegel des Begleiters statt der Mondsichel; species/rows → Figur in der Briefmarke),
+ *   figure?: boolean (Figur zeigen; Standard je Vorlage – Programmheft-Piktogramme und Studie ja, Laufkarten nein)
+ * }
+ * Schriften vorher laden (ensureFonts). In der Story bleibt alles Beschriftete in der
+ * sicheren Zone (oben 250 px, unten 340 px frei).
+ */
+
+import {
+  chaikin, fit, isLoop, markersEvery, project, simplify, simplifyTo,
+} from './geo.js';
+import {
+  facts, fmtCoord, fmtDateLong, fmtDateShort, fmtInt, fmtKg, fmtMonth, fmtPace, fmtTime, moonName, moonPhase,
+  musclesText, paceProfile, setsCompact, setsText, summarizeStrength, suggestCards, MUSCLE_NAMES,
+} from './data.js';
+import { drawRunner } from './laeufer.js';
+import { SHARED_PALETTE, SPECIES } from '../companion/sprites.js';
+import { bewegungsStudie, drawPoseIcon, koerperbeet, sammelKarte } from './kraftbilder.js';
+
+export { bewegungsStudie, koerperbeet, sammelKarte } from './kraftbilder.js';
+
+export * from './data.js';
+
+import {
+  FORMATS, FRAME, M, SAFE, SANS, SERIF, W, begin, measureNum, writeNum, blossom, breathingWidth, brushStroke, fitSize, fontOf,
+  hairline, makeCanvas, measure, paper, seal, signature, statRow, withShadow, write, writeRun,
+} from './ink.js';
+
+export {
+  W, H, SAFE, FORMATS, FRAME, SERIF, SANS, PALETTES, SEALS,
+} from './ink.js';
+
+// ───────────────────────────── Mond ─────────────────────────────
+
+/** Mondphase als feine Zeichnung: Scheibe zart, beleuchteter Teil in Tinte. */
+function moonGlyph(ctx, x, y, r, phase, color) {
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 0.95;
+  const waxing = phase < 0.5;
+  const k = Math.cos(2 * Math.PI * phase);
+  ctx.beginPath();
+  ctx.arc(x, y, r, -Math.PI / 2, Math.PI / 2, !waxing);
+  ctx.ellipse(x, y, Math.max(0.01, r * Math.abs(k)), r, 0, Math.PI / 2, -Math.PI / 2, waxing ? k > 0 : k <= 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+// ───────────────────────────── Detail-Zeilen ─────────────────────────────
+
+/**
+ * Zeilen für die detaillierte Ansicht.
+ * Kraft: jede Übung mit Sätzen; Lauf: jeder Kilometer mit Tempo (Balken = Geschwindigkeit).
+ */
+export function detailRows(data) {
+  if (data.type === 'kraft') {
+    return (data.exercises || []).map((ex) => {
+      const t = setsText(ex);
+      return { left: ex.name, right: t.reps, sub: musclesText(ex), subRight: t.load, mark: !!ex.pr };
+    });
+  }
+  const paces = paceProfile(data);
+  const fastest = Math.min(...paces);
+  const slowest = Math.max(...paces);
+  const full = Math.floor((data.distanceM || 0) / 1000);
+  return paces.map((p, i) => ({
+    left: i < full || !data.distanceM ? `${i + 1}. Kilometer` : `letzte ${fmtInt((data.distanceM % 1000) || 1000)} m`,
+    right: fmtPace(p),
+    unit: '/km',
+    speed: slowest - fastest ? (slowest - p) / (slowest - fastest) : 0.5,
+    mark: p === fastest && paces.length > 1,
+  }));
+}
+
+
+/**
+ * Detail-Zeilen wie ein Programmheft: Name links, Punktlinie, Wert rechts,
+ * darunter klein die Muskeln bzw. das Gewicht. Gibt die benutzte Höhe zurück.
+ */
+function drawRows(ctx, rows, x1, x2, y, rowH, pal, { px = 46, subPx = 26, index = true, compact = false, icon = null } = {}) {
+  const ix = icon ? icon.size + Math.round(px * 0.6) : index ? Math.round(px * 1.1) : 0;
+  rows.forEach((r, k) => {
+    const base = y + k * rowH + px * 0.8;
+    if (icon) {
+      // Mini-Pose mittig zur Zeile (Name + Unterzeile), Nummer klein in der Ecke
+      const mid = compact ? base - px * 0.3 : base + (subPx + 14) / 2 - px * 0.3;
+      const iy = Math.round(mid - icon.size / 2);
+      icon.draw(k, x1, iy);
+    } else if (index) write(ctx, String(k + 1), x1, base, { px: px * 0.62, italic: true, color: pal.roseInk });
+    const nameW = write(ctx, r.left, x1 + ix, base, { px, color: pal.ink });
+    let after = x1 + ix + nameW + 16;
+    if (r.mark) {
+      const bp = Math.max(3, Math.round(px / 9));
+      blossom(ctx, after + bp * 2, Math.round(base - px * 0.34), bp, pal);
+      after += bp * 5;
+      if (!compact && r.sub != null) after += write(ctx, 'Bestwert', after + 4, base, { px: subPx + 2, italic: true, color: pal.roseInk }) + 12;
+    }
+    const rightParts = [{ t: r.right, px, color: pal.ink }];
+    if (r.unit) rightParts.push({ t: r.unit, px: px * 0.5, italic: true, color: pal.muted, gap: 6 });
+    const rw = rightParts.reduce((a, p) => a + measure(ctx, p.t, p) + (p.gap || 0), 0);
+    const leadEnd = x2 - rw - 22;
+    if (r.speed != null) {
+      const len = Math.max(0, leadEnd - after - 10) * (0.25 + 0.75 * r.speed);
+      ctx.save();
+      ctx.strokeStyle = r.mark ? pal.rose : pal.ink;
+      ctx.globalAlpha = r.mark ? 0.95 : 0.26;
+      ctx.lineWidth = r.mark ? 4 : 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(leadEnd - len, base - px * 0.28); ctx.lineTo(leadEnd, base - px * 0.28); ctx.stroke();
+      ctx.restore();
+    } else if (leadEnd - after > 24) {
+      ctx.save();
+      ctx.fillStyle = pal.ink;
+      ctx.globalAlpha = 0.26;
+      for (let x = after + 8; x < leadEnd; x += 13) { ctx.beginPath(); ctx.arc(x, base - 6, 1.6, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    writeRun(ctx, rightParts, x2, base, 'right');
+    if (!compact && (r.sub || r.subRight)) {
+      const sy = base + subPx + 14;
+      if (r.sub) write(ctx, r.sub, x1 + ix, sy, { px: subPx, italic: true, color: pal.muted });
+      if (r.subRight) write(ctx, r.subRight, x2, sy, { px: subPx, serif: false, color: pal.muted, align: 'right' });
+    } else if (compact && r.subRight) {
+      // kompakte Zeile: Gewicht direkt hinter die Sätze
+    }
+  });
+  return rows.length * rowH;
+}
+
+/** Kompakte Kraft-Zeilen: eine Zeile je Übung ("3 × 8 · 100 kg", "10 · 10 · 8 · bis 85 kg"). */
+function compactRows(data, rows) {
+  return rows.map((r, i) => ({ ...r, right: setsCompact((data.exercises || [])[i] || {}) || r.right }));
+}
+
+// ───────────────────────────── a) Lauf-Sticker ─────────────────────────────
+
+/**
+ * Transparenter Aufkleber: Route als ein Pinselstrich, darunter Distanz, Zeit und Tempo.
+ * theme 'hell' = dunkle Tinte (für helle Fotos), 'dunkel' = helle Tinte (für dunkle Fotos).
+ * format 'kompakt' liefert ein eng zugeschnittenes Bild (1080 breit) zum Kopieren in die Story.
+ * opts.transparent (Standard true); false legt Papier darunter. opts.anchor: 'unten' | 'oben'.
+ */
+export function laufSticker(run, opts = {}) {
+  const o = { transparent: true, ...opts, template: 'sticker' };
+  const routeH = 420; const blockH = routeH + 60 + 196 + 132 + 152 + 20;
+  const compact = o.format === 'kompakt';
+  const size = compact ? { w: W, h: blockH + 110 } : null;
+  const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o, size);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  stage();
+  const f = facts(run);
+  const light = transparent && theme === 'dunkel';
+  const ink = light ? '#F8F2ED' : pal.ink;
+  const muted = light ? 'rgba(248,242,237,0.86)' : pal.muted;
+  const shadow = transparent ? (light ? 'rgba(18,12,10,0.45)' : 'rgba(255,250,246,0.6)') : null;
+  const p = { ...pal, ink, muted };
+  const top = compact ? 60 : o.anchor === 'oben' ? SAFE.top + 40 : SAFE.bottom - blockH;
+
+  const meters = project(run.route || []);
+  const simple = chaikin(simplify(meters, 3), 2);
+  const fitted = fit(simple, { x: 0, y: 0, w: 520, h: routeH }).points;
+  const bx = fitted.length ? Math.min(...fitted.map((q) => q[0])) : 0;
+  const by = fitted.length ? Math.max(...fitted.map((q) => q[1])) : routeH;
+  const pts = fitted.map(([x, y]) => [x - bx + M + 10, y - by + top + routeH]);
+  withShadow(ctx, shadow, 22, () => {
+    brushStroke(ctx, pts, breathingWidth(14, paceProfile(run)), ink);
+    if (pts.length) {
+      const a = pts[0]; const z = pts[pts.length - 1];
+      ctx.strokeStyle = ink; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(a[0], a[1], 16, 0, Math.PI * 2); ctx.stroke();
+      if (Math.hypot(z[0] - a[0], z[1] - a[1]) > 34) {
+        ctx.fillStyle = pal.rose;
+        ctx.beginPath(); ctx.arc(z[0], z[1], 10, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  });
+  // Die Läuferin steht am Ziel, mitten im Schritt – als hätte sie die Linie gerade gezogen
+  if (pts.length && o.figure) {
+    const z = pts[pts.length - 1];
+    const fig = makeCanvas(160, 200, o);
+    const fc = fig.getContext('2d');
+    drawRunner(fc, 80, 196, 120, transparent ? (light ? 'dunkel' : 'hell') : theme, { makeCanvas: (a, b) => makeCanvas(a, b, o) });
+    withShadow(ctx, shadow, 18, () => ctx.drawImage(fig, Math.round(z[0] + 86 - 80), Math.round(z[1] + 14 - 196)));
+  }
+  const yHero = top + routeH + 60 + 196;
+  withShadow(ctx, shadow, 28, () => {
+    if (detailed) write(ctx, f.title, W - M, top + 40, { px: 40, italic: true, color: muted, align: 'right' });
+    writeRun(ctx, [
+      { t: f.hero.value, px: 260, color: ink, tracking: -5 },
+      { t: f.hero.unit, px: 90, italic: true, color: muted, gap: 20 },
+    ], M - 8, yHero);
+    const stats = detailed ? f.stats.slice(0, 3) : f.stats.slice(0, 2);
+    statRow(ctx, stats, M, M + (detailed ? 780 : 560), yHero + 132, p, { px: 80, labelPx: 28, align: 'left', muted });
+    signature(ctx, M, yHero + 132 + 152, p, rand, o, { align: 'left', px: 32, color: muted });
+  });
+  return canvas;
+}
+
+// ───────────────────────────── b) Lauf-Karte „Sternbild“ ─────────────────────────────
+
+/** Ein Stern: Punkt mit zartem Kreuz (keine Leuchteffekte). */
+function starShape(ctx, x, y, r, color, alpha, ring = false) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x, y, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.2, r * 0.16);
+  ctx.globalAlpha = alpha * 0.7;
+  ctx.beginPath();
+  ctx.moveTo(x - r * 1.5, y); ctx.lineTo(x + r * 1.5, y);
+  ctx.moveTo(x, y - r * 1.5); ctx.lineTo(x, y + r * 1.5);
+  ctx.stroke();
+  if (ring) {
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, r * 2.3, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Abbildung Meter → Kreis: Mitte des Rahmens in die Kreismitte, weitester Punkt auf radius. */
+function circleFit(meters, cx, cy, radius) {
+  if (!meters.length) return (p) => p;
+  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+  for (const [x, y] of meters) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+  const mx = (minX + maxX) / 2; const my = (minY + maxY) / 2;
+  const far = Math.max(1e-6, ...meters.map(([x, y]) => Math.hypot(x - mx, y - my)));
+  const k = radius / far;
+  return ([x, y]) => [cx + (x - mx) * k, cy + (y - my) * k];
+}
+
+/**
+ * Die Route als Sternbild: markante Knicke werden Sterne, feine Linien verbinden sie,
+ * jeder Kilometer ist ein Stern in Altrosa – der schnellste leuchtet am hellsten.
+ * Oben die Mondphase zur Laufzeit, unten Koordinaten wie im Sternatlas.
+ */
+export function laufKarte(run, opts = {}) {
+  const o = { ...opts, template: 'sternbild' };
+  const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  const dark = theme === 'dunkel';
+  const star = dark ? '#F4ECE6' : pal.ink;
+  if (!transparent) {
+    for (let i = 0; i < 360; i++) {
+      const x = rand() * w; const y = rand() * h;
+      const r = rand() ** 3 * 2.4 + 0.6;
+      ctx.globalAlpha = (dark ? 0.1 : 0.08) + rand() * (dark ? 0.38 : 0.2);
+      ctx.fillStyle = rand() < 0.1 ? pal.rose : star;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+  stage();
+  const f = facts(run);
+  const when = run.start || run.date;
+
+  const R = detailed ? 290 : 340;
+  const cx = W / 2; const cy = SAFE.top + 104 + R;
+  // Sternkarte: zwei Ringe mit feiner Gradteilung (wie ein Astrolabium), innen ein gepunkteter Kreis
+  ctx.save();
+  ctx.strokeStyle = pal.ink;
+  ctx.globalAlpha = dark ? 0.16 : 0.15;
+  ctx.lineWidth = 1.4;
+  const r1 = R + 18; const r2 = R + 40;
+  ctx.beginPath(); ctx.arc(cx, cy, r1, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, r2, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath();
+  for (let d = 0; d < 360; d += 2) {
+    const a = (d * Math.PI) / 180;
+    const len = d % 30 === 0 ? 22 : d % 10 === 0 ? 12 : 6;
+    ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.lineTo(cx + Math.cos(a) * (r1 + len), cy + Math.sin(a) * (r1 + len));
+  }
+  ctx.stroke();
+  ctx.globalAlpha = dark ? 0.12 : 0.11;
+  ctx.setLineDash([2, 10]);
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.62, 0, Math.PI * 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  const meters = project(run.route || []);
+  const stars = simplifyTo(meters, 22, 8);
+  // Einpassen nach Radius: die Route füllt den Kreis, egal wie sie geformt ist.
+  const kmRaw = markersEvery(meters, 1000);
+  const toCircle = circleFit(meters, cx, cy, R * 0.84);
+  const sp = stars.map(toCircle);
+  const kmMarks = kmRaw.map(toCircle);
+
+  ctx.save();
+  ctx.strokeStyle = star;
+  ctx.globalAlpha = dark ? 0.5 : 0.45;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  sp.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  if (isLoop(meters)) ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+  sp.forEach(([x, y], i) => {
+    const a = sp[(i - 1 + sp.length) % sp.length]; const b = sp[(i + 1) % sp.length];
+    const v1 = [x - a[0], y - a[1]]; const v2 = [b[0] - x, b[1] - y];
+    const cos = (v1[0] * v2[0] + v1[1] * v2[1]) / ((Math.hypot(...v1) * Math.hypot(...v2)) || 1);
+    starShape(ctx, x, y, 3.5 + ((1 - cos) / 2) * 8 + rand() * 2, star, 0.92);
+  });
+  const paces = paceProfile(run);
+  const pMin = Math.min(...paces); const pMax = Math.max(...paces);
+  kmMarks.forEach(([x, y], i) => {
+    const pace = paces[i] || pMax;
+    const s01 = pMax - pMin ? (pMax - pace) / (pMax - pMin) : 0.5;
+    starShape(ctx, x, y, 5 + s01 * 6, pal.rose, 0.55 + 0.45 * s01, pace === pMin && paces.length > 1);
+    const dx = x - cx; const dy = y - cy; const d = Math.hypot(dx, dy) || 1;
+    write(ctx, String(i + 1), x + (dx / d) * 36, y + (dy / d) * 36 + 10, { px: 30, italic: true, color: pal.roseInk, align: 'center' });
+  });
+  if (sp.length) {
+    ctx.strokeStyle = pal.sage; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(sp[0][0], sp[0][1], 16, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  write(ctx, f.line, M, SAFE.top + 34, { px: 30, italic: true, color: pal.muted });
+  const phase = moonPhase(when);
+  write(ctx, moonName(phase), W - M - 50, SAFE.top + 34, { px: 30, italic: true, color: pal.muted, align: 'right' });
+  moonGlyph(ctx, W - M - 18, SAFE.top + 24, 17, phase, star);
+
+  const route = run.route || [];
+  if (route.length) {
+    const lat = route.reduce((a, q) => a + q[0], 0) / route.length;
+    const lon = route.reduce((a, q) => a + q[1], 0) / route.length;
+    const yC = cy + R + 104;
+    if (o.figure) {
+      write(ctx, fmtCoord(lat, 'N', 'S'), W / 2 - 46, yC, { px: 26, serif: false, color: pal.muted, align: 'right', tracking: 1 });
+      write(ctx, fmtCoord(lon, 'O', 'W'), W / 2 + 46, yC, { px: 26, serif: false, color: pal.muted, align: 'left', tracking: 1 });
+      drawRunner(ctx, W / 2, yC + 6, 52, theme, { colors: { ink: pal.ink, far: pal.far }, makeCanvas: (a, b) => makeCanvas(a, b, o) });
+    } else write(ctx, `${fmtCoord(lat, 'N', 'S')}   ${fmtCoord(lon, 'O', 'W')}`, W / 2, yC, { px: 26, serif: false, color: pal.muted, align: 'center', tracking: 1 });
+  }
+  const name = run.constellation ? `Sternbild „${run.constellation}“` : f.title;
+  if (detailed) {
+    const yT = cy + R + 196;
+    write(ctx, name, W / 2, yT, { px: 70, color: pal.ink, align: 'center' });
+    write(ctx, `${f.hero.value} km  ·  ${f.stats[0].value}  ·  ${f.stats[1].value} /km`, W / 2, yT + 56, { px: 34, italic: true, color: pal.muted, align: 'center' });
+    const rows = detailRows(run);
+    const y0 = yT + 100;
+    const avail = SAFE.bottom - 80 - y0;
+    const rowH = Math.min(54, avail / rows.length);
+    drawRows(ctx, rows, M + 30, W - M - 30, y0, rowH, pal, { px: Math.min(34, rowH * 0.64), index: false, compact: true });
+  } else {
+    // Name groß, „Sternbild“ klein darüber – wie die Beschriftung im Sternatlas
+    const yT = cy + R + 104 + 196;
+    const big = run.constellation || f.title;
+    const bPx = fitSize(ctx, big, W - 2 * M, {}, run.constellation ? 150 : 104);
+    if (run.constellation) write(ctx, 'Sternbild', W / 2, yT - bPx * 0.78 - 18, { px: 34, italic: true, color: pal.roseInk, align: 'center' });
+    write(ctx, big, W / 2, yT, { px: bPx, color: pal.ink, align: 'center' });
+    statRow(ctx, [{ value: f.hero.value, unit: 'km', label: 'Distanz' }, ...f.stats.slice(0, 2)], M + 20, W - M - 20, SAFE.bottom - 112, pal, { px: 66, labelPx: 25, align: 'center' });
+  }
+  signature(ctx, W / 2, SAFE.bottom - 10, pal, rand, o, { align: 'center', px: 30 });
+  return canvas;
+}
+
+// ───────────────────────────── c) Kraft: Körperbeet & Programmheft ─────────────────────────────
+
+/**
+ * Krafttraining. Kompakt: das Körperbeet – zwei Pixel-Mannequins (vorn, hinten),
+ * trainierte Muskeln getönt, die stärksten blühen; drei Zahlen.
+ * Detailliert: das Programmheft (programmKarte).
+ */
+export function kraftKarte(workout, opts = {}) {
+  if (opts.detail === 'detailliert') return programmKarte(workout, opts);
+  return koerperbeet(workout, opts);
+}
+
+/** Gewicht einer Übung für die Tabelle: „100 kg“, „80–85 kg“, ohne Gewicht leer. */
+export function weightCell(ex) {
+  const kgs = (ex.sets || []).map((st) => Number(st.kg) || 0).filter((k) => k > 0);
+  if (!kgs.length) return { value: '', unit: '', note: ex.bodyweight === false ? '' : 'Körpergewicht' };
+  const lo = Math.min(...kgs); const hi = Math.max(...kgs);
+  return { value: lo === hi ? fmtKg(hi) : `${fmtKg(lo)}–${fmtKg(hi)}`, unit: 'kg', note: ex.perSide ? 'je Seite' : '' };
+}
+
+/**
+ * Das Programmheft: das ganze Training als präzise Tabelle – für Strava und den Feed.
+ * Kopf mit Datum und Titel, darunter eine Zeile mit Volumen, Sätzen, Dauer und Bestwert,
+ * dann je Übung: Piktogramm (optional, opts.figure), Name, Sätze × Wdh., Gewicht –
+ * Ziffern in festen Breiten, feine Linien zwischen den Zeilen.
+ * Eigenes Layout für Story (9:16) und Feed (4:5).
+ */
+export function programmKarte(workout, opts = {}) {
+  const o = { ...opts, template: 'programm' };
+  const fmt = o.format === 'feed' ? 'feed' : 'story';
+  const { canvas, ctx, pal, theme, rand, transparent, w, h } = begin(workout, o, FORMATS[fmt]);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  const fr = FRAME[fmt];
+  const feed = fmt === 'feed';
+  const s = summarizeStrength(workout);
+  const f = facts(workout);
+  const x1 = M; const x2 = W - M;
+  const K = feed ? 0.84 : 1; // Maßstab Feed
+  const when = workout.start || workout.date;
+  const showFig = o.figure !== false;
+
+  // Kopf
+  const yMeta = fr.top + 30;
+  write(ctx, `${fmtDateLong(when)}${workout.start ? ` · ${fmtTime(when)}` : ''}`, x1, yMeta, { px: 26 * K, serif: false, color: pal.muted });
+  if (workout.edition) writeNum(ctx, `Nr. ${workout.edition}`, x2, yMeta, { px: 26 * K, serif: false, color: pal.muted, align: 'right' });
+  const tPx = fitSize(ctx, f.title, x2 - x1, { trackingEm: -0.015 }, 132 * K);
+  const yTitle = yMeta + 30 * K + tPx * 0.8;
+  write(ctx, f.title, x1 - tPx * 0.04, yTitle, { px: tPx, color: pal.ink, tracking: -tPx * 0.015 });
+  let yHeadEnd = yTitle;
+  if (workout.place) { yHeadEnd = yTitle + 48 * K; write(ctx, workout.place, x1, yHeadEnd, { px: 28 * K, serif: false, color: pal.muted }); }
+
+  // Zusammenfassung: vier Spalten auf einem Raster
+  const ySumTop = yHeadEnd + 44 * K;
+  hairline(ctx, x1, ySumTop, x2, pal.ink, 0.85, 2);
+  const pr = s.prs[0];
+  const cells = [
+    { value: fmtInt(s.volume), unit: 'kg', label: 'Volumen' },
+    { value: fmtInt(s.sets), unit: '', label: s.sets === 1 ? 'Satz' : 'Sätze' },
+    workout.durationS > 0 ? { value: fmtInt(workout.durationS / 60), unit: 'min', label: 'Dauer' } : { value: fmtInt((workout.exercises || []).length), unit: '', label: 'Übungen' },
+    pr ? { value: fmtKg(pr.kg), unit: 'kg', label: 'Bestwert', accent: true }
+      : s.top ? { value: fmtKg(s.top.kg), unit: 'kg', label: 'schwerster Satz' } : null,
+  ].filter(Boolean);
+  // Spalten nach Inhalt: jede so breit wie ihre Zahl, der Rest gleichmäßig als Abstand
+  let numPx = 68 * K;
+  const cellW = (c, px) => measureNum(ctx, c.value, { px }) + (c.unit ? 8 * K + measure(ctx, c.unit, { px: px * 0.4, italic: true }) : 0);
+  const labelOf = (c) => c.label;
+  let widths = cells.map((c) => Math.max(cellW(c, numPx), measure(ctx, labelOf(c), { px: 22 * K, serif: false })));
+  while (widths.reduce((a, b) => a + b, 0) > (x2 - x1) - 3 * 36 * K && numPx > 40) {
+    numPx -= 2;
+    widths = cells.map((c) => Math.max(cellW(c, numPx), measure(ctx, labelOf(c), { px: 22 * K, serif: false })));
+  }
+  const free = (x2 - x1 - widths.reduce((a, b) => a + b, 0)) / Math.max(1, cells.length - 1);
+  const yNum = ySumTop + 30 * K + numPx * 0.78;
+  let cx = x1;
+  cells.forEach((c, i) => {
+    const col = c.accent ? pal.roseInk : pal.ink;
+    const nw = writeNum(ctx, c.value, cx, yNum, { px: numPx, color: col });
+    if (c.unit) write(ctx, c.unit, cx + nw + 8 * K, yNum, { px: numPx * 0.4, italic: true, color: c.accent ? pal.roseInk : pal.muted });
+    write(ctx, c.label, cx, yNum + 38 * K, { px: 22 * K, serif: false, color: c.accent ? pal.roseInk : pal.muted });
+    cx += widths[i] + free;
+  });
+  const ySumEnd = yNum + 74 * K;
+  hairline(ctx, x1, ySumEnd, x2, pal.ink, 0.16, 1.5);
+
+  // Tabelle: Spaltenbreiten aus dem Inhalt, eine Namensgröße für alle Zeilen
+  const exs = workout.exercises || [];
+  const footTop = fr.bottom - (feed ? 54 : 70);
+  const icon = showFig ? Math.round(64 * K) : 0;
+  const nameX = x1 + (icon ? icon + 28 * K : 0);
+  const yHead = ySumEnd + 56 * K;
+  const yRows = yHead + 22 * K;
+  const rowH = Math.min((feed ? 120 : 150) * K, (footTop - yRows) / Math.max(1, exs.length));
+  const vpx = Math.max(24, Math.min(36 * K, rowH * 0.3));
+  const spx = Math.max(18, Math.round(vpx * 0.62));
+  const val = { px: vpx, serif: false, weight: 600 };
+  const cellsW = exs.map((ex) => weightCell(ex));
+  const wW = Math.max(measure(ctx, 'Gewicht', { px: 22 * K, serif: false }), ...cellsW.map((c) => (c.value ? measureNum(ctx, c.value, val) + 7 + measure(ctx, 'kg', { px: vpx * 0.62, serif: false }) : 0)));
+  const colRep = x2 - wW - 44 * K;
+  const rW = Math.max(measure(ctx, 'Sätze × Wdh.', { px: 22 * K, serif: false }), ...exs.map((ex) => measureNum(ctx, setsText(ex).reps, val)));
+  const nameMax = colRep - rW - 32 * K - nameX;
+  const npx = Math.max(22, Math.min(vpx, ...exs.map((ex) => fitSize(ctx, ex.name, nameMax, { serif: false, weight: 600 }, vpx))));
+  const hpx = 22 * K;
+  write(ctx, 'Übung', nameX, yHead, { px: hpx, serif: false, color: pal.muted });
+  write(ctx, 'Sätze × Wdh.', colRep, yHead, { px: hpx, serif: false, color: pal.muted, align: 'right' });
+  write(ctx, 'Gewicht', x2, yHead, { px: hpx, serif: false, color: pal.muted, align: 'right' });
+  hairline(ctx, x1, yRows, x2, pal.ink, 0.16, 1.5);
+  exs.forEach((ex, k) => {
+    const top = yRows + k * rowH;
+    const mid = top + rowH / 2;
+    const yName = mid - 2;
+    write(ctx, ex.name, nameX, yName, { px: npx, serif: false, weight: 600, color: pal.ink });
+    const mus = musclesText(ex);
+    if (mus) write(ctx, mus, nameX, yName + spx + 12, { px: spx, serif: false, color: pal.muted });
+    writeNum(ctx, setsText(ex).reps, colRep, yName, { ...val, color: pal.ink, align: 'right' });
+    const wc = cellsW[k];
+    if (wc.value) {
+      const uw = measure(ctx, 'kg', { px: vpx * 0.62, serif: false });
+      write(ctx, 'kg', x2, yName, { px: vpx * 0.62, serif: false, color: pal.muted, align: 'right' });
+      writeNum(ctx, wc.value, x2 - uw - 7, yName, { ...val, color: ex.pr ? pal.roseInk : pal.ink, align: 'right' });
+    } else write(ctx, '–', x2, yName, { px: vpx, serif: false, color: pal.faint, align: 'right' });
+    const note = ex.pr ? 'Bestwert' : wc.note;
+    if (note) write(ctx, note, x2, yName + spx + 12, { px: spx, serif: false, color: ex.pr ? pal.roseInk : pal.muted, align: 'right' });
+    if (icon) drawPoseIcon(ctx, ex, x1, Math.round(mid - icon / 2 + 4), icon, theme, pal, o);
+    if (k < exs.length - 1) hairline(ctx, nameX, top + rowH, x2, pal.ink, 0.09, 1.2);
+  });
+  hairline(ctx, x1, yRows + exs.length * rowH, x2, pal.ink, 0.16, 1.5);
+
+  const yEnd = fr.bottom - (feed ? 4 : 12);
+  signature(ctx, x2, yEnd, pal, rand, o, { align: 'right', px: feed ? 26 : 28 });
+  return canvas;
+}
+
+// ───────────────────────────── d) Pixel-Stempel „Briefmarke“ ─────────────────────────────
+
+/** Elli, das Elefantenbaby (Seitenansicht, schaut nach rechts). Platzhalter, bis src/ui/companion sie liefert. */
+export const ELLI = {
+  rows: [
+    '.........bbbbbb.......',
+    '......bbbbbbbbbbb.....',
+    '....bbbbbbbppbbbbbb...',
+    '...bbbbbbbppppbbbbbb..',
+    '..bbbbbbbbppppbbbebbb.',
+    '..bbbbbbbbbppbbbbbbcb.',
+    '.bbbbbbbbbbbbbbbbbbbbb',
+    '.bbbbbbbbbbbbbbbbbb.bb',
+    'tbbbbbbbbbbbbbbbbbb..b',
+    '.bbbbbbbbbbbbbbbbbb..b',
+    '..sbbbbbbbbbbbbbbs..bb',
+    '..sbbs.sbbs.sbbs.sbbs.',
+    '..sbbs.sbbs.sbbs.sbbs.',
+    '..ssss.ssss.ssss.ssss.',
+  ],
+  colors: {
+    hell: { b: '#A39894', s: '#8A807C', p: '#D7AFA6', e: '#2E2A28', c: '#C99A90', t: '#8A807C' },
+    dunkel: { b: '#A49A97', s: '#857B79', p: '#D3A99F', e: '#1C1A1A', c: '#D3A99F', t: '#857B79' },
+  },
+};
+
+/** Pflanzen-Sprites. „g“ Blatt, „d“ dunkles Blatt, „r“ Blüte, „y“ Mitte, „w“ hell. */
+const PLANTS = [
+  ['.g.', 'gg.', '.g.'],
+  ['g.g', '.g.', '.g.', '.g.'],
+  ['.r.', 'ryr', '.r.', 'g.g', '.dg', '.g.'],
+  ['.w.w.', 'wwyww', '.www.', '..g..', '.gg.d', '..g..', '..g..'],
+  ['.rrr.', 'rryrr', '.rrr.', '..g..', 'dgg..', '..ggd', '..g..', '..g..', '..g..'],
+];
+
+function sprite(ctx, rows, colors, x, y, p) {
+  rows.forEach((row, j) => [...row].forEach((ch, i) => {
+    const c = colors[ch];
+    if (!c) return;
+    ctx.fillStyle = c;
+    ctx.fillRect(x + i * p, y + j * p, p, p);
+  }));
+}
+
+/**
+ * Der eigene Begleiter als Pixel-Figur für die Briefmarke (Standbild „stolz“, eng zugeschnitten).
+ * Unbekannte Art → null.
+ */
+export function companionSprite(species) {
+  const sp = species && SPECIES[species];
+  const grid = sp && (sp.frames.proud || sp.frames.idle)[0].grid;
+  if (!grid) return null;
+  const keep = (ch) => ch !== '.' && ch !== 'D'; // ohne Bodenschatten
+  const ys = grid.map((r, y) => ([...r].some(keep) ? y : -1)).filter((y) => y >= 0);
+  const xs = grid.flatMap((r) => [...r].map((ch, x) => (keep(ch) ? x : -1))).filter((x) => x >= 0);
+  const x0 = Math.min(...xs); const x1 = Math.max(...xs);
+  const rows = grid.slice(ys[0], ys[ys.length - 1] + 1).map((r) => [...r.slice(x0, x1 + 1)].map((ch) => (keep(ch) ? ch : '.')).join(''));
+  const pick = (mode) => Object.fromEntries([...Object.entries(sp.palette), ...Object.entries(SHARED_PALETTE)].map(([k, v]) => [k, v[mode]]));
+  return { rows, colors: { hell: pick('light'), dunkel: pick('dark') } };
+}
+
+/** Pixel-Szene: Himmel, Mond in der echten Phase, Sterne, Garten (wächst mit den Einheiten), Elli. */
+function pixelScene(ctx, x0, y0, cols, rowsN, p, theme, data, rand, opts) {
+  const dark = theme === 'dunkel';
+  const sky = dark ? ['#1D1A1B', '#221E1F', '#282324', '#2F2929', '#373030'] : ['#E6CFC8', '#EBD4CA', '#EFDACD', '#F2E0D2', '#F5E7DA'];
+  const groundY = rowsN - 13;
+  const bandH = groundY / sky.length;
+  const bayer = [[0, 2], [3, 1]];
+  for (let j = 0; j < groundY; j++) {
+    const fb = j / bandH;
+    const b = Math.min(sky.length - 1, Math.floor(fb));
+    const frac = fb - b;
+    for (let i = 0; i < cols; i++) {
+      const next = b + 1 < sky.length && frac > 0.55 && (frac - 0.55) * 9 > bayer[j % 2][i % 2] ? b + 1 : b;
+      ctx.fillStyle = sky[next];
+      ctx.fillRect(x0 + i * p, y0 + j * p, p, p);
+    }
+  }
+  const starC = dark ? '#EEE7E3' : '#FFFFFF';
+  for (let k = 0; k < (dark ? 24 : 9); k++) {
+    const i = 2 + Math.floor(rand() * (cols - 4)); const j = 16 + Math.floor(rand() * (groundY - 34));
+    ctx.fillStyle = starC;
+    ctx.globalAlpha = 0.45 + rand() * 0.5;
+    ctx.fillRect(x0 + i * p, y0 + j * p, p, p);
+    if (rand() < 0.22) {
+      ctx.globalAlpha = 0.3;
+      ctx.fillRect(x0 + (i - 1) * p, y0 + j * p, p, p); ctx.fillRect(x0 + (i + 1) * p, y0 + j * p, p, p);
+      ctx.fillRect(x0 + i * p, y0 + (j - 1) * p, p, p); ctx.fillRect(x0 + i * p, y0 + (j + 1) * p, p, p);
+    }
+  }
+  ctx.globalAlpha = 1;
+  const phase = moonPhase(data.start || data.date);
+  const k = Math.cos(2 * Math.PI * phase);
+  const mx = cols - 13; const my = 22; const mr = 5.6;
+  for (let j = -6; j <= 6; j++) {
+    for (let i = -6; i <= 6; i++) {
+      const xn = i / mr; const yn = j / mr;
+      if (xn * xn + yn * yn > 1.04) continue;
+      const term = k * Math.sqrt(Math.max(0, 1 - yn * yn));
+      const lit = (phase < 0.5 ? xn : -xn) >= term;
+      ctx.fillStyle = lit ? (dark ? '#EDE2D5' : '#FFF8F1') : (dark ? '#3A3333' : '#E2C9C0');
+      ctx.fillRect(x0 + (mx + i) * p, y0 + (my + j) * p, p, p);
+    }
+  }
+  const g1 = dark ? '#2C2827' : '#DDD2C9';
+  const g2 = dark ? '#363130' : '#D2C6BC';
+  const grass = dark ? '#6F7C66' : '#9DAA8F';
+  const grass2 = dark ? '#AFBCA2' : '#7F8C72';
+  for (let j = groundY; j < rowsN; j++) {
+    for (let i = 0; i < cols; i++) {
+      ctx.fillStyle = (i * 3 + j * 5) % 11 === 0 ? g2 : g1;
+      ctx.fillRect(x0 + i * p, y0 + j * p, p, p);
+    }
+  }
+  for (let i = 0; i < cols; i++) {
+    ctx.fillStyle = grass;
+    ctx.fillRect(x0 + i * p, y0 + groundY * p, p, p);
+    if (rand() < 0.4) { ctx.fillStyle = grass2; ctx.fillRect(x0 + i * p, y0 + (groundY - 1) * p, p, p); }
+  }
+  const n = Math.max(1, Math.min(12, (data.garden && data.garden.count) || 1));
+  const pc = { g: grass2, d: grass, r: dark ? '#D3A99F' : '#B58C83', y: dark ? '#E8D9A8' : '#D9C48A', w: dark ? '#EEE7E3' : '#FFFFFF' };
+  const elliX = 5;
+  const freeL = elliX + 26;
+  const span = cols - 3 - freeL;
+  for (let q = 0; q < n; q++) {
+    const isNew = q === n - 1;
+    const kind = isNew ? 4 : [0, 1, 2, 3, 1, 2][Math.floor(rand() * 6)];
+    const rows = PLANTS[kind];
+    const xx = freeL + Math.round(((q + 0.5) / n) * span) - 2;
+    const yy = groundY - rows.length + 1;
+    sprite(ctx, rows, pc, x0 + xx * p, y0 + yy * p, p);
+    if (isNew) {
+      ctx.fillStyle = pc.w;
+      ctx.fillRect(x0 + (xx + 6) * p, y0 + (yy - 1) * p, p, p);
+      ctx.fillRect(x0 + (xx - 2) * p, y0 + (yy + 2) * p, p, p);
+    }
+  }
+  const comp = opts.companion && opts.companion.rows ? opts.companion : companionSprite(opts.companion && opts.companion.species) || ELLI;
+  const colors = (comp.colors && (comp.colors[theme] || comp.colors.hell)) || {};
+  sprite(ctx, comp.rows, colors, x0 + elliX * p, y0 + (groundY - comp.rows.length + 1) * p, p);
+}
+
+/**
+ * Briefmarke mit Zähnung und Pixel-Garten, darüber ein Poststempel mit Ort und Uhrzeit.
+ * Für Lauf und Kraft. data.garden.count = Einheiten im Monat = Pflanzen im Beet.
+ * Detailliert: darunter alle Übungen bzw. Kilometer.
+ */
+export function pixelStempel(data, opts = {}) {
+  const o = { ...opts, template: 'stempel' };
+  const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  stage();
+  const dark = theme === 'dunkel';
+  const f = facts(data, o.focus);
+
+  const cols = 62; const rowsN = detailed ? 54 : 70; const p = detailed ? 9 : 10;
+  const pad = 28; const foot = 84;
+  const sw = cols * p + pad * 2; const sh = rowsN * p + pad + foot;
+  const stamp = makeCanvas(sw, sh, o);
+  const s = stamp.getContext('2d');
+  s.textBaseline = 'alphabetic';
+  s.fillStyle = dark ? '#EFE8E2' : '#FFFCFA';
+  s.fillRect(0, 0, sw, sh);
+  pixelScene(s, pad, pad, cols, rowsN, p, theme, data, rand, o);
+  s.strokeStyle = 'rgba(46,42,40,0.16)'; s.lineWidth = 1.5;
+  s.strokeRect(pad - 0.75, pad - 0.75, cols * p + 1.5, rowsN * p + 1.5);
+  const valInk = dark ? '#F4ECE6' : '#2E2A28';
+  writeRun(s, [
+    { t: f.hero.value, px: 96, color: valInk, tracking: -2 },
+    { t: f.hero.unit, px: 42, italic: true, color: valInk, gap: 8, alpha: 0.75 },
+  ], pad + 26, pad + 100);
+  const footY = pad + rowsN * p + 54;
+  write(s, f.title, pad + 2, footY, { px: 36, color: '#2E2A28' });
+  write(s, 'nachtgarten', sw - pad - 24, pad + 58, { px: 32, italic: true, color: valInk, align: 'right', alpha: 0.8 });
+  s.globalCompositeOperation = 'destination-out';
+  const holeR = 8.5; const step = 28;
+  for (let x = step / 2; x < sw; x += step) {
+    s.beginPath(); s.arc(x, 0, holeR, 0, Math.PI * 2); s.fill();
+    s.beginPath(); s.arc(x, sh, holeR, 0, Math.PI * 2); s.fill();
+  }
+  for (let y = step / 2; y < sh; y += step) {
+    s.beginPath(); s.arc(0, y, holeR, 0, Math.PI * 2); s.fill();
+    s.beginPath(); s.arc(sw, y, holeR, 0, Math.PI * 2); s.fill();
+  }
+  s.globalCompositeOperation = 'source-over';
+
+  const cx = W / 2; const cy = SAFE.top + 34 + sh / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(-0.03);
+  ctx.shadowColor = dark ? 'rgba(0,0,0,0.5)' : 'rgba(80,60,50,0.2)';
+  ctx.shadowBlur = 44; ctx.shadowOffsetY = 16;
+  ctx.drawImage(stamp, -sw / 2, -sh / 2);
+  ctx.restore();
+  postmark(ctx, cx + sw / 2 - 66, cy + sh / 2 - 70, 124, pal, data);
+
+  const below = cy + sh / 2 + 40;
+  if (detailed) {
+    const rows = data.type === 'kraft' ? compactRows(data, detailRows(data)) : detailRows(data);
+    const y0 = below + 50;
+    const avail = SAFE.bottom - 80 - y0;
+    const rowH = Math.min(60, avail / rows.length);
+    drawRows(ctx, rows, M, W - M, y0, rowH, pal, { px: Math.min(36, rowH * 0.62), index: data.type === 'kraft', compact: true });
+    signature(ctx, W - M, SAFE.bottom - 12, pal, rand, o, { align: 'right', px: 30 });
+  } else {
+    const yS = below + 140;
+    statRow(ctx, f.stats.slice(0, 2), M + 60, W - M - 60, yS, pal, { px: 72, labelPx: 26, align: 'center' });
+    const count = data.garden && data.garden.count;
+    if (count) {
+      write(ctx, `Der Garten wächst: ${count} ${count === 1 ? 'Einheit' : 'Einheiten'} im ${fmtMonth(data.start || data.date)}.`, W / 2, Math.min(SAFE.bottom - 12, yS + 150), { px: 36, italic: true, color: pal.muted, align: 'center' });
+    }
+  }
+  return canvas;
+}
+
+function postmark(ctx, x, y, r, pal, data) {
+  const when = data.start || data.date;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(0.16);
+  ctx.globalAlpha = 0.8;
+  ctx.strokeStyle = pal.rose;
+  ctx.fillStyle = pal.rose;
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, r - 46, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 3;
+  for (let k = -1; k <= 1; k++) {
+    ctx.beginPath();
+    for (let t = 0; t <= 1.0001; t += 0.02) {
+      const xx = r + 16 + t * 210;
+      const yy = k * 28 + Math.sin(t * Math.PI * 3 + k) * 8;
+      if (t === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+    }
+    ctx.stroke();
+  }
+  arcText(ctx, (data.place || 'nachtgarten').toLowerCase(), r - 23, -Math.PI / 2, 28, true);
+  arcText(ctx, `${fmtTime(when)} uhr`, r - 23, Math.PI / 2, 26, false);
+  ctx.font = fontOf({ px: 40 });
+  ctx.textAlign = 'center';
+  ctx.fillText(fmtDateShort(when), 0, 13);
+  ctx.restore();
+}
+
+/** Text entlang eines Kreisbogens, zentriert um `mid`; oben im Uhrzeigersinn, unten lesbar. */
+function arcText(ctx, str, radius, mid, px, top) {
+  ctx.font = fontOf({ px, italic: true });
+  ctx.textAlign = 'center';
+  const chars = [...str];
+  const widths = chars.map((ch) => ctx.measureText(ch).width + 2);
+  const total = widths.reduce((a, b) => a + b, 0);
+  const dir = top ? 1 : -1;
+  let ang = mid - (dir * (total / radius)) / 2;
+  chars.forEach((ch, i) => {
+    const a = ang + (dir * (widths[i] / radius)) / 2;
+    ctx.save();
+    ctx.translate(Math.cos(a) * radius, Math.sin(a) * radius);
+    ctx.rotate(a + (dir * Math.PI) / 2);
+    ctx.fillText(ch, 0, px * 0.34);
+    ctx.restore();
+    ang += (dir * widths[i]) / radius;
+  });
+}
+
+// ───────────────────────────── e) Minimal-Typo „Plakat“ ─────────────────────────────
+
+/** Nur Ziffern: eine große Zahl, zwei kleinere darunter – wie ein Plakat. focus 'bestwert' für Rekorde. */
+export function minimalTypo(data, opts = {}) {
+  const o = { ...opts, template: 'typo' };
+  const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  stage();
+  const f = facts(data, o.focus);
+  const onPhoto = transparent && theme === 'dunkel';
+  const ink = onPhoto ? '#F8F2ED' : pal.ink;
+  const muted = onPhoto ? 'rgba(248,242,237,0.84)' : pal.muted;
+  const accent = onPhoto ? '#E6C0B6' : pal.roseInk;
+  const shadow = transparent ? (onPhoto ? 'rgba(18,12,10,0.4)' : 'rgba(255,250,246,0.55)') : null;
+  const p = { ...pal, ink, muted, roseInk: accent };
+
+  withShadow(ctx, shadow, 26, () => {
+    write(ctx, f.title, M, SAFE.top + 40, { px: 40, italic: true, color: muted });
+    write(ctx, f.line.replace(/^Nr\. \d+ · /, '').replace(/ · \d\d:\d\d$/, ''), W - M, SAFE.top + 40, { px: 28, serif: false, color: muted, align: 'right' });
+    const trEm = -0.03;
+    const heroPx = fitSize(ctx, f.hero.value, W - M * 2 + 16, { trackingEm: trEm }, 600);
+    const yHero = SAFE.top + 110 + heroPx * 0.7;
+    write(ctx, f.hero.value, M - heroPx * 0.035, yHero, { px: heroPx, color: ink, tracking: heroPx * trEm });
+    const label = o.focus === 'bestwert' && f.hero.unit ? `${f.hero.unit} · ${f.hero.label}` : f.hero.label;
+    write(ctx, label, M, yHero + heroPx * 0.13 + 70, { px: 62, italic: true, color: accent });
+
+    if (detailed) {
+      const rows = data.type === 'kraft' ? compactRows(data, detailRows(data)) : detailRows(data);
+      const y0 = yHero + heroPx * 0.13 + 140;
+      hairline(ctx, M, y0, W - M, ink, 0.18);
+      const avail = SAFE.bottom - 90 - (y0 + 30);
+      const rowH = Math.min(66, avail / rows.length);
+      drawRows(ctx, rows, M, W - M, y0 + 30, rowH, p, { px: Math.min(38, rowH * 0.6), index: data.type === 'kraft', compact: true });
+    } else {
+      let y = yHero + heroPx * 0.13 + 350;
+      for (const st of f.stats.slice(0, 2)) {
+        hairline(ctx, M, y - 190, W - M, ink, 0.18);
+        writeRun(ctx, [
+          { t: st.value, px: 190, color: ink, tracking: -3 },
+          ...(st.unit ? [{ t: st.unit, px: 70, italic: true, color: muted, gap: 14 }] : []),
+        ], M - 4, y);
+        write(ctx, st.label, W - M, y, { px: 40, italic: true, color: muted, align: 'right' });
+        y += 240;
+      }
+    }
+    signature(ctx, W - M, SAFE.bottom - 12, p, rand, o, { align: 'right', px: 30, color: muted });
+  });
+  return canvas;
+}
+
+// ───────────────────────────── f) Tempo-Welle ─────────────────────────────
+
+/**
+ * Viele feine Linien wie Höhenzüge; die Höhe folgt dem Tempo (schneller = höher).
+ * Die Linie in Altrosa ist das echte Tempo, die anderen ihr Echo.
+ */
+export function tempoWelle(run, opts = {}) {
+  const o = { ...opts, template: 'welle' };
+  const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
+  if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
+  stage();
+  const dark = theme === 'dunkel';
+  const f = facts(run);
+  const paces = paceProfile(run);
+  const min = Math.min(...paces); const max = Math.max(...paces);
+  const speed = paces.map((q) => (max - min ? (max - q) / (max - min) : 0.5));
+  const fastIdx = paces.indexOf(min);
+
+  const x1 = M; const x2 = W - M;
+  const top = SAFE.top + 250; const lines = 26; const gap = 24;
+  const prof = (t) => {
+    if (speed.length < 2) return 0.5;
+    const ff = t * (speed.length - 1);
+    const i = Math.min(speed.length - 2, Math.floor(ff));
+    const k = (1 - Math.cos((ff - i) * Math.PI)) / 2;
+    return speed[i] * (1 - k) + speed[i + 1] * k;
+  };
+  const phases = Array.from({ length: lines }, () => [rand() * 6.28, rand() * 6.28, 0.6 + rand() * 0.8]);
+  const hero = Math.round(lines * 0.6);
+  let heroPts = [];
+  for (let li = 0; li < lines; li++) {
+    const base = top + li * gap + 140;
+    const near = Math.exp(-((li - hero) ** 2) / 40);
+    const pts = [];
+    for (let k = 0; k <= 180; k++) {
+      const t = k / 180;
+      const env = Math.sin(Math.PI * Math.min(1, Math.max(0, (t - 0.02) / 0.96))) ** 1.4;
+      const [a, b, c] = phases[li];
+      const noise = Math.sin(t * 8 * c + a) * 0.5 + Math.sin(t * 21 + b) * 0.2;
+      const v = li === hero ? prof(t) : prof(t) * (0.3 + 0.7 * near) + noise * 0.24 * (1 - near * 0.7);
+      pts.push([x1 + t * (x2 - x1), base - env * (34 + 220 * Math.max(0, v))]);
+    }
+    if (li === hero) heroPts = pts;
+    if (!transparent) {
+      ctx.fillStyle = pal.paper;
+      ctx.beginPath();
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.lineTo(x2, base + gap * 2); ctx.lineTo(x1, base + gap * 2); ctx.closePath();
+      ctx.fill();
+    }
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.strokeStyle = li === hero ? pal.rose : pal.ink;
+    ctx.globalAlpha = li === hero ? 1 : (dark ? 0.24 : 0.22) + near * 0.3;
+    ctx.lineWidth = li === hero ? 4.5 : 1.7;
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  if (paces.length > 1 && heroPts.length) {
+    const t = fastIdx / (paces.length - 1);
+    const q = heroPts[Math.round(t * (heroPts.length - 1))];
+    blossom(ctx, Math.round(q[0]) - 4, Math.round(q[1]) - 28, 8, pal, dark ? '#E8D9A8' : '#D9C48A');
+  }
+  const yAxis = top + lines * gap + 190;
+  paces.forEach((q, i) => {
+    const t = paces.length > 1 ? i / (paces.length - 1) : 0.5;
+    const x = x1 + t * (x2 - x1);
+    const a = i === 0 ? 'left' : i === paces.length - 1 ? 'right' : 'center';
+    write(ctx, String(i + 1), x, yAxis, { px: 30, italic: true, color: i === fastIdx ? pal.roseInk : pal.muted, align: a });
+    if (detailed) write(ctx, fmtPace(q), x, yAxis + 42, { px: 25, serif: false, color: pal.ink, align: a, alpha: 0.85 });
+  });
+  write(ctx, f.line, M, SAFE.top + 34, { px: 30, italic: true, color: pal.muted });
+  write(ctx, f.title, M - 3, SAFE.top + 128, { px: 80, color: pal.ink });
+
+  const yV = SAFE.bottom - 120;
+  writeRun(ctx, [
+    { t: f.hero.value, px: 150, color: pal.ink, tracking: -3 },
+    { t: 'km', px: 60, italic: true, color: pal.muted, gap: 14 },
+  ], M - 4, yV);
+  f.stats.slice(0, 2).forEach((x, i) => writeRun(ctx, [
+    { t: x.value, px: 54, color: pal.ink },
+    ...(x.unit ? [{ t: x.unit, px: 28, italic: true, color: pal.muted, gap: 6 }] : []),
+  ], W - M, yV - 70 + i * 70, 'right'));
+  signature(ctx, W - M, SAFE.bottom - 12, pal, rand, o, { align: 'right', px: 30 });
+  write(ctx, 'Tempo je Kilometer', M, SAFE.bottom - 12, { px: 28, italic: true, color: pal.muted });
+  return canvas;
+}
+
+// ───────────────────────────── Übersicht ─────────────────────────────
+
+/** Alle Vorlagen mit ihren sinnvollen Varianten. */
+export const TEMPLATES = {
+  sticker: { name: 'Lauf-Sticker', for: ['lauf'], render: laufSticker, variants: [{ theme: 'dunkel', transparent: true }, { theme: 'hell', transparent: true }, { theme: 'hell', transparent: false }, { theme: 'dunkel', transparent: false }] },
+  sternbild: { name: 'Sternbild', for: ['lauf'], render: laufKarte, variants: [{ theme: 'dunkel' }, { theme: 'hell' }] },
+  studie: { name: 'Bewegungsstudie', for: ['kraft'], render: bewegungsStudie, variants: [{ theme: 'hell' }, { theme: 'dunkel' }] },
+  sammel: { name: 'Sammelkarte', for: ['kraft'], render: sammelKarte, variants: [{ theme: 'dunkel' }, { theme: 'hell' }, { theme: 'dunkel', transparent: true }] },
+  kraft: { name: 'Körperbeet · Programmheft', for: ['kraft'], render: kraftKarte, variants: [{ theme: 'hell' }, { theme: 'dunkel' }, { theme: 'dunkel', transparent: true }] },
+  stempel: { name: 'Briefmarke', for: ['lauf', 'kraft'], render: pixelStempel, variants: [{ theme: 'dunkel' }, { theme: 'hell' }, { theme: 'hell', transparent: true }] },
+  typo: { name: 'Plakat', for: ['lauf', 'kraft'], render: minimalTypo, variants: [{ theme: 'hell' }, { theme: 'dunkel' }, { theme: 'dunkel', transparent: true }] },
+  welle: { name: 'Tempo-Welle', for: ['lauf'], render: tempoWelle, variants: [{ theme: 'dunkel' }, { theme: 'hell' }] },
+};
+
+/** Rendert eine Vorlage (z. B. einen Vorschlag aus suggestCards) mit zusätzlichen Optionen. */
+export function renderCard(session, { template, opts = {} }, extra = {}) {
+  const t = TEMPLATES[template];
+  if (!t) throw new Error(`Unbekannte Vorlage: ${template}`);
+  return t.render(session, { ...opts, ...extra });
+}
+
+/** Vorschläge samt Renderfunktion – für die Auswahl nach dem Training. */
+export function suggestions(session, extra = {}) {
+  return suggestCards(session).map((s) => ({ ...s, render: (more = {}) => renderCard(session, s, { ...extra, ...more }) }));
+}
+
+/** Lädt die Schriftschnitte, die die Karten brauchen (im Browser). */
+export async function ensureFonts(doc = typeof document !== 'undefined' ? document : null) {
+  if (!doc || !doc.fonts) return;
+  await Promise.all([
+    `400 100px ${SERIF}`, `italic 400 100px ${SERIF}`, `400 100px ${SANS}`, `600 100px ${SANS}`,
+  ].map((f) => doc.fonts.load(f).catch(() => null)));
+}
+
+/** Canvas → PNG-Blob (für Teilen, Kopieren, Speichern). */
+export function toBlob(canvas) {
+  if (canvas.convertToBlob) return canvas.convertToBlob({ type: 'image/png' });
+  return new Promise((res) => canvas.toBlob(res, 'image/png'));
+}
