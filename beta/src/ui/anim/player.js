@@ -14,6 +14,7 @@
  * - Zwei Darstellungen: "pixel" (Standard – kleines Pixel-Mannequin, 5–8 Sprite-Bilder
  *   je Bewegung, harte Abendruhe-Palette) und "vector" (glatt, stufenlos, mit Pfeil).
  */
+import { adoptCss } from "../adopt-css.js";
 import { createFigure, solve, el, NS, GROUND } from "./figure.js";
 import { createEquipment } from "./equipment.js";
 import { buildPattern } from "../../data/patterns.js";
@@ -113,6 +114,11 @@ let cssDone = false;
 /** Fügt die Standard-Stile einmalig ein (im Dokument oder in einem ShadowRoot). */
 export function injectAnimCss(root = document.head) {
   if (cssDone && root === document.head) return;
+  if (root === document.head) {
+    adoptCss("nga-css", ANIM_CSS);
+    cssDone = true;
+    return;
+  }
   const st = document.createElement("style");
   st.dataset.nga = "1";
   st.textContent = ANIM_CSS;

@@ -6,7 +6,7 @@
 import { haptic } from '../../core/platform.js';
 import { moveTile, toggleModule } from '../../domain/modules.js';
 import { COMPANION_NAME_MAX, withCompanion } from '../../domain/companion.js';
-import { SPECIES, speciesInfo } from '../../data/companions.js';
+import { speciesInfo } from '../../data/companions.js';
 import { goalLabel, goalOptions } from '../../data/goals.js';
 import { TONES, companionLine } from '../../data/texts/companion.js';
 import { t } from '../../data/texts/i18n.js';
@@ -17,7 +17,8 @@ import { companionFigure } from '../../ui/companion.js';
 import { icon } from '../../ui/icons.js';
 import { openSheet } from '../../ui/sheet.js';
 import { toast } from '../../ui/toast.js';
-import { companionStage } from '../companion/companion-state.js';
+import { companionStage, isPlain, setPlain } from '../companion/companion-state.js';
+import { companionPicker } from '../companion/picker.js';
 import { mamaForm } from '../mama/mama-setup.js';
 import { openOnboarding } from '../onboarding/onboarding.js';
 import { privacyPanel } from '../privacy/privacy.js';
@@ -126,8 +127,6 @@ export function openProfile(ctx) {
 function buildProfile(ctx, sheet, cleanups) {
   const { store, registry } = ctx;
   const profile = store.profile.get() ?? emptyProfile();
-  const buddy = store.buddy.get();
-  const companion = ctx.companion();
 
   const updateProfile = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), ...patch }));
   const updateCompanion = (patch) => store.profile.update((p) => ({ ...(p ?? emptyProfile()), companion: withCompanion(p, patch) }));
@@ -140,10 +139,10 @@ function buildProfile(ctx, sheet, cleanups) {
     hello.textContent = p.name ? t('profile.hi', { name: p.name }) : t('profile.hiAnon');
     goalLine.textContent = p.goal ? goalLabel(p.goal) : t('profile.noGoal');
     const c = ctx.companion();
-    replace(figure, companionFigure({ species: c.species, mood: 'happy', stage: companionStage(ctx), label: c.name }));
+    replace(figure, isPlain(ctx) ? icon('user', { size: 32 }) : companionFigure({ species: c.species, mood: 'happy', stage: companionStage(ctx), label: c.name }));
   };
   paintHead();
-  cleanups.push(ctx.watch(['profile'], paintHead));
+  cleanups.push(ctx.watch(['profile', 'settings'], paintHead));
 
   const sample = h('p', { class: 'tone-sample' });
   const paintSample = () => {
@@ -206,55 +205,7 @@ function buildProfile(ctx, sheet, cleanups) {
     ),
     section(t('profile.modules'), modules, mamaEdit),
     section(t('profile.order'), order.el),
-    section(
-      t('companion.section'),
-      switchRow({
-        label: t('companion.show'),
-        hint: t('companion.showHint'),
-        checked: buddy.on,
-        onChange: (on) => store.buddy.update((b) => ({ ...b, on })),
-      }),
-      SPECIES.length > 1
-        ? settingRow(
-            t('companion.species'),
-            chipGroup({
-              label: t('companion.species'),
-              options: SPECIES.map((sp) => ({ value: sp.id, label: t(`species.${sp.id}`) })),
-              selected: [companion.species],
-              allowEmpty: false,
-              onChange: ([species]) => {
-                updateCompanion({ species });
-                paintSample();
-              },
-            }),
-          )
-        : null,
-      textField({
-        label: t('companion.name'),
-        value: companion.name,
-        placeholder: speciesInfo(companion.species).defaultName,
-        maxlength: COMPANION_NAME_MAX,
-        onInput: (v) => {
-          updateCompanion({ name: v });
-          paintSample();
-        },
-      }),
-      h(
-        'div',
-        { class: 'setting' },
-        h('p', { class: 'setting-label', text: t('companion.tone') }),
-        segmented({
-          label: t('companion.tone'),
-          options: TONES.map((id) => ({ value: id, label: t(`tone.${id}`) })),
-          value: buddy.tone,
-          onChange: (tone) => {
-            store.buddy.update((b) => ({ ...b, tone }));
-            paintSample();
-          },
-        }),
-        sample,
-      ),
-    ),
+    companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }),
     section(t('profile.view'), lang.el, theme.el, start.el),
     section(t('data.title'), privacyPanel(ctx)),
     h('button', {
@@ -269,4 +220,74 @@ function buildProfile(ctx, sheet, cleanups) {
       },
     }),
   ];
+}
+
+/**
+ * Abschnitt „Begleiter“: Schlicht-Schalter; ist er aus, Auswahl, Name und Ton.
+ * @param {AppContext} ctx
+ * @param {{updateCompanion: (patch: object) => void, paintSample: () => void, sample: HTMLElement, cleanups: (() => void)[]}} parts
+ */
+function companionSection(ctx, { updateCompanion, paintSample, sample, cleanups }) {
+  const { store } = ctx;
+  const details = h('div', { class: 'profile-companion' });
+  const paintDetails = () => {
+    details.hidden = isPlain(ctx);
+    if (details.hidden) return replace(details);
+    const companion = ctx.companion();
+    const name = textField({
+      label: t('companion.name'),
+      value: companion.name,
+      placeholder: speciesInfo(companion.species).defaultName,
+      maxlength: COMPANION_NAME_MAX,
+      onInput: (v) => {
+        updateCompanion({ name: v });
+        paintSample();
+      },
+    });
+    replace(
+      details,
+      companionPicker({
+        value: companion.species,
+        onChange: (species) => {
+          const before = ctx.companion();
+          // Hieß er wie die alte Art, bekommt er den Namen der neuen.
+          const keepName = before.name !== speciesInfo(before.species).defaultName;
+          updateCompanion(keepName ? { species } : { species, name: '' });
+          name.input.value = ctx.companion().name;
+          name.input.placeholder = speciesInfo(species).defaultName;
+          paintSample();
+        },
+      }),
+      name,
+      h(
+        'div',
+        { class: 'setting' },
+        h('p', { class: 'setting-label', text: t('companion.tone') }),
+        segmented({
+          label: t('companion.tone'),
+          options: TONES.map((id) => ({ value: id, label: t(`tone.${id}`) })),
+          value: store.buddy.get().tone,
+          onChange: (tone) => {
+            store.buddy.update((b) => ({ ...b, tone }));
+            paintSample();
+          },
+        }),
+        sample,
+      ),
+    );
+  };
+  paintDetails();
+  return section(
+    t('companion.section'),
+    switchRow({
+      label: t('companion.plain'),
+      hint: t('companion.plainHint'),
+      checked: isPlain(ctx),
+      onChange: (on) => {
+        setPlain(ctx, on);
+        paintDetails();
+      },
+    }),
+    details,
+  );
 }

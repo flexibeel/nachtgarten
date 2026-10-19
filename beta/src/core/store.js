@@ -35,6 +35,7 @@
  * | ng2.lastCard   | lastCard   | zuletzt gezeigte Abschluss-Karte                                | null     |
  * | ng2.ideas      | ideas      | Ideen-Labor: Favoriten                                          | {likes:[]} |
  * | ng2.motto      | motto      | eigener Leitsatz auf „Heute“                                    | null     |
+ * | ng2.gate       | gate       | „Wirklich jetzt?“: Entscheidungen (60 Tage), Schonfrist nach „Trotzdem öffnen“ | s. u. |
  */
 
 export const PREFIX = 'ng2.';
@@ -85,6 +86,16 @@ export const SCHEMA_VERSION = 1;
  * @property {boolean} lockDuringTraining   Instagram sperren, solange ein Live-Training läuft
  * @property {string[]|null} enabledModules  eingeschaltete Module; null = noch nicht gefragt (Standard)
  * @property {string[]} tileOrder            gewünschte Reihenfolge der Kacheln auf „Heute“ (Kachel-Ids)
+ * @property {string[]} hiddenTiles          ausgeblendete Kacheln auf „Heute“
+ * @property {boolean|null} plain            „Schlicht“: Begleiter, Garten und Sätze ausblenden (null = aus buddy.on ableiten)
+ * @property {{template: string, days: number}|null} activePlan   gewählte Plan-Vorlage (data/plans.js)
+ */
+
+/**
+ * @typedef {'training'|'move'|'breath'|'open'} GateChoice
+ * @typedef {object} GateState
+ * @property {{at: number, choice: GateChoice}[]} log
+ * @property {number|null} graceUntil   bis dahin leitet „Wirklich jetzt?“ direkt weiter (ms)
  */
 
 /**
@@ -330,6 +341,9 @@ const defaultSettings = () => ({
   lockDuringTraining: true,
   enabledModules: null,
   tileOrder: [],
+  hiddenTiles: [],
+  plain: null,
+  activePlan: null,
 });
 
 /**
@@ -364,6 +378,7 @@ const AREAS = /** @type {const} */ ({
   lastCard: () => null,
   ideas: () => ({ likes: [] }),
   motto: () => null,
+  gate: () => ({ log: [], graceUntil: null }),
 });
 
 /** @typedef {keyof typeof AREAS} AreaName */
