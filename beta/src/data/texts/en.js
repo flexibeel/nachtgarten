@@ -516,4 +516,5 @@ export const TEXTS = Object.freeze({
   'wizard.experience.erfahren.hint': 'Regularly for years',
   'wizard.results': 'These could suit you',
   'wizard.none': 'No template fits well. Have a look at all plans.',
+  'library.steps': 'Detailed instructions',
 });
