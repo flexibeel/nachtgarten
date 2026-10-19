@@ -116,12 +116,17 @@ test('Programmheft: jede Übung mit Sätzen steht auf dem Bild, in Story und Fee
     const c = programmKarte(LEG_DAY, { theme: 'hell', format, createCanvas: create });
     const all = c.texts.map((t) => t.t);
     for (const ex of LEG_DAY.exercises) assert.ok(all.includes(ex.name), `${format}: ${ex.name}`);
-    for (const s of ['3 × 8', '100 kg', '10 · 10 · 8', '80 · 80 · 85 kg', '16 kg je Seite', '4 × 15', '15.920', '19', '58']) {
+    for (const s of ['3 × 8', '100', 'kg', '10 · 10 · 8', '80–85', '16', 'je Seite', '4 × 15', '15.920', '19', '58', 'Übung', 'Sätze × Wdh.', 'Gewicht', 'Volumen', 'Dauer']) {
       assert.ok(all.includes(s), `${format}: „${s}“ fehlt`);
     }
     assert.ok(all.includes('Bestwert'));
     assert.ok(all.includes('nachtgarten'), 'Signatur');
   }
+  // ohne Figur dieselben Daten
+  const nf = mockFactory();
+  const c2 = programmKarte(PUSH_DAY, { figure: false, createCanvas: nf.create });
+  for (const ex of PUSH_DAY.exercises) assert.ok(c2.texts.some((t) => t.t === ex.name), ex.name);
+  assert.ok(c2.texts.some((t) => t.t === 'Körpergewicht'), 'Dips ohne Gewicht');
   // kraftKarte detailliert = Programmheft
   const a = mockFactory(); const b = mockFactory();
   const x = kraftKarte(LEG_DAY, { detail: 'detailliert', createCanvas: a.create });

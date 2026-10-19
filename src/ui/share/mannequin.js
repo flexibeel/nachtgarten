@@ -94,7 +94,7 @@ function pathSegs(d) {
 // ───────────────────────────── Geräte ─────────────────────────────
 
 /** Geräte als Formen, je Ebene (back, farProp, mid, front). */
-function propShapes(props, J) {
+export function propShapes(props, J) {
   const L = { back: [], farProp: [], mid: [], front: [] };
   const put = (s, def, x) => (L[s.layer || def] || L.front).push(x);
   for (const s of props || []) {

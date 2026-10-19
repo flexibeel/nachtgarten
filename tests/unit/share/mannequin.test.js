@@ -7,6 +7,7 @@ import { runnerSealRows } from '../../../src/ui/share/laeufer.js';
 import { sealRowsOf, SEALS } from '../../../src/ui/share/ink.js';
 import { sealForSpecies } from '../../../src/ui/share/seal.js';
 import { bewegungsStudie, sammelKarte, suggestCards } from '../../../src/ui/share/cards.js';
+import { figureBounds, figureGeometry } from '../../../src/ui/share/piktogramm.js';
 import { LEG_DAY, PUSH_DAY } from './fixtures.js';
 
 /** Schlanker Canvas-Ersatz: merkt sich Texte, alles andere ist still. */
@@ -104,10 +105,11 @@ test('Siegel: eigene Zeilen > Begleiter-Art > Motiv', () => {
 });
 
 test('Bewegungsstudie und Sammelkarte: Übung im Titel, höchstens drei Kennzahlen, Signatur', () => {
-  const nums = (c) => c.texts.filter((t) => /^\d[\d.,:]*$/.test(t) && t.length > 1);
+  // Bildnummern der Tafel („01“ … „05“) sind Beschriftung, keine Kennzahl
+  const nums = (c) => c.texts.filter((t) => /^\d[\d.,:]*$/.test(t) && t.length > 1 && !/^0\d$/.test(t));
   const st = bewegungsStudie(LEG_DAY, { createCanvas: mock() });
   assert.ok(st.texts.includes('Kniebeuge'));
-  assert.ok(st.texts.includes('Bestwert'));
+  assert.ok(st.texts.includes('· Bestwert'));
   assert.ok(nums(st).length <= 3, nums(st).join(' '));
   assert.ok(st.texts.includes('nachtgarten'));
   const sk = sammelKarte(PUSH_DAY, { createCanvas: mock() });
@@ -118,10 +120,37 @@ test('Bewegungsstudie und Sammelkarte: Übung im Titel, höchstens drei Kennzahl
   for (const e of LEG_DAY.exercises) for (const w of e.name.split(' ')) assert.ok(all.includes(w), e.name);
 });
 
-test('Vorschläge nach dem Krafttraining enthalten Bewegungsstudie und Sammelkarte', () => {
+test('Vorschläge: erwachsene Karten vorn, Briefmarke nie zuerst', () => {
   for (const s of [LEG_DAY, PUSH_DAY]) {
-    const t = suggestCards(s).map((x) => x.template);
+    const list = suggestCards(s);
+    const t = list.map((x) => x.template);
     assert.ok(t.includes('studie'), t.join());
-    assert.ok(t.includes('sammel'), t.join());
+    assert.notEqual(t[0], 'stempel');
+    assert.ok(!t.includes('stempel'), 'Briefmarke nicht unter den ersten vier');
   }
+  const bare = suggestCards({ type: 'lauf', start: '2026-10-19T18:00:00', distanceM: 3000, durationS: 1000, garden: { count: 10 } });
+  assert.notEqual(bare[0].template, 'stempel');
+});
+
+test('Signatur: Mondsichel als Standard, Pixel-Siegel nur mit opts.companion', () => {
+  const calls = (opts) => {
+    const make = mock();
+    let created = 0;
+    const c = bewegungsStudie(LEG_DAY, { ...opts, createCanvas: (w, h) => { created += w === 11 * 3 || h === 11 * 3 ? 1 : 0; return make(w, h); } });
+    return { c, created };
+  };
+  assert.equal(calls({}).created, 0, 'ohne Begleiter kein Pixel-Siegel');
+  assert.ok(calls({ companion: { species: 'eule' } }).created >= 1, 'mit Begleiter das Siegel');
+});
+
+test('Piktogramm: Figur ohne Keimling und Gesicht, Kopf frei über dem Rumpf, Rahmen umschließt alles', () => {
+  const m = motionOf(ex('Kniebeuge'));
+  const pose = keyPose(m.def);
+  const g = figureGeometry(pose, m.def);
+  assert.equal(Object.keys(g).sort().join(), 'J,head,limbs,sides,torso,view');
+  const neck = Math.hypot(g.head.c[0] - g.torso.b[0], g.head.c[1] - g.torso.b[1]);
+  assert.ok(neck > g.head.r + g.torso.w / 2 - 1.5, 'Kopf steht frei');
+  const fr = figureBounds(m.def, [pose]);
+  assert.ok(fr[2] > 20 && fr[3] > 40);
+  assert.ok(fr[1] + fr[3] >= 94, 'Boden im Rahmen');
 });

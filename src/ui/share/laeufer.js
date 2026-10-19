@@ -1,25 +1,26 @@
 /**
  * Nachtgarten – Teilen: das Mannequin mitten im Schritt, für Laufkarten.
  *
- *   drawRunner(ctx, x, y, h, theme)  kleine Pixel-Läuferin, Füße auf (x, y) – Mitte unten
+ *   drawRunner(ctx, x, y, h, theme)  Läuferin als Piktogramm, Füße auf (x, y) – Mitte unten
  *   runnerSealRows()                 Silhouette als Siegel-Motiv („#“ ausgespart), 11 × 13
  */
 
-import { boundsOf, MANNEQUIN_COLORS, paintRaster, rasterPose } from './mannequin.js';
+import { boundsOf, rasterPose } from './mannequin.js';
+import { drawFigure, figureBounds } from './piktogramm.js';
 import { runnerMotion } from './pose.js';
 
-/** Malt die Läuferin; h = Höhe in px. Gibt {x, y, w, h} der Figur zurück. */
-export function drawRunner(ctx, x, y, h, theme, { colors, unit = 1.6 } = {}) {
+/**
+ * Malt die Läuferin als Piktogramm (Silhouette); Füße auf (x, y) – Mitte unten, h = Höhe in px.
+ * colors: {ink, far} – Standard aus dem Thema.
+ */
+export function drawRunner(ctx, x, y, h, theme, { colors, makeCanvas } = {}) {
   const { def, pose } = runnerMotion();
-  const fr = boundsOf(def, [pose], { props: false, pad: 1 });
+  const fr = figureBounds(def, [pose], { props: false, pad: 1 });
   const s = h / fr[3];
-  const p = Math.max(2, Math.round(s * unit));
-  const cols = Math.round((fr[2] * s) / p); const rows = Math.round((fr[3] * s) / p);
-  const frame = [fr[0] + fr[2] / 2 - (cols * p) / s / 2, fr[1] + fr[3] - (rows * p) / s, (cols * p) / s, (rows * p) / s];
-  const R = rasterPose(pose, def, { frame, cols, rows, props: false, moving: new Set(['n.thigh', 'n.shin', 'f.thigh', 'f.shin']) });
-  const x0 = Math.round(x - (cols * p) / 2); const y0 = Math.round(y - rows * p);
-  paintRaster(ctx, R, x0, y0, p, colors || MANNEQUIN_COLORS[theme === 'dunkel' ? 'dunkel' : 'hell']);
-  return { x: x0, y: y0, w: cols * p, h: rows * p };
+  const c = colors || (theme === 'dunkel' ? { ink: '#EEE9E4', far: '#7A726E' } : { ink: '#24211F', far: '#A29A94' });
+  const x0 = x - (fr[2] * s) / 2; const y0 = y - fr[3] * s;
+  drawFigure(ctx, pose, def, { x: x0, y: y0, s, frame: fr, ink: c.ink, far: c.far, props: false, makeCanvas });
+  return { x: x0, y: y0, w: fr[2] * s, h: fr[3] * s };
 }
 
 let sealCache = null;

@@ -280,6 +280,14 @@ PLAN = [{"id": "ok", "name": "Oberkörper", "items": [
     {"exercise": "bench", "sets": 2, "reps": "8–10"}, {"exercise": "latpull", "sets": 2, "reps": "10–12"}, {"exercise": "g_inclinedb", "sets": 2, "reps": "8–12"}]}]
 
 
+def to_log(page):
+    """„So geht’s“ bestätigen, falls es gerade gezeigt wird."""
+    page.wait_for_timeout(150)
+    if page.locator(".live.is-intro").count():
+        page.click(".live-done")
+        page.wait_for_selector(".live.is-log")
+
+
 def fits_screen(page, where):
     over = page.evaluate("document.scrollingElement.scrollHeight - window.innerHeight")
     check(over <= 0, f"{where}: Live-Bildschirm scrollt ({over}px)")
@@ -304,6 +312,14 @@ def check_live(browser, base, scheme):
     page.click(".plan-row")
     page.wait_for_selector(".live-name")
     check("Bankdrücken" in page.inner_text(".live-name"), "erste Plan-Übung nicht gewählt")
+    # Erstes Mal: zuerst „So geht’s“ mit Hinweisen und Gerät, eine Hauptaktion
+    page.wait_for_selector(".live.is-intro .live-cues li")
+    check(page.locator(".live-cues li").count() >= 2, "Hinweise fehlen in „So geht’s“")
+    check(page.locator(".live-variant").count() >= 2, "Geräte-Varianten fehlen")
+    check(page.inner_text(".live-done") == "Los geht’s", "Hauptaktion nicht „Los geht’s“")
+    check(page.is_hidden(".live-inputs"), "Eingaben schon in „So geht’s“ sichtbar")
+    fits_screen(page, "So geht’s 390")
+    to_log(page)
     shot(page, f"{scheme}_live")
     fits_screen(page, "Live 390")
     page.click(".live-done")
@@ -450,16 +466,18 @@ def check_wizard(browser, base, scheme):
     shot(page, f"{scheme}_training_plan")
     # Bibliothek: Kategorie, Suche, Favorit, „So geht’s“ mit Animation und Anleitung
     page.click(".training-more .list-button >> nth=0")
-    page.wait_for_selector(".library .lib-row")
-    page.click(".library .chip:has-text('Ziehen')")
+    page.wait_for_selector(".library .lib-cats")
+    page.wait_for_selector(".library .lib-cat[data-category=pull]")
+    page.click(".library .lib-cat[data-category=pull]")
+    page.wait_for_selector(".library .lib-row .lib-thumb")
     page.fill(".lib-search", "rope")
     page.wait_for_timeout(250)
     check(page.locator(".lib-row").count() >= 1, "Suche nach rope ohne Treffer")
     first = page.locator(".lib-name").first.inner_text()
     page.locator(".lib-star").first.click()
     page.fill(".lib-search", "")
-    page.click(".library .chip:has-text('Ziehen')")
-    page.click(".library .lib-fav")
+    page.click(".library .lib-back")
+    page.click(".library .lib-cat.is-fav")
     page.wait_for_timeout(250)
     check(first in page.inner_text(".lib-list"), "Favorit fehlt")
     shot(page, f"{scheme}_library")
@@ -580,7 +598,7 @@ def check_polish(browser, base, scheme):
         page.evaluate("""() => { window.__nav = []; new MutationObserver(() => { const v = document.documentElement.dataset.nav; if (v) window.__nav.push(v); })
             .observe(document.documentElement, { attributes: true, attributeFilter: ['data-nav'] }); }""")
         page.click(".plan-row")
-        page.wait_for_selector(".live-anim .nga-wrap canvas")
+        page.wait_for_selector(".live-anim .nga-wrap")
         check(page.locator(".live-recap-text").inner_text().startswith("Letztes Mal: 3 × 8 · 60 kg"), f"Letztes Mal falsch: {page.locator('.live-recap-text').inner_text()}")
         check(page.locator(".live-suggest-chip").count() == 1, "Vorschlag fehlt")
         check(page.locator(".live-dot").count() == 2, "Satz-Punkte fehlen")
@@ -605,10 +623,12 @@ def check_polish(browser, base, scheme):
         page.click(".live-switch")
         page.click(".switch-row-item >> nth=1")
         page.wait_for_selector(".live-name:has-text('Latzug')")
+        to_log(page)
         check(page.locator(".stepper-number").first.inner_text() == "15", f"Kabelzug startet nicht mit 15 kg: {page.locator('.stepper-number').first.inner_text()}")
         page.click(".live-switch")
         page.click(".switch-row-item >> nth=2")
         page.wait_for_selector(".live-name:has-text('Schrägbank')")
+        to_log(page)
         check(page.locator(".stepper-number").first.inner_text() == "8", "Kurzhanteln starten nicht mit 8 kg")
         # Zurück: pop, vorher push
         page.go_back()
@@ -624,6 +644,8 @@ def check_polish(browser, base, scheme):
     context, page, errors = fresh(browser, base, scheme, SIZES[1], plain=True, reduced=True)
     page.evaluate("""() => localStorage.setItem('ng2.plans', JSON.stringify([{id: 'kg', name: 'Zuhause', items: [{exercise: 'pushup', sets: 3, reps: '8–12'}]}]))""")
     page.goto(base + "#live?plan=kg")
+    page.wait_for_selector(".live-anim .nga-wrap")
+    to_log(page)
     page.wait_for_selector(".live-body-text")
     check(page.inner_text(".live-body-text") == "Körpergewicht", "Körpergewicht nicht angezeigt")
     check(page.locator(".live-anim .nga-wrap").count() == 1, "Animation fehlt in Schlicht")
@@ -685,6 +707,61 @@ def check_persistence(browser, base, scheme):
     context.close()
 
 
+def check_exercise_flow(browser, base, scheme):
+    """Erst „So geht’s“, dann eintragen; Varianten mit eigenem Verlauf und gemerkter Wahl."""
+    context, page, errors = fresh(browser, base, scheme, SIZES[1])
+    page.evaluate("""() => { localStorage.removeItem('ng2.history');
+        localStorage.setItem('ng2.plans', JSON.stringify([{id: 'bein', name: 'Beine', items: [{exercise: 'press', sets: 2, reps: '10–12'}, {exercise: 'k_row', sets: 2, reps: '10–12'}]}])); }""")
+    page.goto(base + "#live?plan=bein")
+    page.reload()
+    page.wait_for_selector(".live.is-intro .live-anim .nga-wrap")
+    shot3(page, f"{scheme}_375_intro")
+    fits_screen(page, "So geht’s 375")
+    check([c for c in page.locator(".live-variant").all_inner_texts()] == ["45°", "horizontal", "Hack", "Kurzhanteln"], "Beinpresse-Varianten falsch")
+    page.click(".live-variant:has-text('horizontal')")
+    page.wait_for_selector(".live-name:has-text('horizontal')")
+    check(page.locator(".live.is-intro").count() == 1, "Variantenwechsel verlässt „So geht’s“")
+    page.click(".live-done")  # Los geht’s
+    page.wait_for_selector(".live.is-log .live-inputs .stepper")
+    check(page.locator(".stepper-number").first.inner_text() == "15", "Maschine startet nicht mit 15 kg")
+    shot3(page, f"{scheme}_375_log")
+    # Animation antippen: wieder groß
+    page.click(".live-anim")
+    page.wait_for_selector(".live.is-intro")
+    page.click(".live-done")
+    page.wait_for_selector(".live.is-log")
+    page.click(".stepper-button[aria-label*='Gewicht'][aria-label*='erhöhen']")
+    page.click(".live-done")
+    page.wait_for_selector(".rest .rest-time")
+    hist = page.evaluate("Object.keys(JSON.parse(localStorage.getItem('ng2.history')))")
+    check(hist == ["press~horizontal"], f"Verlauf nicht je Variante: {hist}")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.exercises')).variants.legpress") == "press~horizontal", "Variante nicht gemerkt")
+    # Kabel: „So geht’s“ mit Aufsatz und Rollenhöhe
+    page.click(".rest-skip")
+    page.click(".live-switch")
+    page.click(".switch-row-item >> nth=1")
+    page.wait_for_selector(".live.is-intro .live-variants[aria-label='Aufsatz']")
+    page.click(".live-variants[aria-label='Aufsatz'] .chip:has-text('Seil')")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.exercises')).prefs.k_row.attachment") == "Seil", "Aufsatz nicht gespeichert")
+    shot3(page, f"{scheme}_375_intro_cable")
+    # „Mehr“: Zeit und Anleitung-Einstellung
+    page.click(".live-more")
+    page.wait_for_selector(".live-more-sheet .segment")
+    shot3(page, f"{scheme}_375_more")
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".live-more-sheet", state="detached")
+    page.click(".live-finish")
+    page.wait_for_selector(".finish.sheet-panel")
+    page.keyboard.press("Escape")
+    # Nächstes Mal: gleich an der horizontalen Presse, ohne Einführung, mit „Letztes Mal“
+    page.goto(base + "#live?plan=bein")
+    page.reload()
+    page.wait_for_selector(".live.is-log .live-name:has-text('horizontal')")
+    check(page.locator(".live-recap-text").inner_text().startswith("Letztes Mal: 1 × 10 · 17,5 kg"), f"Letztes Mal falsch: {page.locator('.live-recap-text').inner_text()}")
+    check(not errors, "\n".join(errors))
+    context.close()
+
+
 def run():
     failures = 0
     with serve() as base, sync_playwright() as p, tempfile.TemporaryDirectory() as tmp:
@@ -707,6 +784,7 @@ def run():
                 check_wizard(browser, base, scheme)
                 check_polish(browser, base, scheme)
                 check_persistence(browser, base, scheme)
+                check_exercise_flow(browser, base, scheme)
                 print(f"ok  {scheme}")
             except Exception as error:  # noqa: BLE001 – Testausgabe
                 failures += 1

@@ -49,7 +49,10 @@ export function shareData(ctx, summary) {
 export function openShare(ctx, summary) {
   const data = shareData(ctx, summary);
   const suggestions = suggestCards(data);
-  const seal = isPlain(ctx) ? { seal: 'mond' } : { sealRows: sealForSpecies(ctx.companion().species) ?? undefined };
+  // Stempel und Siegel zeigen das eigene Tier (in Schlicht der Mond).
+  const seal = isPlain(ctx)
+    ? { seal: 'mond' }
+    : { sealRows: sealForSpecies(ctx.companion().species) ?? undefined, companion: { species: ctx.companion().species } };
   const state = { index: 0, detail: /** @type {'kompakt'|'detailliert'} */ ('kompakt'), format: /** @type {'story'|'feed'} */ ('story') };
   const rail = h('div', { class: 'share-rail', role: 'listbox', 'aria-label': t('share.choose') });
   const reason = h('p', { class: 'share-reason', 'aria-live': 'polite' });

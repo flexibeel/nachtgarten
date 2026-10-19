@@ -5,7 +5,6 @@
 
 import { hashOf, pathLength, seeded } from './geo.js';
 import { sealForSpecies } from './seal.js';
-import { runnerSealRows } from './laeufer.js';
 
 export const W = 1080;
 export const H = 1920;
@@ -25,12 +24,14 @@ export const SANS = "'Nunito Sans', system-ui, sans-serif";
 /** Abendruhe-Palette, je Thema. „ink“ ist die Schriftfarbe. */
 export const PALETTES = {
   hell: {
-    paper: '#F5F1EE', paper2: '#EEE6E0', ink: '#2E2A28', muted: '#7D746F', faint: '#B7ADA7',
-    rose: '#B58C83', roseInk: '#A0766C', sage: '#9DAA8F', soft: '#EAE2DC', line: '#DDD3CD',
+    paper: '#F4F1EC', paper2: '#EEEAE4', ink: '#24211F', muted: '#7B736E', faint: '#B3ABA5',
+    rose: '#B07F75', roseInk: '#9A685E', sage: '#9DAA8F', soft: '#E9E4DE', line: '#DAD3CC',
+    far: '#A29A94', env: '#DDD6CF',
   },
   dunkel: {
-    paper: '#211E1E', paper2: '#1C1A1A', ink: '#EEE7E3', muted: '#ABA19C', faint: '#6E6562',
-    rose: '#D3A99F', roseInk: '#D3A99F', sage: '#AFBCA2', soft: '#383332', line: '#3A3433',
+    paper: '#211E1E', paper2: '#1C1A1A', ink: '#EEE9E4', muted: '#A69D98', faint: '#625A57',
+    rose: '#D3A99F', roseInk: '#D9AFA5', sage: '#AFBCA2', soft: '#363130', line: '#3A3433',
+    far: '#7A726E', env: '#3D3735',
   },
 };
 
@@ -127,14 +128,14 @@ export function fitSize(ctx, str, maxW, o, maxPx) {
 /** Papier: weicher Verlauf, Vignette, feines Korn. */
 export function paper(ctx, pal, theme, rand, opts, w, h) {
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, theme === 'dunkel' ? '#282424' : '#F7F3F0');
+  g.addColorStop(0, theme === 'dunkel' ? '#252121' : '#F6F3EF');
   g.addColorStop(0.6, pal.paper);
   g.addColorStop(1, pal.paper2);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
   const v = ctx.createRadialGradient(w / 2, h * 0.42, h * 0.2, w / 2, h * 0.5, h * 0.78);
   v.addColorStop(0, 'rgba(0,0,0,0)');
-  v.addColorStop(1, theme === 'dunkel' ? 'rgba(0,0,0,0.26)' : 'rgba(90,70,60,0.07)');
+  v.addColorStop(1, theme === 'dunkel' ? 'rgba(0,0,0,0.2)' : 'rgba(90,70,60,0.05)');
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, w, h);
   grain(ctx, theme, rand, opts, w, h);
@@ -190,11 +191,13 @@ export function statRow(ctx, stats, x1, x2, y, pal, { px = 76, labelPx = 27, ali
     if (align === 'center') { x = x1 + colW * (i + 0.5); a = 'center'; } else if (align === 'spread') {
       a = i === 0 ? 'left' : i === n - 1 && n > 1 ? 'right' : 'center';
       x = a === 'left' ? x1 : a === 'right' ? x2 : (x1 + x2) / 2;
-    } else { x = x1 + colW * i; a = 'left'; }
-    const parts = [{ t: s.value, px, color: color || pal.ink }];
-    if (s.unit) parts.push({ t: s.unit, px: px * 0.46, italic: true, color: muted || pal.muted, gap: px * 0.1 });
+    } else if (align === 'grid') { x = x1 + ((x2 - x1) / Math.max(3, n)) * i; a = 'left'; } else { x = x1 + colW * i; a = 'left'; }
+    const ink = s.accent ? pal.roseInk : color || pal.ink;
+    const parts = [{ t: s.value, px, color: ink }];
+    if (s.unit) parts.push({ t: s.unit, px: px * 0.42, italic: true, color: s.accent ? pal.roseInk : muted || pal.muted, gap: px * 0.1 });
     writeRun(ctx, parts, x, y, a);
-    write(ctx, s.label, x, y + labelPx + 20, { px: labelPx, serif: false, color: muted || pal.muted, align: a });
+    const lp = align === 'grid' ? Math.min(labelPx, fitSize(ctx, s.label, (x2 - x1) / Math.max(3, n) - 20, { serif: false }, labelPx)) : labelPx;
+    write(ctx, s.label, x, y + labelPx + 18, { px: lp, serif: false, color: s.accent ? pal.roseInk : muted || pal.muted, align: a });
   });
 }
 
@@ -325,32 +328,91 @@ export function seal(ctx, x, y, size, pal, rand, opts, motif = 'keim', motifRows
   return p * nx;
 }
 
-/** Signatur: Siegel + „nachtgarten“ kursiv, klein. y ist die Grundlinie. */
+/**
+ * Das Zeichen: eine schmale Mondsichel – Nacht, ohne Niedlichkeit. Mittelpunkt (cx, cy), Höhe h.
+ */
+export function mark(ctx, cx, cy, h, color) {
+  const r1 = h / 2; const r2 = r1 * 0.84;
+  const dx = r1 * 0.5; const dy = -r1 * 0.24; // innerer Kreis nach rechts oben versetzt
+  const d = Math.hypot(dx, dy); const ux = dx / d; const uy = dy / d;
+  const a = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
+  const hh = Math.sqrt(Math.max(0, r1 * r1 - a * a));
+  const P1 = [a * ux - hh * uy, a * uy + hh * ux]; const P2 = [a * ux + hh * uy, a * uy - hh * ux];
+  const ang = (p, c = [0, 0]) => Math.atan2(p[1] - c[1], p[0] - c[0]);
+  // Bogen von s nach e, der durch Winkel m läuft
+  const arcThrough = (x0, y0, r, s0, e0, m) => {
+    const norm = (t) => ((t % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const cw = norm(m - s0) < norm(e0 - s0);
+    ctx.arc(x0, y0, r, s0, e0, !cw);
+  };
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  arcThrough(cx, cy, r1, ang(P1), ang(P2), Math.atan2(-uy, -ux));
+  arcThrough(cx + dx, cy + dy, r2, ang(P2, [dx, dy]), ang(P1, [dx, dy]), Math.atan2(-uy, -ux));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Signatur: Zeichen + „nachtgarten“ kursiv, klein. y ist die Grundlinie.
+ * Standard ist die Mondsichel; das Pixel-Siegel des Begleiters nur mit opts.companion (opt-in).
+ */
 export function signature(ctx, x, y, pal, rand, opts, { align = 'right', px = 32, color } = {}) {
   const word = 'nachtgarten';
   const o = { px, italic: true, color: color || pal.muted };
   const tw = measure(ctx, word, o);
-  const sz = Math.round((px * 1.1) / 11) * 11;
-  const gap = Math.round(px * 0.4);
-  // Laufkarten tragen ein zweites Siegel: das Mannequin mitten im Schritt (wie zwei Stempel auf einem Rollbild)
-  const second = opts.runnerSeal ? runnerSealRows() : null;
-  const p = Math.max(1, Math.round(sz / 11));
-  const sz2 = second ? p * (second[0].length + 2) : 0;
-  const gap2 = second ? Math.round(px * 0.18) : 0;
-  const total = sz + gap2 + sz2 + gap + tw;
+  const gap = Math.round(px * 0.36);
+  if (opts.companion) {
+    const sz = Math.round((px * 1.1) / 11) * 11;
+    const total = sz + gap + tw;
+    const x0 = align === 'right' ? x - total : align === 'center' ? x - total / 2 : x;
+    seal(ctx, x0, y + Math.round(px * 0.12) - sz, sz, pal, rand, opts, opts.seal);
+    write(ctx, word, x0 + sz + gap, y, o);
+    return total;
+  }
+  const mh = Math.round(px * 0.78);
+  const total = mh * 0.8 + gap + tw;
   const x0 = align === 'right' ? x - total : align === 'center' ? x - total / 2 : x;
-  const base = y + Math.round(px * 0.12);
-  seal(ctx, x0, base - sz, sz, pal, rand, opts, opts.seal);
-  if (second) seal(ctx, x0 + sz + gap2, base - p * (second.length + 2), sz, pal, rand, opts, null, second);
-  write(ctx, word, x0 + sz + gap2 + sz2 + gap, y, o);
+  mark(ctx, x0 + mh * 0.4, y - px * 0.3, mh, pal.rose);
+  write(ctx, word, x0 + mh * 0.8 + gap, y, o);
   return total;
 }
 
+/**
+ * Zahl mit festen Ziffernbreiten (Tabellenziffern), rechts- oder linksbündig.
+ * Hat die Schrift ohnehin gleich breite Ziffern, wird der Text in einem Stück gesetzt.
+ */
+export function writeNum(ctx, str, x, y, o) {
+  ctx.font = fontOf(o);
+  const dw = ctx.measureText('0').width;
+  const uniform = ['1', '4', '7'].every((d) => Math.abs(ctx.measureText(d).width - dw) < 0.01);
+  if (uniform || !/\d/.test(str)) return write(ctx, str, x, y, o);
+  const widths = [...str].map((ch) => (/\d/.test(ch) ? dw : ctx.measureText(ch).width));
+  const total = widths.reduce((a, b) => a + b, 0);
+  let cx = o.align === 'right' ? x - total : o.align === 'center' ? x - total / 2 : x;
+  [...str].forEach((ch, i) => {
+    const w = widths[i];
+    write(ctx, ch, cx + (/\d/.test(ch) ? (w - ctx.measureText(ch).width) / 2 : 0), y, { ...o, align: 'left' });
+    ctx.font = fontOf(o);
+    cx += w;
+  });
+  return total;
+}
 
-/** Kleine Pixel-Blüte (Markierung für Bestwert / schnellsten Kilometer). */
-export function blossom(ctx, x, y, p, pal, heart) {
+/** Breite einer Zahl mit Tabellenziffern. */
+export function measureNum(ctx, str, o) {
+  ctx.font = fontOf(o);
+  const dw = ctx.measureText('0').width;
+  return [...str].reduce((a, ch) => a + (/\d/.test(ch) ? dw : ctx.measureText(ch).width), 0);
+}
+
+/** Markierung für Bestwert / schnellsten Kilometer. */
+export function blossom(ctx, x, y, p, pal) {
+  // Markierung: ein kleiner Punkt in Altrosa (früher eine Pixel-Blüte)
+  ctx.save();
   ctx.fillStyle = pal.rose;
-  ctx.fillRect(x, y - p, p, p); ctx.fillRect(x - p, y, p, p); ctx.fillRect(x + p, y, p, p); ctx.fillRect(x, y + p, p, p);
-  ctx.fillStyle = heart || pal.paper;
-  ctx.fillRect(x, y, p, p);
+  ctx.beginPath(); ctx.arc(x + p / 2, y + p / 2, p * 1.2, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }

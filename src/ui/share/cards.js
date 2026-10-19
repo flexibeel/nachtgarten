@@ -19,8 +19,8 @@
  *   format?: 'story' (1080×1920, Standard) | 'feed' (1080×1350) | 'kompakt' (nur Sticker: eng zugeschnitten),
  *   detail?: 'kompakt' (Standard) | 'detailliert', focus?: 'bestwert',
  *   createCanvas?: (w, h) => canvas, seal?: 'keim'|'mond'|'elli', sealRows?: string[] (9 × 9, „#“ ausgespart),
- *   companion?: {species?, rows?, colors?} (species → Siegel aus dem Begleiter, rows → Figur in der Briefmarke),
- *   runnerSeal?: boolean (Laufkarten: zweites Siegel mit der Läuferin; Standard bei Lauf-Vorlagen)
+ *   companion?: {species?, rows?, colors?} (opt-in: Pixel-Siegel des Begleiters statt der Mondsichel; species/rows → Figur in der Briefmarke),
+ *   figure?: boolean (Figur zeigen; Standard je Vorlage – Programmheft-Piktogramme und Studie ja, Laufkarten nein)
  * }
  * Schriften vorher laden (ensureFonts). In der Story bleibt alles Beschriftete in der
  * sicheren Zone (oben 250 px, unten 340 px frei).
@@ -30,19 +30,19 @@ import {
   chaikin, fit, isLoop, markersEvery, project, simplify, simplifyTo,
 } from './geo.js';
 import {
-  facts, fmtCoord, fmtDateShort, fmtInt, fmtMonth, fmtPace, fmtTime, moonName, moonPhase,
+  facts, fmtCoord, fmtDateLong, fmtDateShort, fmtInt, fmtKg, fmtMonth, fmtPace, fmtTime, moonName, moonPhase,
   musclesText, paceProfile, setsCompact, setsText, summarizeStrength, suggestCards, MUSCLE_NAMES,
 } from './data.js';
 import { drawRunner } from './laeufer.js';
 import { SHARED_PALETTE, SPECIES } from '../companion/sprites.js';
-import { bewegungsStudie, drawBodyPair, drawPoseThumb, koerperbeet, sammelKarte } from './kraftbilder.js';
+import { bewegungsStudie, drawPoseIcon, koerperbeet, sammelKarte } from './kraftbilder.js';
 
 export { bewegungsStudie, koerperbeet, sammelKarte } from './kraftbilder.js';
 
 export * from './data.js';
 
 import {
-  FORMATS, FRAME, M, SAFE, SANS, SERIF, W, begin, blossom, breathingWidth, brushStroke, fitSize, fontOf,
+  FORMATS, FRAME, M, SAFE, SANS, SERIF, W, begin, measureNum, writeNum, blossom, breathingWidth, brushStroke, fitSize, fontOf,
   hairline, makeCanvas, measure, paper, seal, signature, statRow, withShadow, write, writeRun,
 } from './ink.js';
 
@@ -164,7 +164,7 @@ function compactRows(data, rows) {
  * opts.transparent (Standard true); false legt Papier darunter. opts.anchor: 'unten' | 'oben'.
  */
 export function laufSticker(run, opts = {}) {
-  const o = { transparent: true, runnerSeal: true, ...opts, template: 'sticker' };
+  const o = { transparent: true, ...opts, template: 'sticker' };
   const routeH = 420; const blockH = routeH + 60 + 196 + 132 + 152 + 20;
   const compact = o.format === 'kompakt';
   const size = compact ? { w: W, h: blockH + 110 } : null;
@@ -198,11 +198,11 @@ export function laufSticker(run, opts = {}) {
     }
   });
   // Die Läuferin steht am Ziel, mitten im Schritt – als hätte sie die Linie gerade gezogen
-  if (pts.length) {
+  if (pts.length && o.figure) {
     const z = pts[pts.length - 1];
     const fig = makeCanvas(160, 200, o);
     const fc = fig.getContext('2d');
-    drawRunner(fc, 80, 196, 128, transparent ? (light ? 'dunkel' : 'hell') : theme);
+    drawRunner(fc, 80, 196, 120, transparent ? (light ? 'dunkel' : 'hell') : theme, { makeCanvas: (a, b) => makeCanvas(a, b, o) });
     withShadow(ctx, shadow, 18, () => ctx.drawImage(fig, Math.round(z[0] + 86 - 80), Math.round(z[1] + 14 - 196)));
   }
   const yHero = top + routeH + 60 + 196;
@@ -260,7 +260,7 @@ function circleFit(meters, cx, cy, radius) {
  * Oben die Mondphase zur Laufzeit, unten Koordinaten wie im Sternatlas.
  */
 export function laufKarte(run, opts = {}) {
-  const o = { runnerSeal: true, ...opts, template: 'sternbild' };
+  const o = { ...opts, template: 'sternbild' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   const dark = theme === 'dunkel';
@@ -352,9 +352,11 @@ export function laufKarte(run, opts = {}) {
     const lat = route.reduce((a, q) => a + q[0], 0) / route.length;
     const lon = route.reduce((a, q) => a + q[1], 0) / route.length;
     const yC = cy + R + 104;
-    write(ctx, fmtCoord(lat, 'N', 'S'), W / 2 - 46, yC, { px: 26, serif: false, color: pal.muted, align: 'right', tracking: 1 });
-    write(ctx, fmtCoord(lon, 'O', 'W'), W / 2 + 46, yC, { px: 26, serif: false, color: pal.muted, align: 'left', tracking: 1 });
-    drawRunner(ctx, W / 2, yC + 6, 52, theme);
+    if (o.figure) {
+      write(ctx, fmtCoord(lat, 'N', 'S'), W / 2 - 46, yC, { px: 26, serif: false, color: pal.muted, align: 'right', tracking: 1 });
+      write(ctx, fmtCoord(lon, 'O', 'W'), W / 2 + 46, yC, { px: 26, serif: false, color: pal.muted, align: 'left', tracking: 1 });
+      drawRunner(ctx, W / 2, yC + 6, 52, theme, { colors: { ink: pal.ink, far: pal.far }, makeCanvas: (a, b) => makeCanvas(a, b, o) });
+    } else write(ctx, `${fmtCoord(lat, 'N', 'S')}   ${fmtCoord(lon, 'O', 'W')}`, W / 2, yC, { px: 26, serif: false, color: pal.muted, align: 'center', tracking: 1 });
   }
   const name = run.constellation ? `Sternbild „${run.constellation}“` : f.title;
   if (detailed) {
@@ -391,63 +393,123 @@ export function kraftKarte(workout, opts = {}) {
   return koerperbeet(workout, opts);
 }
 
+/** Gewicht einer Übung für die Tabelle: „100 kg“, „80–85 kg“, ohne Gewicht leer. */
+export function weightCell(ex) {
+  const kgs = (ex.sets || []).map((st) => Number(st.kg) || 0).filter((k) => k > 0);
+  if (!kgs.length) return { value: '', unit: '', note: ex.bodyweight === false ? '' : 'Körpergewicht' };
+  const lo = Math.min(...kgs); const hi = Math.max(...kgs);
+  return { value: lo === hi ? fmtKg(hi) : `${fmtKg(lo)}–${fmtKg(hi)}`, unit: 'kg', note: ex.perSide ? 'je Seite' : '' };
+}
+
 /**
- * Das Programmheft: das ganze Training auf einem Bild, gesetzt wie eine Menükarte –
- * jede Übung mit Sätzen × Wiederholungen und Gewicht, Gesamtvolumen und Dauer.
- * Eigenes Layout für Story (9:16) und Feed (4:5). Für Strava: ein Bild statt Tipparbeit.
+ * Das Programmheft: das ganze Training als präzise Tabelle – für Strava und den Feed.
+ * Kopf mit Datum und Titel, darunter eine Zeile mit Volumen, Sätzen, Dauer und Bestwert,
+ * dann je Übung: Piktogramm (optional, opts.figure), Name, Sätze × Wdh., Gewicht –
+ * Ziffern in festen Breiten, feine Linien zwischen den Zeilen.
+ * Eigenes Layout für Story (9:16) und Feed (4:5).
  */
 export function programmKarte(workout, opts = {}) {
   const o = { ...opts, template: 'programm' };
   const fmt = o.format === 'feed' ? 'feed' : 'story';
-  const { canvas, ctx, pal, theme, rand, seed, transparent, w, h } = begin(workout, o, FORMATS[fmt]);
+  const { canvas, ctx, pal, theme, rand, transparent, w, h } = begin(workout, o, FORMATS[fmt]);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   const fr = FRAME[fmt];
   const feed = fmt === 'feed';
   const s = summarizeStrength(workout);
   const f = facts(workout);
   const x1 = M; const x2 = W - M;
+  const K = feed ? 0.84 : 1; // Maßstab Feed
+  const when = workout.start || workout.date;
+  const showFig = o.figure !== false;
 
-  // Kopf: Datum, Titel, Muskeln – rechts das Mannequin vorn und hinten, getönt
-  const figH = feed ? 190 : 236;
-  const figW = figH * 0.4;
-  const figX = x2 - figW * 2.36 + 6;
-  const figY = fr.top + (feed ? 0 : 8);
-  const fs = { h: figH };
-  drawBodyPair(ctx, figX, figY, figH, s.load, theme, { gap: 0.36, seed });
-  write(ctx, f.line, x1, fr.top + 34, { px: feed ? 27 : 30, italic: true, color: pal.muted });
-  const tPx = fitSize(ctx, f.title, figX - x1 - 30, {}, feed ? 100 : 116);
-  const yTitle = fr.top + 34 + 24 + tPx * 0.78;
-  write(ctx, f.title, x1 - 3, yTitle, { px: tPx, color: pal.ink });
-  const topM = Object.entries(s.load).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([m]) => MUSCLE_NAMES[m] || m);
-  write(ctx, topM.join(' · '), x1, yTitle + (feed ? 52 : 60), { px: feed ? 30 : 34, italic: true, color: pal.roseInk });
+  // Kopf
+  const yMeta = fr.top + 30;
+  write(ctx, `${fmtDateLong(when)}${workout.start ? ` · ${fmtTime(when)}` : ''}`, x1, yMeta, { px: 26 * K, serif: false, color: pal.muted });
+  if (workout.edition) writeNum(ctx, `Nr. ${workout.edition}`, x2, yMeta, { px: 26 * K, serif: false, color: pal.muted, align: 'right' });
+  const tPx = fitSize(ctx, f.title, x2 - x1, { trackingEm: -0.015 }, 132 * K);
+  const yTitle = yMeta + 30 * K + tPx * 0.8;
+  write(ctx, f.title, x1 - tPx * 0.04, yTitle, { px: tPx, color: pal.ink, tracking: -tPx * 0.015 });
+  let yHeadEnd = yTitle;
+  if (workout.place) { yHeadEnd = yTitle + 48 * K; write(ctx, workout.place, x1, yHeadEnd, { px: 28 * K, serif: false, color: pal.muted }); }
 
-  const headBottom = Math.max(figY + fs.h, yTitle + 76) + (feed ? 22 : 36);
-  hairline(ctx, x1, headBottom, x2, pal.ink, 0.16);
-
-  const footH = feed ? 196 : 236;
-  const footTop = fr.bottom - footH;
-  const rows = detailRows(workout);
-  const listTop = headBottom + (feed ? 26 : 40);
-  const avail = footTop - listTop - (feed ? 6 : 16);
-  const rowH = Math.min(feed ? 112 : 130, avail / Math.max(1, rows.length));
-  const px = Math.max(28, Math.min(feed ? 44 : 50, rowH * 0.42));
-  const thumb = Math.round(Math.min(rowH * 0.8, px * 1.9));
-  const exs = workout.exercises || [];
-  drawRows(ctx, rows, x1, x2, listTop, rowH, pal, {
-    px, subPx: Math.round(px * 0.58), index: true,
-    icon: { size: thumb, draw: (k, x, y) => exs[k] && drawPoseThumb(ctx, exs[k], x, y, thumb, theme) },
-  });
-
-  hairline(ctx, x1, footTop, x2, pal.ink, 0.16);
-  const yS = footTop + (feed ? 84 : 100);
-  statRow(ctx, [
+  // Zusammenfassung: vier Spalten auf einem Raster
+  const ySumTop = yHeadEnd + 44 * K;
+  hairline(ctx, x1, ySumTop, x2, pal.ink, 0.85, 2);
+  const pr = s.prs[0];
+  const cells = [
     { value: fmtInt(s.volume), unit: 'kg', label: 'Volumen' },
-    { value: fmtInt(s.sets), label: s.sets === 1 ? 'Satz' : 'Sätze' },
-    workout.durationS > 0 ? { value: fmtInt(workout.durationS / 60), unit: 'min', label: 'Dauer' } : null,
-  ].filter(Boolean), x1, x2, yS, pal, { px: feed ? 58 : 66, labelPx: feed ? 24 : 26, align: 'spread' });
-  const yEnd = fr.bottom - (feed ? 0 : 12);
-  signature(ctx, x2, yEnd, pal, rand, o, { align: 'right', px: feed ? 28 : 30 });
-  if (workout.place) write(ctx, workout.place, x1, yEnd, { px: feed ? 28 : 30, italic: true, color: pal.muted });
+    { value: fmtInt(s.sets), unit: '', label: s.sets === 1 ? 'Satz' : 'Sätze' },
+    workout.durationS > 0 ? { value: fmtInt(workout.durationS / 60), unit: 'min', label: 'Dauer' } : { value: fmtInt((workout.exercises || []).length), unit: '', label: 'Übungen' },
+    pr ? { value: fmtKg(pr.kg), unit: 'kg', label: 'Bestwert', accent: true }
+      : s.top ? { value: fmtKg(s.top.kg), unit: 'kg', label: 'schwerster Satz' } : null,
+  ].filter(Boolean);
+  // Spalten nach Inhalt: jede so breit wie ihre Zahl, der Rest gleichmäßig als Abstand
+  let numPx = 68 * K;
+  const cellW = (c, px) => measureNum(ctx, c.value, { px }) + (c.unit ? 8 * K + measure(ctx, c.unit, { px: px * 0.4, italic: true }) : 0);
+  const labelOf = (c) => c.label;
+  let widths = cells.map((c) => Math.max(cellW(c, numPx), measure(ctx, labelOf(c), { px: 22 * K, serif: false })));
+  while (widths.reduce((a, b) => a + b, 0) > (x2 - x1) - 3 * 36 * K && numPx > 40) {
+    numPx -= 2;
+    widths = cells.map((c) => Math.max(cellW(c, numPx), measure(ctx, labelOf(c), { px: 22 * K, serif: false })));
+  }
+  const free = (x2 - x1 - widths.reduce((a, b) => a + b, 0)) / Math.max(1, cells.length - 1);
+  const yNum = ySumTop + 30 * K + numPx * 0.78;
+  let cx = x1;
+  cells.forEach((c, i) => {
+    const col = c.accent ? pal.roseInk : pal.ink;
+    const nw = writeNum(ctx, c.value, cx, yNum, { px: numPx, color: col });
+    if (c.unit) write(ctx, c.unit, cx + nw + 8 * K, yNum, { px: numPx * 0.4, italic: true, color: c.accent ? pal.roseInk : pal.muted });
+    write(ctx, c.label, cx, yNum + 38 * K, { px: 22 * K, serif: false, color: c.accent ? pal.roseInk : pal.muted });
+    cx += widths[i] + free;
+  });
+  const ySumEnd = yNum + 74 * K;
+  hairline(ctx, x1, ySumEnd, x2, pal.ink, 0.16, 1.5);
+
+  // Tabelle: Spaltenbreiten aus dem Inhalt, eine Namensgröße für alle Zeilen
+  const exs = workout.exercises || [];
+  const footTop = fr.bottom - (feed ? 54 : 70);
+  const icon = showFig ? Math.round(64 * K) : 0;
+  const nameX = x1 + (icon ? icon + 28 * K : 0);
+  const yHead = ySumEnd + 56 * K;
+  const yRows = yHead + 22 * K;
+  const rowH = Math.min((feed ? 120 : 150) * K, (footTop - yRows) / Math.max(1, exs.length));
+  const vpx = Math.max(24, Math.min(36 * K, rowH * 0.3));
+  const spx = Math.max(18, Math.round(vpx * 0.62));
+  const val = { px: vpx, serif: false, weight: 600 };
+  const cellsW = exs.map((ex) => weightCell(ex));
+  const wW = Math.max(measure(ctx, 'Gewicht', { px: 22 * K, serif: false }), ...cellsW.map((c) => (c.value ? measureNum(ctx, c.value, val) + 7 + measure(ctx, 'kg', { px: vpx * 0.62, serif: false }) : 0)));
+  const colRep = x2 - wW - 44 * K;
+  const rW = Math.max(measure(ctx, 'Sätze × Wdh.', { px: 22 * K, serif: false }), ...exs.map((ex) => measureNum(ctx, setsText(ex).reps, val)));
+  const nameMax = colRep - rW - 32 * K - nameX;
+  const npx = Math.max(22, Math.min(vpx, ...exs.map((ex) => fitSize(ctx, ex.name, nameMax, { serif: false, weight: 600 }, vpx))));
+  const hpx = 22 * K;
+  write(ctx, 'Übung', nameX, yHead, { px: hpx, serif: false, color: pal.muted });
+  write(ctx, 'Sätze × Wdh.', colRep, yHead, { px: hpx, serif: false, color: pal.muted, align: 'right' });
+  write(ctx, 'Gewicht', x2, yHead, { px: hpx, serif: false, color: pal.muted, align: 'right' });
+  hairline(ctx, x1, yRows, x2, pal.ink, 0.16, 1.5);
+  exs.forEach((ex, k) => {
+    const top = yRows + k * rowH;
+    const mid = top + rowH / 2;
+    const yName = mid - 2;
+    write(ctx, ex.name, nameX, yName, { px: npx, serif: false, weight: 600, color: pal.ink });
+    const mus = musclesText(ex);
+    if (mus) write(ctx, mus, nameX, yName + spx + 12, { px: spx, serif: false, color: pal.muted });
+    writeNum(ctx, setsText(ex).reps, colRep, yName, { ...val, color: pal.ink, align: 'right' });
+    const wc = cellsW[k];
+    if (wc.value) {
+      const uw = measure(ctx, 'kg', { px: vpx * 0.62, serif: false });
+      write(ctx, 'kg', x2, yName, { px: vpx * 0.62, serif: false, color: pal.muted, align: 'right' });
+      writeNum(ctx, wc.value, x2 - uw - 7, yName, { ...val, color: ex.pr ? pal.roseInk : pal.ink, align: 'right' });
+    } else write(ctx, '–', x2, yName, { px: vpx, serif: false, color: pal.faint, align: 'right' });
+    const note = ex.pr ? 'Bestwert' : wc.note;
+    if (note) write(ctx, note, x2, yName + spx + 12, { px: spx, serif: false, color: ex.pr ? pal.roseInk : pal.muted, align: 'right' });
+    if (icon) drawPoseIcon(ctx, ex, x1, Math.round(mid - icon / 2 + 4), icon, theme, pal, o);
+    if (k < exs.length - 1) hairline(ctx, nameX, top + rowH, x2, pal.ink, 0.09, 1.2);
+  });
+  hairline(ctx, x1, yRows + exs.length * rowH, x2, pal.ink, 0.16, 1.5);
+
+  const yEnd = fr.bottom - (feed ? 4 : 12);
+  signature(ctx, x2, yEnd, pal, rand, o, { align: 'right', px: feed ? 26 : 28 });
   return canvas;
 }
 
@@ -599,7 +661,7 @@ function pixelScene(ctx, x0, y0, cols, rowsN, p, theme, data, rand, opts) {
  * Detailliert: darunter alle Übungen bzw. Kilometer.
  */
 export function pixelStempel(data, opts = {}) {
-  const o = { runnerSeal: data.type !== 'kraft', ...opts, template: 'stempel' };
+  const o = { ...opts, template: 'stempel' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();
@@ -720,7 +782,7 @@ function arcText(ctx, str, radius, mid, px, top) {
 
 /** Nur Ziffern: eine große Zahl, zwei kleinere darunter – wie ein Plakat. focus 'bestwert' für Rekorde. */
 export function minimalTypo(data, opts = {}) {
-  const o = { runnerSeal: data.type !== 'kraft', ...opts, template: 'typo' };
+  const o = { ...opts, template: 'typo' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(data, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();
@@ -773,7 +835,7 @@ export function minimalTypo(data, opts = {}) {
  * Die Linie in Altrosa ist das echte Tempo, die anderen ihr Echo.
  */
 export function tempoWelle(run, opts = {}) {
-  const o = { runnerSeal: true, ...opts, template: 'welle' };
+  const o = { ...opts, template: 'welle' };
   const { canvas, ctx, pal, theme, rand, transparent, w, h, stage, detailed } = begin(run, o);
   if (!transparent) paper(ctx, pal, theme, rand, o, w, h);
   stage();

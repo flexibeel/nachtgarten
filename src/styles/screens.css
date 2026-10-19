@@ -925,10 +925,22 @@
   flex-direction: column;
   gap: 2px;
 }
+.live-eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 20px;
+}
+/* Kontext gedämpft, der Name ist das Wichtigste */
 .live-eyebrow {
-  color: var(--accent-ink);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
   font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
+  font-weight: var(--fw-medium);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .live-name-row {
   display: flex;
@@ -947,7 +959,7 @@
   background: none;
   color: var(--text);
   font-family: var(--font-display);
-  font-size: clamp(1.6rem, 7.4vw, 2.1rem);
+  font-size: clamp(1.9rem, 8.6vw, 2.5rem);
   line-height: var(--lh-tight);
   text-align: left;
 }
@@ -1018,8 +1030,74 @@
 }
 .live-figure[hidden],
 .live-alt[hidden],
-.live-recap[hidden] {
+.live-recap[hidden],
+.live-inputs[hidden],
+.live-rir[hidden],
+.live-cues[hidden],
+.live-coach[hidden] {
   display: none;
+}
+/* Geräte-Varianten und Kabel-Einstellungen: eine ruhige Chip-Zeile, seitlich wischbar */
+.live-variants {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-1) calc(-1 * var(--gutter)) 0;
+  padding: 0 var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.live-variants::-webkit-scrollbar {
+  display: none;
+}
+.live-variants .chip {
+  flex: none;
+}
+.live-chips-label {
+  flex: none;
+  line-height: 1;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+}
+/* „So geht’s“: zwei, drei kurze Hinweise unter der großen Animation */
+.live-cues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 36ch;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  counter-reset: cue;
+  list-style: none;
+}
+.live-cues li {
+  display: flex;
+  gap: var(--space-3);
+  font-size: var(--fs-md);
+  line-height: var(--lh-snug);
+  counter-increment: cue;
+}
+.live-cues li::before {
+  content: counter(cue);
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-bold);
+}
+.live-switch {
+  flex: none;
+  width: var(--target-lg);
+  height: var(--target-lg);
+  border-radius: var(--radius-button);
+  background: var(--soft);
 }
 .live-anim {
   display: grid;
@@ -1027,10 +1105,26 @@
   place-items: center;
   width: 100%;
   min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-card);
+  background: none;
+  color: inherit;
   container-type: size;
+  -webkit-tap-highlight-color: transparent;
+}
+.live-anim:not(:disabled):active .nga-wrap {
+  transform: scale(0.97);
 }
 .live-anim .nga-wrap {
-  width: min(100cqw, 100cqh, 236px) !important;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+/* Eintragen: kleine Erinnerung (antippen = groß); „So geht’s“: so groß, wie Platz ist */
+.live.is-log .live-anim .nga-wrap {
+  width: min(100cqw, 100cqh, 208px) !important;
+}
+.live.is-intro .live-anim .nga-wrap {
+  width: min(100cqw, 100cqh, 300px) !important;
 }
 .live-anim .nga-wrap.nga-pair {
   width: min(100cqw, 200cqh, 360px) !important;
@@ -1471,16 +1565,122 @@
 .lib-open {
   display: flex;
   flex: 1;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  align-items: center;
+  gap: var(--space-3);
   min-width: 0;
-  min-height: var(--target-lg);
+  min-height: 64px;
   padding: var(--space-2) 0;
   border: 0;
   background: none;
   color: var(--text);
   text-align: left;
+}
+.lib-texts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* Vorschau: Standbild der Übung, bewegt sich beim Drücken */
+.lib-thumb {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.lib-thumb .nga-wrap {
+  width: 46px !important;
+}
+.lib-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* Startseite: Kategorien als Kacheln, zwei Spalten */
+.lib-cats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.lib-cat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--text);
+  text-align: left;
+  transition: transform var(--dur-1) var(--ease-out);
+}
+.lib-cat:active {
+  transform: scale(0.97);
+}
+.lib-cat .lib-thumb {
+  width: 48px;
+  height: 48px;
+  background: var(--bg);
+  box-shadow: none;
+}
+.lib-cat .lib-thumb .nga-wrap {
+  width: 44px !important;
+}
+.lib-cat-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-small);
+  background: var(--soft);
+  color: var(--muted);
+}
+.lib-cat-icon.is-star {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.lib-cat-texts {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lib-cat-name {
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-snug);
+}
+.lib-cat-sub {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.lib-cat.is-all {
+  grid-column: 1 / -1;
+  min-height: 56px;
+}
+.lib-cat.is-all .lib-cat-icon {
+  width: 40px;
+  height: 40px;
+}
+.lib-list-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.lib-heading {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 400;
+}
+.lib-back {
+  flex: none;
 }
 .lib-name {
   font-weight: var(--fw-medium);

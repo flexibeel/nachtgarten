@@ -53,6 +53,7 @@ const PATHS = Object.freeze({
   eye: '<path d="M2.75 12S6 5.75 12 5.75 21.25 12 21.25 12 18 18.25 12 18.25 2.75 12 2.75 12Z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M4 4l16 16M9.9 6A9.6 9.6 0 0 1 12 5.75C18 5.75 21.25 12 21.25 12a16 16 0 0 1-2.6 3.4M14.1 14.2A3 3 0 0 1 9.8 9.9M6.5 7.5C4 9.3 2.75 12 2.75 12S6 18.25 12 18.25c1.4 0 2.7-.35 3.8-.9"/>',
   arrowLeft: '<path d="M19 12H5m0 0 6-6m-6 6 6 6"/>',
+  more: '<circle cx="5.5" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="18.5" cy="12" r="1.3" fill="currentColor"/>',
 });
 
 export const ICON_NAMES = Object.freeze(Object.keys(PATHS));
