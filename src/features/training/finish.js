@@ -18,7 +18,7 @@ import { exerciseLookup } from './exercises.js';
 /** @typedef {import('../context.js').AppContext} AppContext */
 
 /** Teilen-Sheet ist angeschlossen. */
-const SHARE_READY = false;
+const SHARE_READY = true;
 
 /**
  * @param {AppContext} ctx

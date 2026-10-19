@@ -332,8 +332,10 @@ export function summarizeLive(live, { lookup, prs, now, timeTracking }) {
     items: [...byExercise].map(([id, list]) => {
       const ex = lookup(id);
       return {
+        id,
         name: ex?.name ?? id,
         gear: ex?.gear ?? '',
+        muscles: ex?.muscles ?? [],
         sets: list.map((s) => ({ weight: s.weight, reps: s.reps })),
         pr: prs.some((p) => p.exercise === id && p.session === live.start),
       };

@@ -1865,3 +1865,97 @@
   font-size: var(--fs-sm);
   line-height: var(--lh-snug);
 }
+
+/* ---------------------------------------------------------------- Teilen */
+
+.share .sheet-body {
+  gap: var(--space-4);
+}
+.share-rail {
+  display: flex;
+  flex: none;
+  gap: var(--space-3);
+  margin: 0 calc(-1 * var(--gutter));
+  padding: var(--space-2) 22%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.share-rail::-webkit-scrollbar {
+  display: none;
+}
+.share-card {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 56%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  scroll-snap-align: center;
+  transition: transform var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+  opacity: 0.55;
+  transform: scale(0.92);
+}
+.share-card[aria-selected='true'] {
+  color: var(--text);
+  opacity: 1;
+  transform: none;
+}
+.share-img {
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+  box-shadow: var(--shadow-toast);
+  background: var(--card);
+}
+.share-card.is-story .share-img {
+  aspect-ratio: 9 / 16;
+}
+.share-card.is-feed .share-img {
+  aspect-ratio: 4 / 5;
+}
+.share-name {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+.share-reason {
+  min-height: 1.5em;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.share-toggles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+.share-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+}
+.share-actions .button {
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  font-size: var(--fs-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .share-card {
+    transition: none;
+  }
+}
+.share-actions-row .button {
+  gap: 6px;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}

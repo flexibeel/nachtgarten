@@ -253,3 +253,40 @@ export function openExternal(appUrl, webUrl) {
   }, 1200);
   return undefined;
 }
+
+/* ------------------------------------------------------- Bilder teilen */
+
+/**
+ * Bild über das Teilen-Menü (mit Datei) teilen; ohne Unterstützung als Download.
+ * @param {Blob} blob
+ * @param {string} name
+ * @param {string} [title]
+ * @returns {Promise<'shared'|'downloaded'|'cancelled'|'failed'>}
+ */
+export async function shareImage(blob, name, title) {
+  const file = typeof globalThis.File === 'function' ? new File([blob], name, { type: 'image/png' }) : null;
+  try {
+    if (file && nav()?.canShare?.({ files: [file] })) {
+      await nav().share({ files: [file], title });
+      return 'shared';
+    }
+  } catch (error) {
+    if (/** @type {Error} */ (error)?.name === 'AbortError') return 'cancelled';
+  }
+  return saveFile({ name, content: blob, type: 'image/png' });
+}
+
+/**
+ * PNG in die Zwischenablage (z. B. als Sticker für die Instagram-Story).
+ * @param {Blob} blob
+ */
+export async function copyImage(blob) {
+  try {
+    const Item = /** @type {any} */ (globalThis).ClipboardItem;
+    if (!Item || !nav()?.clipboard?.write) return false;
+    await nav().clipboard.write([new Item({ 'image/png': blob })]);
+    return true;
+  } catch {
+    return false;
+  }
+}

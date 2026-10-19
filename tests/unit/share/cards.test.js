@@ -216,3 +216,15 @@ test('Körperbeet: Pixel-Mannequin – heller Kopf mit Rand, Muskeln je Ansicht,
   const fs = figureSize(9);
   assert.equal(fs.w, front.cols * 9);
 });
+
+test('Siegel aus dem Begleiter: 9 × 9, je Art eigenes Motiv', async () => {
+  const { sealForSpecies, sealFromGrid } = await import('../../../src/ui/share/seal.js');
+  const elli = sealForSpecies('elefant');
+  assert.equal(elli.length, 9);
+  assert.ok(elli.every((r) => r.length === 9 && /^[#.]+$/.test(r)));
+  const filled = elli.join('').split('#').length - 1;
+  assert.ok(filled > 20 && filled < 75, `Elli: ${filled} Punkte`);
+  assert.notDeepEqual(sealForSpecies('eule'), elli);
+  assert.equal(sealForSpecies('drache'), null);
+  assert.deepEqual(sealFromGrid(['...', '.D.']), Array(9).fill('.........'), 'nur Schatten → leer');
+});
