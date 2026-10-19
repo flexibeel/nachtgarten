@@ -92,5 +92,5 @@ test('Texte: jeder Schlüssel, den die Domain liefert, hat einen Text', () => {
     'backup.notJson', 'backup.notNachtgarten', 'backup.tooNew', 'backup.invalidData',
   ];
   for (const key of domainKeys) assert.ok(key in TEXTS, key);
-  assert.equal(text('week.remaining', { left: 2 }), 'Noch 2 Einheiten bis zu deinem Ziel.');
+  assert.equal(text('week.remaining', { left: 2 }), 'Noch 2 Trainingstage bis zu deinem Wochenziel.');
 });

@@ -1,10 +1,11 @@
 /**
- * Keimi, der Begleiter: Wachstum und Stimmung.
+ * Der Begleiter (jede Art, z. B. der Keimling „Keimi“): Wachstum und Stimmung.
+ * Wie die vier Stufen aussehen und heißen, bestimmt die Art (data/companions.js).
  *
  * Wachstum: aktive Tage der letzten vier Wochen (heute + 27 Tage zurück).
  * Aktiv ist ein Tag mit Training/Aktivität, erledigter Gewohnheit oder Umlenkung.
- *   ab 16 Tagen Blüte (4), ab 10 Knospe (3), ab 4 zwei Blätter (2), sonst Keimling (1).
- * Keimi schrumpft höchstens eine Stufe unter die höchste je erreichte Stufe.
+ *   ab 16 Tagen Stufe 4, ab 10 Stufe 3, ab 4 Stufe 2, sonst Stufe 1.
+ * Der Begleiter schrumpft höchstens eine Stufe unter die höchste je erreichte Stufe.
  *
  * Stimmung auf „Heute“ nach fester Reihenfolge: zurück nach Pause, Bestleistung,
  * Training erledigt, Nacht, eingeschlafen (4 Tage nichts), Training geplant, dann
@@ -15,10 +16,10 @@ import { addDays, daysBetween } from '../core/dates.js';
 
 /** @typedef {import('../core/store.js').BuddyState} BuddyState */
 
-export const STAGE_NAMES = Object.freeze(['Keimling', 'Zwei Blätter', 'Knospe', 'Blüte']);
+export const STAGE_COUNT = 4;
 export const WINDOW_DAYS = 28;
 export const IDLE_DAYS = 4;
-/** Ab so vielen Tagen Abwesenheit begrüßt Keimi „Da bist du ja“. */
+/** Ab so vielen Tagen Abwesenheit begrüßt der Begleiter „Da bist du ja“. */
 export const BACK_AFTER_DAYS = 3;
 
 /**
@@ -94,7 +95,7 @@ export function visit(state, today) {
  */
 
 /**
- * Was Keimi gerade sagt und wie er schaut.
+ * Was der Begleiter gerade sagt und wie er schaut.
  * @param {object} input
  * @param {BuddyState} input.state
  * @param {string} input.today
@@ -117,4 +118,58 @@ export function moodFor({ state, today, hour, prToday, trainedToday, plannedToda
   if (redirectsThisWeek > 0 && random() < 0.4) return { context: 'redirect', mood: 'happy', redirects: redirectsThisWeek };
   if (random() < 0.5) return { context: 'rest', mood: 'calm' };
   return { context: hour < 11 ? 'morning' : hour >= 17 ? 'evening' : 'day', mood: 'calm' };
+}
+
+/**
+ * @typedef {object} BuddySnapshot
+ * @property {number} stage
+ * @property {number} maxStage
+ * @property {BuddyState} state      nach Besuch und Wachstum (zum Speichern)
+ * @property {BuddyContext} context
+ * @property {BuddyMood} mood
+ * @property {boolean} wake          kurz „…hm? Oh!“ zeigen, dann begrüßen
+ * @property {number} redirects
+ */
+
+/**
+ * Alles, was „Heute“ über den Begleiter wissen muss, in einem Schritt: Besuch vermerken,
+ * Wachstum berechnen, Stimmung wählen.
+ * @param {object} input
+ * @param {BuddyState} input.state
+ * @param {string} input.today
+ * @param {number} input.hour
+ * @param {string[]} input.sessionDates
+ * @param {string[]} input.prDates
+ * @param {Record<string, boolean>} input.habitDays
+ * @param {Record<string, {redirects:number}>} input.accountDays
+ * @param {boolean} input.plannedToday
+ * @param {number} input.redirectsThisWeek
+ * @param {() => number} [input.random]
+ * @returns {BuddySnapshot}
+ */
+export function buddySnapshot({ state, today, hour, sessionDates, prDates, habitDays, accountDays, plannedToday, redirectsThisWeek, random = Math.random }) {
+  const visited = visit(state, today);
+  const active = activeDays({ today, sessionDates, habitDays, accountDays });
+  const { stage, maxStage } = growth(active.size, visited.maxStage);
+  const mood = moodFor({
+    state: visited,
+    today,
+    hour,
+    prToday: prDates.includes(today),
+    trainedToday: sessionDates.includes(today),
+    plannedToday,
+    idle: isIdle(active, today, sessionDates.length > 0),
+    redirectsThisWeek,
+    random,
+  });
+  const wake = !!mood.wake;
+  return {
+    stage,
+    maxStage,
+    state: { ...visited, maxStage, backShown: visited.backShown || wake },
+    context: mood.context,
+    mood: mood.mood,
+    wake,
+    redirects: redirectsThisWeek,
+  };
 }

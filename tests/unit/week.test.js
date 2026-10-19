@@ -19,7 +19,7 @@ test('Wochenziel: Profil, sonst Wochenplan, sonst 3', () => {
   assert.equal(weekGoal(null, {}), DEFAULT_WEEK_GOAL);
 });
 
-test('Wochenring: Einträge zählen (auch zwei am Tag und Aktivitäten)', () => {
+test('Wochenring: zählt Trainingstage, nicht Einträge (zwei am Tag = ein Tag)', () => {
   const now = at(2026, 10, 21, 20); // Mittwoch
   const sessions = [
     session('2026-10-18'), // Vorwoche
@@ -27,10 +27,10 @@ test('Wochenring: Einträge zählen (auch zwei am Tag und Aktivitäten)', () => 
     session('2026-10-19', { kind: 'activity', planId: 'run' }),
     session('2026-10-21', { kind: 'homeplan', planId: 'b1' }),
   ];
-  const ring = weekRing({ sessions, profile: profile(4), schedule: sched, now });
-  assert.equal(ring.done, 3);
-  assert.equal(ring.goal, 4);
-  assert.equal(ring.fraction, 0.75);
+  const ring = weekRing({ sessions, profile: profile(3), schedule: sched, now });
+  assert.equal(ring.done, 2);
+  assert.equal(ring.goal, 3);
+  assert.equal(ring.fraction, 2 / 3);
   assert.equal(ring.headline, 'week.remainingOne');
   assert.deepEqual(ring.days.map((d) => d.done), [true, false, true, false, false, false, false]);
   assert.deepEqual(ring.days.map((d) => d.planned), [true, false, true, false, true, false, false]);
@@ -44,7 +44,12 @@ test('Wochenring: Anfang, mehrere offen, geschafft und übererfüllt', () => {
   const one = weekRing({ sessions: [session('2026-10-19')], profile: profile(3), schedule: {}, now });
   assert.equal(one.headline, 'week.remaining');
   assert.deepEqual(one.params, { left: 2 });
-  const over = weekRing({ sessions: ['2026-10-19', '2026-10-19', '2026-10-19', '2026-10-19'].map((d) => session(d)), profile: profile(3), schedule: {}, now });
+  const sameDay = weekRing({ sessions: ['2026-10-19', '2026-10-19', '2026-10-19', '2026-10-19'].map((d) => session(d)), profile: profile(3), schedule: {}, now });
+  assert.equal(sameDay.done, 1);
+  assert.equal(sameDay.headline, 'week.remaining');
+  const later = at(2026, 10, 23, 20);
+  const over = weekRing({ sessions: ['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-23'].map((d) => session(d)), profile: profile(3), schedule: {}, now: later });
+  assert.equal(over.done, 4);
   assert.equal(over.headline, 'week.done');
   assert.equal(over.fraction, 1);
 });

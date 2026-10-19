@@ -44,7 +44,7 @@ export const LEGACY_KEYS = Object.freeze({
   'lab.repRange': 'exercises',
   'lab.rirLast': 'exercises',
   'lab.habit': 'habit',
-  'lab.focus': 'focus', // ganz alte Fassung: Array = Schwerpunkte → settings.foci
+  'lab.focus': 'focus', // ganz alte Fassung: Array = Schwerpunkte → settings.enabledModules
   'lab.dump': 'dump',
   'lab.feed': 'feed',
   'lab.queue': 'feed',
@@ -122,16 +122,25 @@ function muscleSets(sets) {
 
 /* ------------------------------------------------------- Bereiche */
 
-function convertProfile(p, name) {
+/** v1 kannte nur den Keimling; sein Name stand in "lab.buddy". */
+function convertProfile(p, name, buddy) {
   if (!isObj(p)) return undefined;
   const n = str(p.name, str(name)).trim();
+  const companionName = isObj(buddy) ? str(buddy.name).trim() : '';
   return {
     name: n === 'du' ? '' : n,
     goal: GOALS.includes(p.goal) ? p.goal : '',
     age: numOrNull(p.age),
     weight: numOrNull(p.weight),
     days: intIn(numOrNull(p.days), 1, 7, 3),
+    companion: { species: 'keimling', name: companionName || 'Keimi' },
   };
+}
+
+/** v1-Schwerpunkte → v2-Module. Die Gewohnheit war in v1 immer sichtbar. */
+function convertModules(foci) {
+  if (!foci) return null;
+  return [...new Set([...foci, 'habits'])];
 }
 
 function convertSettings(v) {
@@ -146,7 +155,8 @@ function convertSettings(v) {
     restSeconds: intIn(v['lab.rest'], 15, 600, 90),
     timeTracking: v['lab.timeOn'] === true,
     lockDuringTraining: v['lab.lockTrain'] !== false,
-    foci: strArray(v['lab.foci']) ?? legacyFoci,
+    enabledModules: convertModules(strArray(v['lab.foci']) ?? legacyFoci),
+    tileOrder: [],
   };
 }
 
@@ -359,7 +369,6 @@ function convertBuddy(cfg, meta) {
   const c = isObj(cfg) ? cfg : {};
   const m = isObj(meta) ? meta : {};
   return {
-    name: str(c.name).trim() || 'Keimi',
     tone: TONES.includes(c.tone) ? c.tone : 'motiv',
     on: c.on !== false,
     maxStage: intIn(m.max, 1, 4, 1),
@@ -428,7 +437,7 @@ export function convertV1(raw) {
 
   const focus = v['lab.focus'];
   const data = {
-    profile: convertProfile(v['lab.profile'], v['lab.name']),
+    profile: convertProfile(v['lab.profile'], v['lab.name'], v['lab.buddy']),
     settings: convertSettings(v),
     gear: strArray(v['lab.gear']) ?? undefined,
     plans: convertPlans(v['lab.plans']),

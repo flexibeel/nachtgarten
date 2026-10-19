@@ -20,10 +20,21 @@ export const TEXTS = Object.freeze({
   'set.invalidWeight': 'Gewicht bitte zwischen 0 und 500 kg.',
   'set.invalidReps': 'Wiederholungen bitte als ganze Zahl von 1 bis 100.',
 
-  'week.done': 'Woche geschafft. Stark.',
-  'week.remainingOne': 'Noch 1 Einheit bis zu deinem Ziel.',
-  'week.remaining': 'Noch {left} Einheiten bis zu deinem Ziel.',
+  'week.done': 'Wochenziel geschafft. Stark.',
+  'week.remainingOne': 'Noch 1 Trainingstag bis zu deinem Wochenziel.',
+  'week.remaining': 'Noch {left} Trainingstage bis zu deinem Wochenziel.',
   'week.start': 'Die Woche gehört dir.',
+
+  'greeting.morning': 'Guten Morgen',
+  'greeting.day': 'Hallo',
+  'greeting.evening': 'Guten Abend',
+  'greeting.night': 'Gute Nacht',
+
+  'mama.noDate': 'Trag bitte ein Datum ein.',
+  'mama.dueTooFar': 'Der Termin liegt mehr als 40 Wochen in der Zukunft.',
+  'mama.dueLongPast': 'Der Termin ist schon über 6 Wochen her. Ist dein Baby schon da?',
+  'mama.birthInFuture': 'Das Geburtsdatum liegt in der Zukunft.',
+  'mama.birthTooOld': 'Die Rückbildungspläne reichen etwa ein Jahr nach der Geburt.',
 
   'habit.empty': 'Tipp auf heute, wenn du es gemacht hast.',
   'habit.count': '{count} von 7 Tagen diese Woche. Ausrutscher sind okay.',

@@ -1,11 +1,11 @@
 import './helpers/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STAGE_NAMES, activeDays, growth, isIdle, moodFor, stageFromActiveDays, visit } from '../../src/domain/buddy.js';
+import { STAGE_COUNT, activeDays, growth, isIdle, moodFor, stageFromActiveDays, visit } from '../../src/domain/buddy.js';
 
 const TODAY = '2026-10-19';
 const buddy = (extra = {}) => ({
-  name: 'Keimi', tone: 'motiv', on: true, maxStage: 1, lastVisit: null, backDay: null, backShown: false, ...extra,
+  tone: 'motiv', on: true, maxStage: 1, lastVisit: null, backDay: null, backShown: false, ...extra,
 });
 
 test('aktive Tage: Training, Gewohnheit, Umlenkung im 28-Tage-Fenster, ohne Doppelte', () => {
@@ -32,7 +32,7 @@ test('Stufen-Grenzen', () => {
   assert.equal(stageFromActiveDays(10), 3);
   assert.equal(stageFromActiveDays(15), 3);
   assert.equal(stageFromActiveDays(16), 4);
-  assert.equal(STAGE_NAMES.length, 4);
+  assert.equal(STAGE_COUNT, 4);
 });
 
 test('Keimi schrumpft höchstens eine Stufe', () => {
@@ -89,4 +89,29 @@ test('Stimmung: Zufall für Umlenkungs-Lob, Ruhetag und Tageszeit', () => {
   assert.equal(moodFor({ ...base, hour: 11, random: () => 0.9 }).context, 'day');
   assert.equal(moodFor({ ...base, hour: 17, random: () => 0.9 }).context, 'evening');
   assert.equal(moodFor({ ...base, redirectsThisWeek: 0, hour: 14, random: () => 0.1 }).context, 'rest');
+});
+
+test('Momentaufnahme: Besuch, Wachstum mit Gedächtnis und Begrüßung nach Pause', async () => {
+  const { buddySnapshot } = await import('../../src/domain/buddy.js');
+  const base = {
+    today: TODAY, hour: 9, prDates: [], habitDays: {}, accountDays: {}, plannedToday: false, redirectsThisWeek: 0, random: () => 0.9,
+  };
+  const fresh = buddySnapshot({ ...base, state: buddy(), sessionDates: [] });
+  assert.equal(fresh.stage, 1);
+  assert.equal(fresh.context, 'morning');
+  assert.equal(fresh.state.lastVisit, TODAY);
+
+  const dates = Array.from({ length: 10 }, (_, i) => `2026-10-${String(10 + i).padStart(2, '0')}`);
+  const grown = buddySnapshot({ ...base, state: buddy(), sessionDates: dates });
+  assert.equal(grown.stage, 3);
+  assert.equal(grown.state.maxStage, 3);
+  assert.equal(grown.context, 'trainDone');
+
+  const back = buddySnapshot({ ...base, state: buddy({ lastVisit: '2026-10-10', maxStage: 4 }), sessionDates: ['2026-10-01'] });
+  assert.equal(back.wake, true);
+  assert.equal(back.context, 'back');
+  assert.equal(back.stage, 3, 'schrumpft höchstens eine Stufe');
+  assert.equal(back.state.backShown, true, 'Begrüßung nur einmal');
+  const again = buddySnapshot({ ...base, state: back.state, sessionDates: ['2026-10-01'] });
+  assert.equal(again.wake, false);
 });

@@ -20,10 +20,12 @@ test('jeder v1-Schlüssel aus src/app.html ist zugeordnet', () => {
 
 test('Profil und Einstellungen', () => {
   const d = convertV1(v1Raw());
-  assert.deepEqual(d.profile, { name: 'Felix', goal: 'Muskelaufbau', age: 34, weight: null, days: 4 });
+  assert.deepEqual(d.profile, {
+    name: 'Felix', goal: 'Muskelaufbau', age: 34, weight: null, days: 4, companion: { species: 'keimling', name: 'Keimi' },
+  });
   assert.deepEqual(d.settings, {
     theme: 'light', view: 'profi', startView: 'live', restSeconds: 120, timeTracking: true, lockDuringTraining: false,
-    foci: ['train', 'handy', 'mama'],
+    enabledModules: ['train', 'handy', 'mama', 'habits'], tileOrder: [],
   });
   assert.deepEqual(d.gear, V1_VALUES['lab.gear']);
 });
@@ -120,7 +122,7 @@ test('Zeitkonto, Umlenkungen, Keimi, Schwangerschaft, Messwerte, Abschluss-Karte
   assert.deepEqual(d.account.days['2026-10-18'], { tries: 4, redirects: 2, used: 10, earned: 10, earnKeys: ['kontakt0', 'kontakt1'] });
   assert.equal(d.account.unlock.until, V1_VALUES['lab.igUnlock'].until);
   assert.deepEqual(d.redirects, { '2026-10-12': 3, '2026-10-19': 2 });
-  assert.deepEqual(d.buddy, { name: 'Keimi', tone: 'frech', on: true, maxStage: 3, lastVisit: '2026-10-19', backDay: '2026-10-10', backShown: true });
+  assert.deepEqual(d.buddy, { tone: 'frech', on: true, maxStage: 3, lastVisit: '2026-10-19', backDay: '2026-10-10', backShown: true });
   assert.deepEqual(d.mama, { mode: 'post', date: '2026-08-01', cesarean: true, seenPhase: 'pp1', safetyOk: true, check6: true, check12: false });
   assert.deepEqual(d.metrics, [{ name: 'Blutzucker', unit: 'mg/dl', lo: 70, hi: 180 }, { name: 'Puls', unit: '' }]);
   assert.equal(d.lastCard.volume, 3150);
@@ -136,8 +138,8 @@ test('Sonderfälle: Name "du", alte Schwerpunkte im Fokus-Feld, Beispielkarte, k
     'lab.plans': '{kaputt',
     'lab.tlog': '"kein Array"',
   });
-  assert.deepEqual(d.profile, { name: '', goal: '', age: null, weight: 72, days: 7 });
-  assert.deepEqual(d.settings.foci, ['train']);
+  assert.deepEqual(d.profile, { name: '', goal: '', age: null, weight: 72, days: 7, companion: { species: 'keimling', name: 'Keimi' } });
+  assert.deepEqual(d.settings.enabledModules, ['train', 'habits']);
   assert.equal('focus' in d, false);
   assert.equal('lastCard' in d, false);
   assert.equal('plans' in d, false);

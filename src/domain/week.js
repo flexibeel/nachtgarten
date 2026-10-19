@@ -2,7 +2,9 @@
  * Woche: Ring auf „Heute“, Wochenrückblick, Sätze pro Muskel gegen den Zielbereich.
  *
  * Regeln (aus v1 übernommen):
- * - Zähler = Anzahl Einträge der Woche (Kraft, Aktivitäten und Heimpläne zählen gleich).
+ * - Ring auf „Heute“: Zähler = Anzahl Tage mit mindestens einem Eintrag (Kraft, Aktivität
+ *   oder Heimplan). Zwei Einheiten an einem Tag zählen als ein Trainingstag.
+ * - Wochenrückblick: zählt weiterhin Einheiten (Einträge).
  * - Nenner = Wochenziel aus dem Profil (profile.days), sonst Anzahl geplanter Tage, sonst 3.
  * - Vergleich zur Vorwoche bis zum gleichen Wochentag, sonntags mit der ganzen Vorwoche.
  */
@@ -45,8 +47,8 @@ export const totalSets = (sessions) => sessions.reduce((a, s) => a + (s.setCount
 
 /**
  * @typedef {object} WeekRing
- * @property {number} done
- * @property {number} goal
+ * @property {number} done       Trainingstage dieser Woche
+ * @property {number} goal       Wochenziel in Tagen
  * @property {number} fraction   0…1
  * @property {{key:string, label:string, done:boolean, planned:boolean, today:boolean}[]} days
  * @property {'week.done'|'week.remaining'|'week.remainingOne'|'week.start'} headline
@@ -61,7 +63,8 @@ export function weekRing({ sessions, profile, schedule, now = Date.now() }) {
   const dates = weekDates(now);
   const entries = sessionsIn(sessions, dates);
   const goal = weekGoal(profile, schedule);
-  const done = entries.length;
+  const trainedDays = new Set(entries.map((s) => s.date));
+  const done = trainedDays.size;
   const left = Math.max(0, goal - done);
   const ti = todayIdx(now);
   const headline = done >= goal ? 'week.done' : !done ? 'week.start' : left === 1 ? 'week.remainingOne' : 'week.remaining';
@@ -72,7 +75,7 @@ export function weekRing({ sessions, profile, schedule, now = Date.now() }) {
     days: dates.map((key, i) => ({
       key,
       label: WEEKDAYS_SHORT[i],
-      done: entries.some((s) => s.date === key),
+      done: trainedDays.has(key),
       planned: !!schedule[String(i)],
       today: i === ti,
     })),

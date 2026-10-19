@@ -12,8 +12,8 @@
  * | Schlüssel      | Bereich    | Inhalt                                                          | Standard |
  * |----------------|------------|-----------------------------------------------------------------|----------|
  * | ng2.meta       | meta       | Schema-Version, Anlagezeit, Zeitpunkt der v1-Übernahme          | {schema} |
- * | ng2.profile    | profile    | Name, Ziel, Alter, Gewicht, Trainingstage pro Woche             | null     |
- * | ng2.settings   | settings   | Design, Ansicht, Startansicht, Pause, Zeitmessung, Sperre, Schwerpunkte | s. u. |
+ * | ng2.profile    | profile    | Name, Ziel, Alter, Gewicht, Trainingstage, Begleiter (Art, Name)| null     |
+ * | ng2.settings   | settings   | Design, Ansicht, Startansicht, Pause, Zeitmessung, Sperre, Module, Kachel-Reihenfolge | s. u. |
  * | ng2.gear       | gear       | verfügbare Geräte                                               | ["Körpergewicht"] |
  * | ng2.plans      | plans      | Trainingspläne mit Übungen (Sätze, Soll-Wdh.)                   | []       |
  * | ng2.schedule   | schedule   | Wochenplan: Wochentag (0 = Mo) → Plan oder Aktivität            | {}       |
@@ -29,7 +29,7 @@
  * | ng2.people     | people     | Menschen fürs Umlenken mit letztem Kontakt                      | []       |
  * | ng2.account    | account    | Instagram-Zeitkonto: Tage (30 Tage Verlauf) und Freigabe        | s. u.    |
  * | ng2.redirects  | redirects  | Umlenkungen je Woche (Montag-Schlüssel → Anzahl)                | {}       |
- * | ng2.buddy      | buddy      | Keimi: Name, Ton, an/aus, höchste Stufe, Besuche                | s. u.    |
+ * | ng2.buddy      | buddy      | Begleiter-Zustand: Ton, an/aus, höchste Stufe, Besuche          | s. u.    |
  * | ng2.mama       | mama       | Schwangerschaft/Rückbildung: Modus, Datum, Abfragen             | null     |
  * | ng2.metrics    | metrics    | eigene Messwerte (Name, Einheit, Bereich)                       | []       |
  * | ng2.lastCard   | lastCard   | zuletzt gezeigte Abschluss-Karte                                | null     |
@@ -62,12 +62,16 @@ export const SCHEMA_VERSION = 1;
 
 /**
  * @typedef {'Muskelaufbau'|'Kraft'|'Abnehmen'|'Fit bleiben'|'Ausdauer'|''} Goal
+ * @typedef {object} Companion
+ * @property {string} species   Art des Begleiters (data/companions.js), z. B. "keimling"
+ * @property {string} name
  * @typedef {object} Profile
  * @property {string} name
  * @property {Goal} goal
  * @property {number|null} age
  * @property {number|null} weight   kg
- * @property {number} days          Wochenziel (Einheiten)
+ * @property {number} days          Wochenziel (Trainingstage)
+ * @property {Companion} [companion]  fehlt bei alten Profilen → Standard-Begleiter
  */
 
 /**
@@ -78,7 +82,8 @@ export const SCHEMA_VERSION = 1;
  * @property {number} restSeconds
  * @property {boolean} timeTracking
  * @property {boolean} lockDuringTraining   Instagram sperren, solange ein Live-Training läuft
- * @property {string[]|null} foci           Schwerpunkte; null = noch nicht gefragt
+ * @property {string[]|null} enabledModules  eingeschaltete Module; null = noch nicht gefragt (Standard)
+ * @property {string[]} tileOrder            gewünschte Reihenfolge der Kacheln auf „Heute“ (Kachel-Ids)
  */
 
 /**
@@ -225,8 +230,8 @@ export const SCHEMA_VERSION = 1;
  */
 
 /**
+ * Zustand des Begleiters (Art und Name stehen im Profil).
  * @typedef {object} BuddyState
- * @property {string} name
  * @property {'ruhig'|'motiv'|'frech'} tone
  * @property {boolean} on
  * @property {number} maxStage
@@ -321,7 +326,8 @@ const defaultSettings = () => ({
   restSeconds: 90,
   timeTracking: false,
   lockDuringTraining: true,
-  foci: null,
+  enabledModules: null,
+  tileOrder: [],
 });
 
 /**
@@ -349,7 +355,7 @@ const AREAS = /** @type {const} */ ({
   account: () => ({ days: {}, unlock: null }),
   redirects: () => ({}),
   buddy: () => ({
-    name: 'Keimi', tone: 'motiv', on: true, maxStage: 1, lastVisit: null, backDay: null, backShown: false,
+    tone: 'motiv', on: true, maxStage: 1, lastVisit: null, backDay: null, backShown: false,
   }),
   mama: () => null,
   metrics: () => [],

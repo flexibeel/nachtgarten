@@ -130,3 +130,44 @@ export function markBirth(mama) {
 export function phaseChanged(mama, currentPhase) {
   return !!currentPhase && !!mama.seenPhase && mama.seenPhase !== currentPhase;
 }
+
+/** Wie lange nach dem errechneten Termin noch „schwanger“ eingetragen werden kann. */
+export const MAX_OVERDUE_DAYS = 42;
+/** Rückbildungspläne reichen etwa ein Jahr. */
+export const MAX_POSTPARTUM_DAYS = 365;
+
+/**
+ * Eingabe aus dem Onboarding/Profil prüfen.
+ * @param {{mode: 'preg'|'post', date: string}} input
+ * @param {string} today
+ * @returns {{ok: true} | {ok: false, error: 'mama.noDate'|'mama.dueTooFar'|'mama.dueLongPast'|'mama.birthInFuture'|'mama.birthTooOld'}}
+ */
+export function validateMamaInput({ mode, date }, today) {
+  if (!isDateKey(date)) return { ok: false, error: 'mama.noDate' };
+  const diff = daysBetween(today, date);
+  if (mode === 'preg') {
+    if (diff > TERM_DAYS) return { ok: false, error: 'mama.dueTooFar' };
+    if (diff < -MAX_OVERDUE_DAYS) return { ok: false, error: 'mama.dueLongPast' };
+    return { ok: true };
+  }
+  if (diff > 0) return { ok: false, error: 'mama.birthInFuture' };
+  if (-diff > MAX_POSTPARTUM_DAYS) return { ok: false, error: 'mama.birthTooOld' };
+  return { ok: true };
+}
+
+/**
+ * Neuer Zustand aus der Eingabe (Abfragen und gesehene Phase zurückgesetzt).
+ * @param {{mode: 'preg'|'post', date: string, cesarean?: boolean, safetyOk?: boolean}} input
+ * @returns {MamaState}
+ */
+export function createMamaState({ mode, date, cesarean = false, safetyOk = false }) {
+  return {
+    mode,
+    date,
+    cesarean: mode === 'post' && !!cesarean,
+    seenPhase: null,
+    safetyOk: !!safetyOk,
+    check6: false,
+    check12: false,
+  };
+}
