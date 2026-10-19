@@ -10,12 +10,12 @@ import { focusPart } from './one-thing-tile.js';
 /** @type {import('../registry.js').ModuleDef} */
 export const habitsModule = {
   id: 'habits',
-  label: 'Gewohnheiten & Kopf frei',
-  hint: 'Eine Sache am Tag, eine Gewohnheit, Gedanken abladen',
+  labelKey: 'module.habits.label',
+  hintKey: 'module.habits.hint',
   icon: 'leaf',
   tiles: [
-    { id: 'one-thing', title: 'Eine Sache heute', render: focusPart },
-    { id: 'habit', title: 'Gewohnheit', render: habitPart },
-    { id: 'dump', title: 'Kurz abladen', render: dumpPart },
+    { id: 'one-thing', titleKey: 'tile.oneThing', render: focusPart },
+    { id: 'habit', titleKey: 'tile.habit', render: habitPart },
+    { id: 'dump', titleKey: 'tile.dump', render: dumpPart },
   ],
 };

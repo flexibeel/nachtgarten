@@ -13,7 +13,7 @@
  * |----------------|------------|-----------------------------------------------------------------|----------|
  * | ng2.meta       | meta       | Schema-Version, Anlagezeit, Zeitpunkt der v1-Übernahme          | {schema} |
  * | ng2.profile    | profile    | Name, Ziel, Alter, Gewicht, Trainingstage, Begleiter (Art, Name)| null     |
- * | ng2.settings   | settings   | Design, Ansicht, Startansicht, Pause, Zeitmessung, Sperre, Module, Kachel-Reihenfolge | s. u. |
+ * | ng2.settings   | settings   | Sprache, Design, Ansicht, Startansicht, Pause, Zeitmessung, Sperre, Module, Kachel-Reihenfolge | s. u. |
  * | ng2.gear       | gear       | verfügbare Geräte                                               | ["Körpergewicht"] |
  * | ng2.plans      | plans      | Trainingspläne mit Übungen (Sätze, Soll-Wdh.)                   | []       |
  * | ng2.schedule   | schedule   | Wochenplan: Wochentag (0 = Mo) → Plan oder Aktivität            | {}       |
@@ -76,6 +76,7 @@ export const SCHEMA_VERSION = 1;
 
 /**
  * @typedef {object} Settings
+ * @property {'de'|'en'} lang               Sprache der Oberfläche
  * @property {'system'|'light'|'dark'} theme
  * @property {'einfach'|'profi'} view
  * @property {'heute'|'training'|'live'} startView
@@ -188,7 +189,7 @@ export const SCHEMA_VERSION = 1;
 
 /**
  * @typedef {object} Habit
- * @property {string} name
+ * @property {string} name     leer = Standard-Gewohnheit (Text aus habit.defaultName)
  * @property {string|null} anchor
  * @property {Record<DateKey, true>} days
  * @typedef {object} DailyFocus
@@ -320,6 +321,7 @@ export function memoryAdapter(initial = {}) {
 
 /** @returns {Settings} */
 const defaultSettings = () => ({
+  lang: 'de',
   theme: 'system',
   view: 'einfach',
   startView: 'heute',
@@ -347,7 +349,7 @@ const AREAS = /** @type {const} */ ({
   live: () => null,
   prs: () => [],
   exercises: () => ({ custom: [], favorites: [], prefs: {}, lastRir: 2 }),
-  habit: () => ({ name: '10 Min. lesen', anchor: null, days: {} }),
+  habit: () => ({ name: '', anchor: null, days: {} }),   // leerer Name → Vorschlag in der Sprache der UI
   focus: () => ({ day: '', text: '', done: false }),
   dump: () => [],
   feed: () => ({ items: [], queue: [], day: null, readDay: null }),

@@ -664,3 +664,8 @@
 .noscript {
   padding: var(--space-6) var(--gutter);
 }
+
+/* Sprachwahl im ersten Onboarding-Schritt: dezent abgesetzt */
+.onboarding-lang {
+  margin-top: var(--space-4);
+}

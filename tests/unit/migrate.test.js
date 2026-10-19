@@ -24,7 +24,7 @@ test('Profil und Einstellungen', () => {
     name: 'Felix', goal: 'Muskelaufbau', age: 34, weight: null, days: 4, companion: { species: 'keimling', name: 'Keimi' },
   });
   assert.deepEqual(d.settings, {
-    theme: 'light', view: 'profi', startView: 'live', restSeconds: 120, timeTracking: true, lockDuringTraining: false,
+    lang: 'de', theme: 'light', view: 'profi', startView: 'live', restSeconds: 120, timeTracking: true, lockDuringTraining: false,
     enabledModules: ['train', 'handy', 'mama', 'habits'], tileOrder: [],
   });
   assert.deepEqual(d.gear, V1_VALUES['lab.gear']);

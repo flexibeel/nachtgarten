@@ -4,14 +4,16 @@
  */
 
 import { prefersDark } from '../core/platform.js';
+import { t } from '../data/texts/i18n.js';
 
 /** @typedef {'system'|'light'|'dark'} ThemeSetting */
 
-export const THEME_OPTIONS = Object.freeze([
-  { value: 'system', label: 'System', icon: 'system' },
-  { value: 'light', label: 'Hell', icon: 'sun' },
-  { value: 'dark', label: 'Dunkel', icon: 'moon' },
-]);
+/** Auswahl Design in der aktiven Sprache. */
+export const themeOptions = () => [
+  { value: 'system', label: t('theme.system'), icon: 'system' },
+  { value: 'light', label: t('theme.light'), icon: 'sun' },
+  { value: 'dark', label: t('theme.dark'), icon: 'moon' },
+];
 
 /** Hintergrundfarben aus tokens.css für die Statusleiste. */
 export const THEME_COLORS = Object.freeze({ light: '#F5F1EE', dark: '#232020' });

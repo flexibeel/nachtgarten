@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_REP_RANGE, applyDailyForm, lastSessionSets, platesPerSide, repRangeOrDefault, stepOrDefault, suggest, targetLowReps,
 } from '../../src/domain/progression.js';
-import { text } from '../../src/data/texts/de.js';
+import { t as text } from '../../src/data/texts/i18n.js';
 
 const TODAY = '2026-10-19';
 const s = (date, weight, reps, rir = null) => ({ date, weight, reps, rir, session: null });

@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRegistry } from '../../src/features/registry.js';
 import { createAppRegistry } from '../../src/features/modules.js';
+import { TEXTS as DE } from '../../src/data/texts/de.js';
 
 const noop = () => ({ el: null });
 const mount = () => {};
@@ -11,27 +12,27 @@ function sample() {
   return createRegistry()
     .register({
       id: 'train',
-      label: 'Training',
-      hint: '',
+      labelKey: 'module.train.label',
+      hintKey: 'module.train.hint',
       icon: 'training',
       views: [
-        { route: 'training', title: 'Training', tab: { label: 'Training', icon: 'training' }, mount },
-        { route: 'live', title: 'Live', chrome: 'bare', aliases: ['sport'], modules: ['train', 'mama'], mount },
+        { route: 'training', titleKey: 'view.training', tab: { labelKey: 'tab.training', icon: 'training' }, mount },
+        { route: 'live', titleKey: 'view.live', chrome: 'bare', aliases: ['sport'], modules: ['train', 'mama'], mount },
       ],
       tiles: [
-        { id: 'sport', title: 'Sport', render: noop, modules: ['train', 'mama'] },
-        { id: 'week', title: 'Woche', render: noop },
+        { id: 'sport', titleKey: 'tile.sport', render: noop, modules: ['train', 'mama'] },
+        { id: 'week', titleKey: 'tile.week', render: noop },
       ],
     })
     .register({
       id: 'mama',
-      label: 'Mama',
-      hint: '',
+      labelKey: 'module.mama.label',
+      hintKey: 'module.mama.hint',
       icon: 'mama',
-      views: [{ route: 'mama', title: 'Mama', tab: { label: 'Mama', icon: 'mama' }, mount }],
-      tiles: [{ id: 'mama', title: 'Mama', render: noop, size: 'small' }],
+      views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount }],
+      tiles: [{ id: 'mama', titleKey: 'tile.mama', render: noop, size: 'small' }],
     })
-    .register({ id: 'habits', label: 'Gewohnheiten', hint: '', icon: 'leaf', tiles: [{ id: 'habit', title: 'Gewohnheit', render: noop }] });
+    .register({ id: 'habits', labelKey: 'module.habits.label', hintKey: 'module.habits.hint', icon: 'leaf', tiles: [{ id: 'habit', titleKey: 'tile.habit', render: noop }] });
 }
 
 test('Registry: Kacheln nur von eingeschalteten Modulen, gemeinsame Kacheln einmal', () => {
@@ -62,9 +63,9 @@ test('Registry: Tabs, Routen, Aliase und gesperrte Ansichten', () => {
 
 test('Registry: doppelte Module, Routen oder Kacheln werden abgelehnt', () => {
   const r = sample();
-  assert.throws(() => r.register({ id: 'train', label: '', hint: '', icon: '' }), /Modul doppelt/);
-  assert.throws(() => r.register({ id: 'x', label: '', hint: '', icon: '', views: [{ route: 'sport', title: '', mount }] }), /Route doppelt/);
-  assert.throws(() => r.register({ id: 'y', label: '', hint: '', icon: '', tiles: [{ id: 'week', title: '', render: noop }] }), /Kachel doppelt/);
+  assert.throws(() => r.register({ id: 'train', labelKey: '', hintKey: '', icon: '' }), /Modul doppelt/);
+  assert.throws(() => r.register({ id: 'x', labelKey: '', hintKey: '', icon: '', views: [{ route: 'sport', titleKey: '', mount }] }), /Route doppelt/);
+  assert.throws(() => r.register({ id: 'y', labelKey: '', hintKey: '', icon: '', tiles: [{ id: 'week', titleKey: '', render: noop }] }), /Kachel doppelt/);
 });
 
 test('App-Registry: alle Module angemeldet, Standard zeigt Training und Gewohnheiten', () => {
@@ -76,5 +77,11 @@ test('App-Registry: alle Module angemeldet, Standard zeigt Training und Gewohnhe
   assert.deepEqual(r.tabs(['ideen']).map((t) => t.route), ['ideen'], 'Ideen-Labor nur, wenn an');
   assert.equal(r.view('fokus', ['train']), null);
   assert.equal(r.aliases().umlenken, 'fokus');
-  for (const m of r.list()) assert.ok(m.label && m.hint && m.icon, m.id);
+  // Alle Beschriftungen sind vorhandene Text-Schlüssel.
+  const keys = [
+    ...r.list().flatMap((m) => [m.labelKey, m.hintKey, ...(m.views ?? []).flatMap((v) => [v.titleKey, v.tab?.labelKey, `placeholder.${v.route}`])]),
+    ...r.allTiles().map((x) => x.titleKey),
+  ].filter(Boolean);
+  for (const k of keys) assert.ok(k in DE, `Text fehlt: ${k}`);
+  for (const m of r.list()) assert.ok(m.icon, m.id);
 });

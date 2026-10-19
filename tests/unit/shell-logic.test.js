@@ -62,9 +62,9 @@ test('Onboarding-Schritte je nach Modulen', () => {
 });
 
 test('Startansicht: nur erreichbare Ziele', () => {
-  assert.deepEqual(startViewOptions(['train']).map((o) => o.value), ['heute', 'training', 'live']);
-  assert.deepEqual(startViewOptions(['mama']).map((o) => o.value), ['heute', 'live']);
-  assert.deepEqual(startViewOptions(['habits', 'handy']).map((o) => o.value), ['heute']);
+  assert.deepEqual(startViewOptions(['train']), ['heute', 'training', 'live']);
+  assert.deepEqual(startViewOptions(['mama']), ['heute', 'live']);
+  assert.deepEqual(startViewOptions(['habits', 'handy']), ['heute']);
 });
 
 test('Schwangerschaft & Rückbildung: Eingabe prüfen', () => {

@@ -33,8 +33,9 @@ src/
   core/                   store.js, dates.js, events.js, router.js, platform.js, format.js
   domain/                 training.js, progression.js, week.js, pregnancy.js, account.js, buddy.js,
                           companion.js, modules.js, today.js, habits.js, feed.js, ics.js, backup.js, migrate.js
-  data/                   goals.js, gear.js, companions.js, mama-safety.js, muscles.js, patterns.js,
-                          texts/de.js (Hinweise), texts/companion.js (Sätze des Begleiters)
+  data/                   goals.js, gear.js, companions.js, muscles.js, patterns.js,
+                          texts/i18n.js (t, Sprache), texts/de.js, texts/en.js,
+                          texts/companion.js (+ companion-de.js, companion-en.js: Sätze des Begleiters)
   ui/                     dom.js, icons.js, sheet.js, toast.js, chips.js, stepper.js, numpad.js, fields.js,
                           card.js, tile.js, ring.js, actionbar.js, theme.js, companion.js,
                           companions/<art>.js (Zeichnung je Begleiter-Art), anim/ (Übungsanimationen)
@@ -55,7 +56,7 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
 2. Nur `core/store.js` greift auf Speicher zu. Alle Schlüssel sind dort dokumentiert.
 3. Farben, Schriften, Abstände, Radien kommen ausschließlich aus `styles/tokens.css`.
 4. Jede Rechenregel hat Unit-Tests; jeder Hauptablauf einen E2E-Test.
-5. Texte für Keimi und Hinweise liegen in `data/texts/`, nicht im Code verstreut.
+5. Alle sichtbaren Texte liegen in `data/texts/` (Deutsch und Englisch), nie im Code der Bildschirme.
 6. Alte Daten (v1, Schlüssel `lab.*`) werden beim ersten Start von `domain/migrate.js` übernommen.
 
 ## Entscheidungen (Stufe 1: Fundament)
@@ -110,6 +111,14 @@ docs/                     SPEC.md, ARCHITECTURE.md, DESIGN.md, TONE.md, BACKLOG.
   `ui/companions/<art>.js`; `ui/companion.js` wählt sie über die Art-Id. Texte nutzen nur Platzhalter
   (`{name}` Begleiter, `{user}` Person); artspezifische Sätze liegen getrennt (`SPECIES_LINES`).
   Neue Art = Eintrag in `SPECIES` + Zeichenfunktion in `ART` (+ optional eigene Sätze).
+- **Sprache** (`data/texts/i18n.js`): Deutsch zuerst, Englisch wählbar (`ng2.settings.lang`, im Profil
+  unter „Ansicht“, auf „Heute“ unter Einstellungen und im ersten Onboarding-Schritt). Alle sichtbaren
+  Texte über `t(key, vars)` bzw. `tList(key)` aus `data/texts/de.js` und `en.js`, Rückfall auf Deutsch.
+  Sätze des Begleiters je Sprache in `companion-de.js` / `companion-en.js`. Bildschirme enthalten keine
+  festen Texte; Registry-Einträge tragen Text-Schlüssel (`labelKey`, `titleKey`). Ein Sprachwechsel
+  zeichnet Shell, aktuelle Ansicht und offene Profil-/Onboarding-Sheets neu. Tests prüfen, dass jeder
+  deutsche Schlüssel auf Englisch existiert, die Platzhalter übereinstimmen und keine festen Texte in
+  `features/` und `ui/` stehen. Gespeicherte Werte (Ziel-Ids, Geräte-Ids aus v1) bleiben sprachneutral.
 - **Bildschirme** bestehen aus `ui/`-Bausteinen; ein Bildschirmteil ist ein `Part` `{el, destroy}`, der
   über `ctx.watch(bereiche, …)` nur auf die Speicher-Bereiche hört, die er zeigt (`features/part.js`).
 - **App-Kontext** (`features/context.js`): Speicher, Ereignisse, Registry, Uhr, Navigation, Design –

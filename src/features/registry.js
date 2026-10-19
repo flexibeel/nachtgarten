@@ -4,6 +4,7 @@
  * fragen nur die Registry – ein ausgeschaltetes Modul ist dadurch überall unsichtbar.
  *
  * Die Registry kennt kein DOM; Ansichten und Kacheln bringen ihre Render-Funktion mit.
+ * Beschriftungen sind Text-Schlüssel (`…Key`), übersetzt wird erst beim Anzeigen mit t().
  */
 
 import { anyEnabled, normalizeModules, orderTiles } from '../domain/modules.js';
@@ -15,7 +16,7 @@ import { anyEnabled, normalizeModules, orderTiles } from '../domain/modules.js';
 /**
  * @typedef {object} TileDef
  * @property {string} id
- * @property {string} title                    Name in „Heute anordnen“
+ * @property {string} titleKey                 Name in „Heute anordnen“
  * @property {(ctx: AppContext) => Part} render
  * @property {string[]} [modules]              sichtbar, wenn eines dieser Module an ist (Standard: das eigene)
  * @property {'full'|'small'} [size]           'small': nebeneinander stehende Kachel
@@ -24,9 +25,9 @@ import { anyEnabled, normalizeModules, orderTiles } from '../domain/modules.js';
 /**
  * @typedef {object} ViewDef
  * @property {string} route                    Name im Hash (#training)
- * @property {string} title                    Dokumenttitel
+ * @property {string} titleKey                 Dokumenttitel
  * @property {(ctx: AppContext, view: HTMLElement, route: Route) => (void | (() => void))} mount
- * @property {{label: string, icon: string}} [tab]   in der Tab-Leiste zeigen
+ * @property {{labelKey: string, icon: string}} [tab]   in der Tab-Leiste zeigen
  * @property {string} [tabOf]                  welcher Tab hervorgehoben wird (Unteransicht)
  * @property {'tabs'|'bare'} [chrome]          'bare': ohne Tab-Leiste (z. B. Live-Training)
  * @property {string[]} [aliases]              weitere Namen (#umlenken → fokus)
@@ -36,8 +37,8 @@ import { anyEnabled, normalizeModules, orderTiles } from '../domain/modules.js';
 /**
  * @typedef {object} ModuleDef
  * @property {string} id
- * @property {string} label                    „Was ist dir wichtig?“
- * @property {string} hint
+ * @property {string} labelKey                 „Was ist dir wichtig?“
+ * @property {string} hintKey
  * @property {string} icon
  * @property {ViewDef[]} [views]
  * @property {TileDef[]} [tiles]
@@ -133,14 +134,14 @@ export function createRegistry() {
     /**
      * Tabs der eingeschalteten Module.
      * @param {string[]|null|undefined} enabled
-     * @returns {{route: string, label: string, icon: string}[]}
+     * @returns {{route: string, labelKey: string, icon: string}[]}
      */
     tabs(enabled) {
       const on = registry.enabled(enabled);
       return modules.flatMap((m) =>
         (m.views ?? [])
           .filter((v) => v.tab && anyEnabled(on, ownerModules(v, m.id)))
-          .map((v) => ({ route: v.route, label: /** @type {any} */ (v.tab).label, icon: /** @type {any} */ (v.tab).icon })),
+          .map((v) => ({ route: v.route, labelKey: /** @type {any} */ (v.tab).labelKey, icon: /** @type {any} */ (v.tab).icon })),
       );
     },
   };

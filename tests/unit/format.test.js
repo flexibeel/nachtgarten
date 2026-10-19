@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import {
   clock, days, fillTemplate, formatKg, formatNumber, minutes, parseDecimal, percentChange, plural, reps, round, sets, units, weeks,
 } from '../../src/core/format.js';
-import { TEXTS, text } from '../../src/data/texts/de.js';
+import { TEXTS } from '../../src/data/texts/de.js';
+import { t as text } from '../../src/data/texts/i18n.js';
 
 test('formatNumber: Komma, Tausenderpunkt, Rundung', () => {
   assert.equal(formatNumber(1234.5), '1.234,5');

@@ -7,15 +7,8 @@ import { placeholder } from '../placeholder/placeholder.js';
 /** @type {import('../registry.js').ModuleDef} */
 export const ideenModule = {
   id: 'ideen',
-  label: 'Ideen-Labor',
-  hint: 'Neue Funktionen mit ausprobieren',
+  labelKey: 'module.ideen.label',
+  hintKey: 'module.ideen.hint',
   icon: 'ideen',
-  views: [
-    {
-      route: 'ideen',
-      title: 'Ideen-Labor',
-      tab: { label: 'Ideen', icon: 'ideen' },
-      mount: placeholder({ title: 'Ideen-Labor', intro: 'Hier sammeln wir bald Skizzen für neue Funktionen. Du entscheidest mit.' }),
-    },
-  ],
+  views: [{ route: 'ideen', titleKey: 'view.ideen', tab: { labelKey: 'tab.ideen', icon: 'ideen' }, mount: placeholder('ideen') }],
 };

@@ -18,6 +18,12 @@ nie für andere, nie gegen den eigenen Körper.
 7. **Schreibweise.** Deutsche Anführungszeichen („…“), Gedankenstrich (–), Zahlen deutsch
    (1,5 kg). Keine Großbuchstaben-Überschriften, keine Ausrufezeichen-Ketten, keine Emojis im Text.
 
+## Englisch
+
+Die App ist deutsch zuerst, Englisch ist gleichwertig wählbar. Für englische Texte gelten dieselben
+Regeln: freundlich, kurz, Wohlbefinden statt Aussehen („Feel lighter & fitter“, nicht „Lose weight“),
+britische Schreibweise, typografische Anführungszeichen (“…”), kein Ausrufezeichen-Lärm.
+
 ## So ja – so nicht
 
 | So nicht | So ja | Warum |
@@ -46,7 +52,7 @@ Drei Tonlagen, alle freundlich:
 - **Frech:** verspielt, nie verletzend, nie über den Körper. „Ruhetag! Sofa-Training: Fernbedienung heben.“
 
 Er kommentiert nie Gewicht, Figur oder Essen, vergleicht nie mit anderen und macht kein
-schlechtes Gewissen. Alle Sätze stehen in `src/data/texts/companion.js`:
+schlechtes Gewissen. Alle Sätze stehen in `src/data/texts/companion-de.js` und `companion-en.js`:
 
 - Nie einen festen Namen schreiben: `{name}` ist der Begleiter, `{user}` bzw. `{, user}` die Person.
 - Allgemeine Sätze passen zu jeder Art. Was nur zu einer Art passt (Blätter, Gießen, Rüssel …),

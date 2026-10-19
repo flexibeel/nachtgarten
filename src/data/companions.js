@@ -1,21 +1,18 @@
 /**
  * Begleiter-Arten. Die Zeichnung je Art liegt in src/ui/companions/<id>.js,
- * eigene Sätze je Art in src/data/texts/companion.js (SPECIES_LINES).
+ * ihre Bezeichnung und Stufen-Namen in den Texten (`species.<id>`, `species.<id>.stages`),
+ * eigene Sätze in companion-<sprache>.js unter `species.<id>`.
  * Weitere Arten (z. B. Pixel-Tiere, zuerst ein Elefant) werden hier ergänzt.
  */
 
 /**
  * @typedef {object} SpeciesInfo
  * @property {string} id
- * @property {string} label          Art, wie sie in der Auswahl heißt
- * @property {string} defaultName
- * @property {readonly string[]} stageNames  vier Wachstumsstufen (domain/buddy.js)
+ * @property {string} defaultName   Eigenname, in allen Sprachen gleich
  */
 
 /** @type {readonly SpeciesInfo[]} */
-export const SPECIES = Object.freeze([
-  { id: 'keimling', label: 'Keimling', defaultName: 'Keimi', stageNames: Object.freeze(['Keimling', 'Zwei Blätter', 'Knospe', 'Blüte']) },
-]);
+export const SPECIES = Object.freeze([{ id: 'keimling', defaultName: 'Keimi' }]);
 
 export const DEFAULT_SPECIES = 'keimling';
 

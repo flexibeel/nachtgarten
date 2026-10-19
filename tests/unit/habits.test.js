@@ -1,7 +1,7 @@
 import './helpers/env.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ANCHORS, anchorSentence, habitMessage, toggleDay, weekDots } from '../../src/domain/habits.js';
+import { anchorSentence, habitMessage, toggleDay, weekDots } from '../../src/domain/habits.js';
 import { at } from './helpers/fixtures.js';
 
 const habit = (days = {}, extra = {}) => ({ name: '10 Min. lesen', anchor: null, days, ...extra });
@@ -60,5 +60,4 @@ test('Anker-Satz', () => {
   assert.equal(anchorSentence(habit({}, { anchor: '  ' })), null);
   assert.equal(anchorSentence(habit({}, { anchor: 'nach dem Frühstück' })), 'Nach dem Frühstück: 10 Min. lesen');
   assert.equal(anchorSentence(habit({}, { anchor: 'vor dem Schlafengehen', name: 'Dehnen...' })), 'Vor dem Schlafengehen: Dehnen');
-  assert.equal(ANCHORS.length, 6);
 });

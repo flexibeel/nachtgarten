@@ -2,7 +2,7 @@
 
 Startet einen lokalen Server im Projektordner und prüft in Hell und Dunkel:
 Onboarding (inkl. Schwangerschaft), „Heute“, Design-Schalter, Sicherung speichern und laden,
-Direktsprung #training, ausgeschaltete Module, keine Seitenfehler, kein seitliches Scrollen.
+Direktsprung #training, ausgeschaltete Module, Sprachwechsel, keine Seitenfehler, kein seitliches Scrollen.
 
   python3 tests/e2e/smoke.py                 # Test
   SHOTS=/pfad python3 tests/e2e/smoke.py     # zusätzlich Screenshots speichern
@@ -159,8 +159,23 @@ def check_profile(page, scheme):
     first = page.locator(".order-item .order-title").first.inner_text()
     page.locator(".order-item").nth(1).locator("button").first.click()
     check(page.locator(".order-item .order-title").first.inner_text() != first, "Kachel lässt sich nicht verschieben")
+    # Sprache: English, alles neu beschriftet, dann zurück
+    page.click(".profile .segment:has-text('English')")
+    page.wait_for_selector(".profile .sheet-title:has-text('Your profile')")
+    check(page.evaluate("JSON.parse(localStorage.getItem('ng2.settings')).lang") == "en", "Sprache nicht gespeichert")
+    check(page.evaluate("document.documentElement.lang") == "en", "html lang nicht gesetzt")
     page.keyboard.press("Escape")
     page.wait_for_selector(".profile.sheet-panel", state="detached")
+    tabs = page.locator(".tab .tab-label").all_inner_texts()
+    check(tabs[0] == "Today", f"Tabs nicht übersetzt: {tabs}")
+    check("Start workout" in page.inner_text(".sport-start"), "Heute nicht übersetzt")
+    shot(page, f"{scheme}_heute_en")
+    page.click(".avatar")
+    page.click(".profile .segment:has-text('Deutsch')")
+    page.wait_for_selector(".profile .sheet-title:has-text('Dein Profil')")
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".profile.sheet-panel", state="detached")
+    check(page.locator(".tab .tab-label").first.inner_text() == "Heute", "Zurück auf Deutsch klappt nicht")
 
 
 def check_backup(page, tmp):

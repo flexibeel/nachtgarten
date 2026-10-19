@@ -1,20 +1,12 @@
 /**
  * Gewohnheit: Wochenpunkte, „nie zweimal verpassen“, Wenn-Dann-Anker.
+ * Vorgeschlagene Anker-Momente stehen in den Texten (habit.anchors).
  */
 
 import { WEEKDAYS_SHORT, addDays, dateKey, weekDates } from '../core/dates.js';
 
 /** @typedef {import('../core/store.js').Habit} Habit */
 /** @typedef {import('../core/dates.js').Now} Now */
-
-export const ANCHORS = Object.freeze([
-  'nach dem Aufstehen',
-  'nach dem Zähneputzen',
-  'nach dem Frühstück',
-  'nach der Arbeit',
-  'nach dem Abendessen',
-  'vor dem Schlafengehen',
-]);
 
 /**
  * Sieben Punkte Mo–So; Tage in der Zukunft sind nicht abhakbar.

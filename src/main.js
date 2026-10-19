@@ -1,5 +1,5 @@
 /**
- * Start der App: alte Daten übernehmen, Design anwenden, Shell und Router aufbauen,
+ * Start der App: alte Daten übernehmen, Sprache und Design anwenden, Shell und Router aufbauen,
  * beim ersten Start das Onboarding zeigen.
  */
 
@@ -11,6 +11,7 @@ import { createAppRegistry } from './features/modules.js';
 import { createShell, routeTable } from './features/shell.js';
 import { closeAllSheets } from './ui/sheet.js';
 import { applyTheme } from './ui/theme.js';
+import { setLang } from './data/texts/i18n.js';
 
 /** Startansichten, die beim Öffnen ohne Direktsprung gelten dürfen. */
 const START_VIEWS = ['heute', 'training', 'live'];
@@ -22,6 +23,7 @@ function boot() {
   const ctx = createContext({ registry: createAppRegistry() });
   migrateFromV1(ctx.store, { now: ctx.now() });
   applyTheme(ctx.store.settings.get().theme);
+  setLang(ctx.store.settings.get().lang);
 
   const shell = createShell(ctx, root);
   const router = createRouter({ ...routeTable(ctx.registry), onRoute: shell.show });
@@ -42,6 +44,7 @@ function boot() {
   ctx.bus.on('reload', async () => {
     await closeAllSheets();
     applyTheme(ctx.store.settings.get().theme);
+    setLang(ctx.store.settings.get().lang);
     shell.refresh();
     if (needsOnboarding()) startOnboarding();
   });

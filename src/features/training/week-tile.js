@@ -3,16 +3,15 @@
  */
 
 import { weekRing } from '../../domain/week.js';
-import { text } from '../../data/texts/de.js';
+import { t } from '../../data/texts/i18n.js';
 import { h, replace } from '../../ui/dom.js';
 import { card } from '../../ui/card.js';
 import { icon } from '../../ui/icons.js';
 import { progressRing } from '../../ui/ring.js';
 import { reactivePart } from '../part.js';
+import { longDay, shortDay } from '../days.js';
 
 /** @typedef {import('../context.js').AppContext} AppContext */
-
-const LONG_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
 /** @param {AppContext} ctx */
 export function weekPart(ctx) {
@@ -26,31 +25,31 @@ export function weekPart(ctx) {
         'ol',
         { class: 'week-days' },
         ring.days.map((d, i) => {
-          const state = d.done ? 'trainiert' : d.planned ? 'geplant' : 'frei';
+          const state = d.done ? 'week.dayDone' : d.planned ? 'week.dayPlanned' : 'week.dayFree';
           return h(
             'li',
             {
               class: ['week-day', d.done && 'is-done', d.planned && 'is-planned', d.today && 'is-today'],
-              'aria-label': `${LONG_DAYS[i]}${d.today ? ' (heute)' : ''}: ${state}`,
+              'aria-label': t(state, { day: longDay(i, d.today) }),
             },
             h('span', { class: 'week-dot', 'aria-hidden': 'true' }, d.done ? icon('check', { size: 14 }) : null),
-            h('span', { class: 'week-label', 'aria-hidden': 'true', text: d.label }),
+            h('span', { class: 'week-label', 'aria-hidden': 'true', text: shortDay(i) }),
           );
         }),
       );
       replace(
         el,
         card(
-          { title: 'Deine Woche', className: 'week' },
+          { title: t('week.title'), className: 'week' },
           h(
             'div',
             { class: 'week-body' },
             progressRing(
-              { fraction: ring.fraction, size: 84, stroke: 7, label: `${ring.done} von ${ring.goal} Trainingstagen` },
+              { fraction: ring.fraction, size: 84, stroke: 7, label: t('week.ringLabel', { done: ring.done, goal: ring.goal }) },
               h('span', { class: 'ring-number', text: `${ring.done}/${ring.goal}` }),
-              h('span', { class: 'ring-unit', text: 'Tage' }),
+              h('span', { class: 'ring-unit', text: t('week.unit') }),
             ),
-            h('div', { class: 'week-side' }, h('p', { class: 'week-headline', text: text(ring.headline, ring.params) }), days),
+            h('div', { class: 'week-side' }, h('p', { class: 'week-headline', text: t(ring.headline, ring.params) }), days),
           ),
         ),
       );

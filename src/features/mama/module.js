@@ -4,10 +4,12 @@
  */
 
 import { mamaStatus } from '../../domain/pregnancy.js';
+import { t } from '../../data/texts/i18n.js';
 import { replace } from '../../ui/dom.js';
 import { linkTile } from '../../ui/tile.js';
 import { reactivePart } from '../part.js';
 import { placeholder } from '../placeholder/placeholder.js';
+import { statusLabel } from './status.js';
 
 /** @param {import('../context.js').AppContext} ctx */
 const statusTile = (ctx) =>
@@ -21,8 +23,8 @@ const statusTile = (ctx) =>
         linkTile({
           href: '#mama',
           icon: 'mama',
-          title: status?.label ?? 'Schwangerschaft & Rückbildung',
-          sub: status ? 'Dein Wochenplan' : 'Angaben im Profil ergänzen',
+          title: status ? statusLabel(status) : t('mama.title'),
+          sub: t(status ? 'mama.tileSub' : 'mama.tileMissing'),
         }),
       );
     },
@@ -32,16 +34,9 @@ const statusTile = (ctx) =>
 /** @type {import('../registry.js').ModuleDef} */
 export const mamaModule = {
   id: 'mama',
-  label: 'Schwangerschaft & Rückbildung',
-  hint: 'Sanfte Pläne passend zur Woche',
+  labelKey: 'module.mama.label',
+  hintKey: 'module.mama.hint',
   icon: 'mama',
-  views: [
-    {
-      route: 'mama',
-      title: 'Schwangerschaft & Rückbildung',
-      tab: { label: 'Mama', icon: 'mama' },
-      mount: placeholder({ title: 'Schwangerschaft & Rückbildung', intro: 'Hier bekommst du bald jede Woche einen sanften Plan, passend zu dir.' }),
-    },
-  ],
-  tiles: [{ id: 'mama', title: 'Schwangerschaft & Rückbildung', render: statusTile, size: 'small' }],
+  views: [{ route: 'mama', titleKey: 'view.mama', tab: { labelKey: 'tab.mama', icon: 'mama' }, mount: placeholder('mama') }],
+  tiles: [{ id: 'mama', titleKey: 'tile.mama', render: statusTile, size: 'small' }],
 };

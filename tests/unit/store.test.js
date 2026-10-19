@@ -64,7 +64,7 @@ test('Kaputtes JSON oder falsche Form → Standard', () => {
   const store = createStore(memoryAdapter({ 'ng2.plans': '{kaputt', 'ng2.gear': '{"a":1}', 'ng2.habit': 'null' }));
   assert.deepEqual(store.plans.get(), []);
   assert.deepEqual(store.gear.get(), ['Körpergewicht']);
-  assert.equal(store.habit.get().name, '10 Min. lesen');
+  assert.equal(store.habit.get().name, '');
 });
 
 test('exportAll enthält nur vorhandene Bereiche, importAll schreibt sie', () => {
